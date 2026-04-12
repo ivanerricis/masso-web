@@ -1,46 +1,26 @@
 import CreateEntityButton from "@/components/create-entity-button";
-import CreateCustomerDialog from "@/components/dialogs/createCustomerDialog";
+import CreateIssueDialog from "@/components/dialogs/createIssueDialog";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
 import type { ReactNode } from "react";
-import type { CustomerDto } from "@/types/dtos";
+import type { IssueDto } from "@/types/dtos";
 
-type CustomerColumn = {
-    key: keyof CustomerDto | "actions";
+type IssueColumn = {
+    key: keyof IssueDto | "actions";
     header: string;
     className?: string;
-    render: (row: CustomerDto) => ReactNode;
+    render: (row: IssueDto) => ReactNode;
 };
 
-const customerRows: CustomerDto[] = [];
+const issueRows: IssueDto[] = [];
 
-const customerColumns: CustomerColumn[] = [
+const issueColumns: IssueColumn[] = [
     {
-        key: "firstName",
-        header: "Nome",
-        render: (row) => row.firstName,
-    },
-    {
-        key: "lastName",
-        header: "Cognome",
-        render: (row) => row.lastName ?? "-",
-    },
-    {
-        key: "phoneNumber",
-        header: "Telefono",
-        render: (row) => row.phoneNumber ?? "-",
-    },
-    {
-        key: "email",
-        header: "Email",
-        render: (row) => row.email,
-    },
-    {
-        key: "vatNumber",
-        header: "Partita IVA",
-        render: (row) => row.vatNumber ?? "-",
+        key: "description",
+        header: "Descrizione",
+        render: (row) => row.description,
     },
     {
         key: "createdAt",
@@ -59,24 +39,24 @@ const customerColumns: CustomerColumn[] = [
     },
 ];
 
-const CustomersPage = () => {
+const IssuesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     return (
         <div className="flex flex-col gap-4">
             <PageHeader
-                title="Clienti"
-                description="Gestisci i clienti del laboratorio."
-                action={<CreateEntityButton label="Crea nuovo cliente" onClick={() => setIsCreateDialogOpen(true)} />}
+                title="Difetti"
+                description="Gestisci i difetti del laboratorio."
+                action={<CreateEntityButton label="Crea nuovo difetto" onClick={() => setIsCreateDialogOpen(true)} />}
             />
-            <CreateCustomerDialog
+            <CreateIssueDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>
-                        {customerColumns.map((column) => (
+                        {issueColumns.map((column) => (
                             <TableHead key={column.key} className={column.className}>
                                 {column.header}
                             </TableHead>
@@ -84,16 +64,16 @@ const CustomersPage = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {customerRows.length === 0 ? (
+                    {issueRows.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={customerColumns.length} className="py-6 text-center text-muted-foreground">
-                                Nessun cliente disponibile.
+                            <TableCell colSpan={issueColumns.length} className="py-6 text-center text-muted-foreground">
+                                Nessun difetto disponibile.
                             </TableCell>
                         </TableRow>
                     ) : (
-                        customerRows.map((row) => (
+                        issueRows.map((row) => (
                             <TableRow key={row.id}>
-                                {customerColumns.map((column) => (
+                                {issueColumns.map((column) => (
                                     <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                         {column.render(row)}
                                     </TableCell>
@@ -107,4 +87,4 @@ const CustomersPage = () => {
     );
 }
 
-export default CustomersPage;
+export default IssuesPage;

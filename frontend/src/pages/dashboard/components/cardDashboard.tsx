@@ -4,19 +4,17 @@ import type { LucideIcon } from "lucide-react";
 type Props = Readonly<{
     text: string
     icon: LucideIcon
-    onOpenChange?: (open: boolean) => void;
+    number: string
 }>
 
-const CardDashboard = ({ text, icon: Icon, onOpenChange }: Props) => {
+const CardDashboard = ({ text, icon: Icon, number }: Props) => {
     return (
-        <div
-            role="button"
-            onClick={onOpenChange ? () => onOpenChange(true) : undefined}
-            className="flex flex-col items-center justify-center rounded-lg border bg-card p-6 gap-2 shadow cursor-pointer hover:bg-primary/10
-            *:hover:cursor-pointer"
-        >
-            <Label className="text-lg">{text}</Label>
-            <Icon />
+        <div className="flex flex-col w-58 rounded-lg border bg-card p-6 gap-2 shadow">
+            <div className="flex items-center justify-between">
+                <Label className="text-lg">{text}</Label>
+                <Icon className="size-5 text-muted-foreground" />
+            </div>
+            <Label className="text-2xl font-bold">{number}</Label>
         </div>
     );
 }

@@ -1,22 +1,22 @@
 import CreateEntityButton from "@/components/create-entity-button";
-import CreateCustomerDialog from "@/components/dialogs/createCustomerDialog";
+import CreateCollaboratorDialog from "@/components/dialogs/createCollaboratorDialog";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
 import type { ReactNode } from "react";
-import type { CustomerDto } from "@/types/dtos";
+import type { CollaboratorDto } from "@/types/dtos";
 
-type CustomerColumn = {
-    key: keyof CustomerDto | "actions";
+type CollaboratorColumn = {
+    key: keyof CollaboratorDto | "actions";
     header: string;
     className?: string;
-    render: (row: CustomerDto) => ReactNode;
+    render: (row: CollaboratorDto) => ReactNode;
 };
 
-const customerRows: CustomerDto[] = [];
+const collaboratorRows: CollaboratorDto[] = [];
 
-const customerColumns: CustomerColumn[] = [
+const collaboratorColumns: CollaboratorColumn[] = [
     {
         key: "firstName",
         header: "Nome",
@@ -31,16 +31,6 @@ const customerColumns: CustomerColumn[] = [
         key: "phoneNumber",
         header: "Telefono",
         render: (row) => row.phoneNumber ?? "-",
-    },
-    {
-        key: "email",
-        header: "Email",
-        render: (row) => row.email,
-    },
-    {
-        key: "vatNumber",
-        header: "Partita IVA",
-        render: (row) => row.vatNumber ?? "-",
     },
     {
         key: "createdAt",
@@ -59,24 +49,24 @@ const customerColumns: CustomerColumn[] = [
     },
 ];
 
-const CustomersPage = () => {
+const CollaboratorsPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     return (
         <div className="flex flex-col gap-4">
             <PageHeader
-                title="Clienti"
-                description="Gestisci i clienti del laboratorio."
-                action={<CreateEntityButton label="Crea nuovo cliente" onClick={() => setIsCreateDialogOpen(true)} />}
+                title="Collaboratori"
+                description="Gestisci i collaboratori del laboratorio."
+                action={<CreateEntityButton label="Crea nuovo collaboratore" onClick={() => setIsCreateDialogOpen(true)} />}
             />
-            <CreateCustomerDialog
+            <CreateCollaboratorDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>
-                        {customerColumns.map((column) => (
+                        {collaboratorColumns.map((column) => (
                             <TableHead key={column.key} className={column.className}>
                                 {column.header}
                             </TableHead>
@@ -84,16 +74,16 @@ const CustomersPage = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {customerRows.length === 0 ? (
+                    {collaboratorRows.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={customerColumns.length} className="py-6 text-center text-muted-foreground">
-                                Nessun cliente disponibile.
+                            <TableCell colSpan={collaboratorColumns.length} className="py-6 text-center text-muted-foreground">
+                                Nessun collaboratore disponibile.
                             </TableCell>
                         </TableRow>
                     ) : (
-                        customerRows.map((row) => (
+                        collaboratorRows.map((row) => (
                             <TableRow key={row.id}>
-                                {customerColumns.map((column) => (
+                                {collaboratorColumns.map((column) => (
                                     <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                         {column.render(row)}
                                     </TableCell>
@@ -107,4 +97,4 @@ const CustomersPage = () => {
     );
 }
 
-export default CustomersPage;
+export default CollaboratorsPage;

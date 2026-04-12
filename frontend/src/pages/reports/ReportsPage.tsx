@@ -1,46 +1,56 @@
-import CreateEntityButton from "@/components/create-entity-button";
-import CreateCustomerDialog from "@/components/dialogs/createCustomerDialog";
-import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import CreateEntityButton from "@/components/create-entity-button";
+import CreateReportDialog from "@/components/dialogs/createReportDialog";
+import PageHeader from "@/components/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
 import type { ReactNode } from "react";
-import type { CustomerDto } from "@/types/dtos";
+import type { ReportDto } from "@/types/dtos";
 
-type CustomerColumn = {
-    key: keyof CustomerDto | "actions";
+type ReportColumn = {
+    key: keyof ReportDto | "actions";
     header: string;
     className?: string;
-    render: (row: CustomerDto) => ReactNode;
+    render: (row: ReportDto) => ReactNode;
 };
 
-const customerRows: CustomerDto[] = [];
+const reportRows: ReportDto[] = [];
 
-const customerColumns: CustomerColumn[] = [
+const reportColumns: ReportColumn[] = [
     {
-        key: "firstName",
-        header: "Nome",
-        render: (row) => row.firstName,
+        key: "customer",
+        header: "Cliente",
+        render: (row) => row.customer,
     },
     {
-        key: "lastName",
-        header: "Cognome",
-        render: (row) => row.lastName ?? "-",
+        key: "device",
+        header: "Dispositivo",
+        render: (row) => row.device,
     },
     {
-        key: "phoneNumber",
-        header: "Telefono",
-        render: (row) => row.phoneNumber ?? "-",
+        key: "issue",
+        header: "Difetto",
+        render: (row) => row.issue,
     },
     {
-        key: "email",
-        header: "Email",
-        render: (row) => row.email,
+        key: "technicians",
+        header: "Tecnici",
+        render: (row) => row.technicians,
     },
     {
-        key: "vatNumber",
-        header: "Partita IVA",
-        render: (row) => row.vatNumber ?? "-",
+        key: "totalPrice",
+        header: "Prezzo",
+        render: (row) => `${row.totalPrice} euro`,
+    },
+    {
+        key: "closed",
+        header: "Chiuso",
+        render: (row) => (row.closed ? "Si" : "No"),
+    },
+    {
+        key: "toInvoice",
+        header: "Da fatturare",
+        render: (row) => (row.toInvoice ? "Si" : "No"),
     },
     {
         key: "createdAt",
@@ -59,24 +69,24 @@ const customerColumns: CustomerColumn[] = [
     },
 ];
 
-const CustomersPage = () => {
+const ReportsPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     return (
         <div className="flex flex-col gap-4">
             <PageHeader
-                title="Clienti"
-                description="Gestisci i clienti del laboratorio."
-                action={<CreateEntityButton label="Crea nuovo cliente" onClick={() => setIsCreateDialogOpen(true)} />}
+                title="Rapporti"
+                description="Gestisci i rapporti del laboratorio."
+                action={<CreateEntityButton label="Crea nuovo rapporto" onClick={() => setIsCreateDialogOpen(true)} />}
             />
-            <CreateCustomerDialog
+            <CreateReportDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>
-                        {customerColumns.map((column) => (
+                        {reportColumns.map((column) => (
                             <TableHead key={column.key} className={column.className}>
                                 {column.header}
                             </TableHead>
@@ -84,16 +94,16 @@ const CustomersPage = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {customerRows.length === 0 ? (
+                    {reportRows.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={customerColumns.length} className="py-6 text-center text-muted-foreground">
-                                Nessun cliente disponibile.
+                            <TableCell colSpan={reportColumns.length} className="py-6 text-center text-muted-foreground">
+                                Nessun rapporto disponibile.
                             </TableCell>
                         </TableRow>
                     ) : (
-                        customerRows.map((row) => (
+                        reportRows.map((row) => (
                             <TableRow key={row.id}>
-                                {customerColumns.map((column) => (
+                                {reportColumns.map((column) => (
                                     <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                         {column.render(row)}
                                     </TableCell>
@@ -107,4 +117,4 @@ const CustomersPage = () => {
     );
 }
 
-export default CustomersPage;
+export default ReportsPage;
