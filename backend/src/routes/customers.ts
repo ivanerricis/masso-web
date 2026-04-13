@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import {
     createCustomer,
     deleteCustomerById,
@@ -6,9 +7,29 @@ import {
     listCustomers,
     updateCustomerById,
 } from "../db/queries/customer";
-import { parseId } from "./utils";
+import { validate } from "./validation";
 
 const customersRouter = Router();
+
+const customerIdParamsSchema = z.object({
+    id: z.coerce.number().int().positive(),
+});
+
+const customerCreateBodySchema = z
+    .object({
+        email: z.string().trim().email().max(255),
+        firstName: z.string().trim().min(1).max(255),
+        lastName: z.string().trim().min(1).max(255).nullable().optional(),
+        phoneNumber: z.string().trim().min(1).max(20).nullable().optional(),
+        vatNumber: z.string().trim().min(1).max(20).nullable().optional(),
+    })
+    .strict();
+
+const customerUpdateBodySchema = customerCreateBodySchema
+    .partial()
+    .refine((value) => Object.keys(value).length > 0, {
+        message: "At least one field is required",
+    });
 
 customersRouter.get("/", async (_, res) => {
     const customers = await listCustomers();
@@ -16,14 +37,8 @@ customersRouter.get("/", async (_, res) => {
     res.json(customers);
 });
 
-customersRouter.get("/:id", async (req, res) => {
-    const id = parseId(req.params.id);
-
-    if (!id) {
-        res.status(400).json({ message: "Invalid customer id" });
-        return;
-    }
-
+customersRouter.get("/:id", validate({ params: customerIdParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
     const customers = await getCustomerById(id);
 
     if (customers.length === 0) {
@@ -34,38 +49,30 @@ customersRouter.get("/:id", async (req, res) => {
     res.json(customers[0]);
 });
 
-customersRouter.post("/", async (req, res) => {
+customersRouter.post("/", validate({ body: customerCreateBodySchema }), async (req, res) => {
     const createdCustomer = await createCustomer(req.body);
 
     res.status(201).json(createdCustomer[0]);
 });
 
-customersRouter.put("/:id", async (req, res) => {
-    const id = parseId(req.params.id);
+customersRouter.put(
+    "/:id",
+    validate({ params: customerIdParamsSchema, body: customerUpdateBodySchema }),
+    async (req, res) => {
+        const { id } = req.params as unknown as { id: number };
+        const updatedCustomer = await updateCustomerById(id, req.body);
 
-    if (!id) {
-        res.status(400).json({ message: "Invalid customer id" });
-        return;
+        if (updatedCustomer.length === 0) {
+            res.status(404).json({ message: "Customer not found" });
+            return;
+        }
+
+        res.json(updatedCustomer[0]);
     }
+);
 
-    const updatedCustomer = await updateCustomerById(id, req.body);
-
-    if (updatedCustomer.length === 0) {
-        res.status(404).json({ message: "Customer not found" });
-        return;
-    }
-
-    res.json(updatedCustomer[0]);
-});
-
-customersRouter.delete("/:id", async (req, res) => {
-    const id = parseId(req.params.id);
-
-    if (!id) {
-        res.status(400).json({ message: "Invalid customer id" });
-        return;
-    }
-
+customersRouter.delete("/:id", validate({ params: customerIdParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
     const deletedCustomer = await deleteCustomerById(id);
 
     if (deletedCustomer.length === 0) {

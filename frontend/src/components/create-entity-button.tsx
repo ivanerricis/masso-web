@@ -13,7 +13,7 @@ const CreateEntityButton = ({ label, size = "lg", className, ...props }: CreateE
     return (
         <Button size={size} className={cn("text-lg", className)} {...props}>
             <PlusCircle className="size-5" />
-            <Label className="hidden md:inline text-lg">{label}</Label>
+            <Label className="hidden md:inline text-lg cursor-pointer">{label}</Label>
         </Button>
     );
 };

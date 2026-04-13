@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import {
     createReportTechnician,
     deleteReportTechnicianByIds,
@@ -6,9 +7,28 @@ import {
     listReportTechnicians,
     updateReportTechnicianByIds,
 } from "../db/queries/reportTechnician";
-import { parseId } from "./utils";
+import { validate } from "./validation";
 
 const reportTechniciansRouter = Router();
+
+const reportTechnicianParamsSchema = z.object({
+    reportId: z.coerce.number().int().positive(),
+    technicianId: z.coerce.number().int().positive(),
+});
+
+const reportTechnicianCreateBodySchema = z
+    .object({
+        reportId: z.coerce.number().int().positive(),
+        technicianId: z.coerce.number().int().positive(),
+        price: z.coerce.number().int().min(0).optional(),
+    })
+    .strict();
+
+const reportTechnicianUpdateBodySchema = z
+    .object({
+        price: z.coerce.number().int().min(0),
+    })
+    .strict();
 
 reportTechniciansRouter.get("/", async (_, res) => {
     const reportTechnicians = await listReportTechnicians();
@@ -16,15 +36,14 @@ reportTechniciansRouter.get("/", async (_, res) => {
     res.json(reportTechnicians);
 });
 
-reportTechniciansRouter.get("/:reportId/:technicianId", async (req, res) => {
-    const reportId = parseId(req.params.reportId);
-    const technicianId = parseId(req.params.technicianId);
-
-    if (!reportId || !technicianId) {
-        res.status(400).json({ message: "Invalid report technician ids" });
-        return;
-    }
-
+reportTechniciansRouter.get(
+    "/:reportId/:technicianId",
+    validate({ params: reportTechnicianParamsSchema }),
+    async (req, res) => {
+    const { reportId, technicianId } = req.params as unknown as {
+        reportId: number;
+        technicianId: number;
+    };
     const reportTechnician = await getReportTechnicianByIds(reportId, technicianId);
 
     if (reportTechnician.length === 0) {
@@ -33,24 +52,28 @@ reportTechniciansRouter.get("/:reportId/:technicianId", async (req, res) => {
     }
 
     res.json(reportTechnician[0]);
-});
+    }
+);
 
-reportTechniciansRouter.post("/", async (req, res) => {
+reportTechniciansRouter.post("/", validate({ body: reportTechnicianCreateBodySchema }), async (req, res) => {
     const createdReportTechnician = await createReportTechnician(req.body);
 
     res.status(201).json(createdReportTechnician[0]);
 });
 
-reportTechniciansRouter.put("/:reportId/:technicianId", async (req, res) => {
-    const reportId = parseId(req.params.reportId);
-    const technicianId = parseId(req.params.technicianId);
-
-    if (!reportId || !technicianId) {
-        res.status(400).json({ message: "Invalid report technician ids" });
-        return;
-    }
-
-    const updatedReportTechnician = await updateReportTechnicianByIds(reportId, technicianId, req.body);
+reportTechniciansRouter.put(
+    "/:reportId/:technicianId",
+    validate({ params: reportTechnicianParamsSchema, body: reportTechnicianUpdateBodySchema }),
+    async (req, res) => {
+    const { reportId, technicianId } = req.params as unknown as {
+        reportId: number;
+        technicianId: number;
+    };
+    const updatedReportTechnician = await updateReportTechnicianByIds(
+        reportId,
+        technicianId,
+        req.body
+    );
 
     if (updatedReportTechnician.length === 0) {
         res.status(404).json({ message: "Report technician not found" });
@@ -58,17 +81,17 @@ reportTechniciansRouter.put("/:reportId/:technicianId", async (req, res) => {
     }
 
     res.json(updatedReportTechnician[0]);
-});
-
-reportTechniciansRouter.delete("/:reportId/:technicianId", async (req, res) => {
-    const reportId = parseId(req.params.reportId);
-    const technicianId = parseId(req.params.technicianId);
-
-    if (!reportId || !technicianId) {
-        res.status(400).json({ message: "Invalid report technician ids" });
-        return;
     }
+);
 
+reportTechniciansRouter.delete(
+    "/:reportId/:technicianId",
+    validate({ params: reportTechnicianParamsSchema }),
+    async (req, res) => {
+    const { reportId, technicianId } = req.params as unknown as {
+        reportId: number;
+        technicianId: number;
+    };
     const deletedReportTechnician = await deleteReportTechnicianByIds(reportId, technicianId);
 
     if (deletedReportTechnician.length === 0) {
@@ -77,6 +100,7 @@ reportTechniciansRouter.delete("/:reportId/:technicianId", async (req, res) => {
     }
 
     res.json(deletedReportTechnician[0]);
-});
+    }
+);
 
 export default reportTechniciansRouter;

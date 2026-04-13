@@ -18,6 +18,7 @@ type EntityDialogBaseProps = {
     description: string;
     confirmLabel?: string;
     fields: FieldConfig[];
+    onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
 };
 
 const buildInitialValues = (fields: FieldConfig[]) => {
@@ -60,12 +61,13 @@ const EntityDialogBase = ({
             onCancel={() => onOpenChange(false)}
             onConfirm={() => onOpenChange(false)}
             content={
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                     {fields.map((field) => (
-                        <div key={field.key} className="grid gap-2">
+                        <div key={field.key} className="grid">
                             {field.type === "checkbox" ? (
-                                <Label className="flex items-center gap-2">
+                                <Label className="flex items-center gap-2 text-lg cursor-pointer w-fit">
                                     <input
+                                        className="size-5 cursor-pointer"
                                         type="checkbox"
                                         checked={Boolean(formValues[field.key])}
                                         onChange={(event) => handleInputChange(field.key, event.target.checked)}
@@ -74,9 +76,18 @@ const EntityDialogBase = ({
                                 </Label>
                             ) : (
                                 <>
-                                    <Label htmlFor={field.key}>{field.label}</Label>
+                                    <Label htmlFor={field.key} className="text-lg">{field.label}</Label>
                                     {field.type === "textarea" ? (
                                         <Textarea
+                                            className="text-lg!"
+                                            id={field.key}
+                                            placeholder={field.placeholder}
+                                            value={String(formValues[field.key] ?? "")}
+                                            onChange={(event) => handleInputChange(field.key, event.target.value)}
+                                        />
+                                    ) : field.type === "text" ? (
+                                        <Input
+                                            className="text-lg!"
                                             id={field.key}
                                             placeholder={field.placeholder}
                                             value={String(formValues[field.key] ?? "")}
@@ -84,6 +95,7 @@ const EntityDialogBase = ({
                                         />
                                     ) : (
                                         <Input
+                                            className="text-lg!"
                                             id={field.key}
                                             type={field.type}
                                             placeholder={field.placeholder}

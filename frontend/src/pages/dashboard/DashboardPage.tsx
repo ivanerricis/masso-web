@@ -1,4 +1,4 @@
-import { CircleDashed, Euro } from "lucide-react";
+import { CircleCheck, CircleDashed, Euro } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
 import CustomDialog from "@/components/dialogs/customDialog";
 import PageHeader from "@/components/page-header";
@@ -23,11 +23,19 @@ const DashboardPage = () => {
                     text="Rapportini aperti"
                     icon={CircleDashed}
                     number="5"
+                    iconColor="text-destructive"
+                />
+                <CardDashboard
+                    text="Rapportini chiusi"
+                    icon={CircleCheck}
+                    number="5"
+                    iconColor="text-green-400"
                 />
                 <CardDashboard
                     text="Incassi totali"
                     icon={Euro}
                     number="10"
+                    iconColor="text-yellow-400"
                 />
             </div>
 

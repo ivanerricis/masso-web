@@ -1,6 +1,7 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateTechnicianDialog from "@/components/dialogs/createTechnicianDialog";
 import PageHeader from "@/components/page-header";
+import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
@@ -13,8 +14,6 @@ type TechnicianColumn = {
     className?: string;
     render: (row: TechnicianDto) => ReactNode;
 };
-
-const technicianRows: TechnicianDto[] = [];
 
 const technicianColumns: TechnicianColumn[] = [
     {
@@ -54,6 +53,8 @@ const technicianColumns: TechnicianColumn[] = [
     },
 ];
 
+const technicianRows: TechnicianDto[] = [];
+
 const TechniciansPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -64,10 +65,14 @@ const TechniciansPage = () => {
                 description="Gestisci i tecnici del laboratorio."
                 action={<CreateEntityButton label="Crea nuovo tecnico" onClick={() => setIsCreateDialogOpen(true)} />}
             />
+
             <CreateTechnicianDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
+
+            <SearchInput />
+
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>

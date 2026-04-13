@@ -1,6 +1,7 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateIssueDialog from "@/components/dialogs/createIssueDialog";
 import PageHeader from "@/components/page-header";
+import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
@@ -13,8 +14,6 @@ type IssueColumn = {
     className?: string;
     render: (row: IssueDto) => ReactNode;
 };
-
-const issueRows: IssueDto[] = [];
 
 const issueColumns: IssueColumn[] = [
     {
@@ -39,6 +38,8 @@ const issueColumns: IssueColumn[] = [
     },
 ];
 
+const issueRows: IssueDto[] = [];
+
 const IssuesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -53,6 +54,9 @@ const IssuesPage = () => {
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
+
+            <SearchInput />
+
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>

@@ -9,11 +9,20 @@ export const getCollaboratorById = (id: number) =>
     db.select().from(collaboratorTable).where(eq(collaboratorTable.id, id));
 
 export const createCollaborator = (data: NewCollaborator) =>
-    db.insert(collaboratorTable).values(data).returning();
+    db.insert(collaboratorTable)
+        .values({
+            ...data,
+            created_at: new Date(),
+            updated_at: new Date(),
+        })
+        .returning();
 
 export const updateCollaboratorById = (id: number, data: UpdateCollaborator) =>
     db.update(collaboratorTable)
-        .set(data)
+        .set({
+            ...data,
+            updated_at: new Date(),
+        })
         .where(eq(collaboratorTable.id, id))
         .returning();
 

@@ -1,6 +1,7 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateCollaboratorDialog from "@/components/dialogs/createCollaboratorDialog";
 import PageHeader from "@/components/page-header";
+import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
@@ -13,8 +14,6 @@ type CollaboratorColumn = {
     className?: string;
     render: (row: CollaboratorDto) => ReactNode;
 };
-
-const collaboratorRows: CollaboratorDto[] = [];
 
 const collaboratorColumns: CollaboratorColumn[] = [
     {
@@ -49,6 +48,8 @@ const collaboratorColumns: CollaboratorColumn[] = [
     },
 ];
 
+const collaboratorRows: CollaboratorDto[] = [];
+
 const CollaboratorsPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -59,10 +60,14 @@ const CollaboratorsPage = () => {
                 description="Gestisci i collaboratori del laboratorio."
                 action={<CreateEntityButton label="Crea nuovo collaboratore" onClick={() => setIsCreateDialogOpen(true)} />}
             />
+
             <CreateCollaboratorDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
+
+            <SearchInput />
+
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>

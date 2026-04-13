@@ -1,6 +1,7 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateCustomerDialog from "@/components/dialogs/createCustomerDialog";
 import PageHeader from "@/components/page-header";
+import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
@@ -13,8 +14,6 @@ type CustomerColumn = {
     className?: string;
     render: (row: CustomerDto) => ReactNode;
 };
-
-const customerRows: CustomerDto[] = [];
 
 const customerColumns: CustomerColumn[] = [
     {
@@ -59,6 +58,8 @@ const customerColumns: CustomerColumn[] = [
     },
 ];
 
+const customerRows: CustomerDto[] = [];
+
 const CustomersPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -69,10 +70,14 @@ const CustomersPage = () => {
                 description="Gestisci i clienti del laboratorio."
                 action={<CreateEntityButton label="Crea nuovo cliente" onClick={() => setIsCreateDialogOpen(true)} />}
             />
+
             <CreateCustomerDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
+
+            <SearchInput />
+
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>

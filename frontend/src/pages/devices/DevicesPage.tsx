@@ -1,6 +1,7 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateDeviceDialog from "@/components/dialogs/createDeviceDialog";
 import PageHeader from "@/components/page-header";
+import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
@@ -13,8 +14,6 @@ type DeviceColumn = {
     className?: string;
     render: (row: DeviceDto) => ReactNode;
 };
-
-const deviceRows: DeviceDto[] = [];
 
 const deviceColumns: DeviceColumn[] = [
     {
@@ -39,6 +38,8 @@ const deviceColumns: DeviceColumn[] = [
     },
 ];
 
+const deviceRows: DeviceDto[] = [];
+
 const DevicesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -49,10 +50,14 @@ const DevicesPage = () => {
                 description="Gestisci i dispositivi del laboratorio."
                 action={<CreateEntityButton label="Crea nuovo dispositivo" onClick={() => setIsCreateDialogOpen(true)} />}
             />
+
             <CreateDeviceDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
+
+            <SearchInput />
+
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>

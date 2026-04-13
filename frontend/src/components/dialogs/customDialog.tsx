@@ -9,6 +9,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
+import { Save, Trash } from "lucide-react";
+import { Label } from "../ui/label";
 
 type Props = Readonly<{
   content?: ReactNode;
@@ -55,7 +57,7 @@ const CustomDialog = ({
 
       <DialogContent className={destructive ? "border-destructive! border!" : "border-primary! border!"}>
         <DialogHeader>
-          {title ? <DialogTitle>{title}</DialogTitle> : null}
+          {title ? <DialogTitle className="text-lg">{title}</DialogTitle> : null}
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
 
@@ -64,14 +66,22 @@ const CustomDialog = ({
         {(showCancelButton || showConfirmButton) && (
           <DialogFooter>
             {showCancelButton && (
-              <Button variant="outline" onClick={onCancel}>
+              <Button size={"lg"} className="text-lg" variant="outline" onClick={onCancel}>
                 {cancelLabel}
               </Button>
             )}
 
             {showConfirmButton && (
-              <Button variant={destructive ? "destructive" : "default"} onClick={onConfirm}>
-                {confirmLabel}
+              <Button
+                size={"lg"}
+                variant={destructive ? "destructive" : "default"} onClick={onConfirm}>
+                {destructive ?
+                  (
+                    <Trash className="size-5"/>
+                  )
+                  : (<Save className="size-5"/>)
+                }
+                <Label className="text-lg">{confirmLabel}</Label>
               </Button>
             )}
           </DialogFooter>

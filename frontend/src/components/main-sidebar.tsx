@@ -41,7 +41,7 @@ const MainSidebar = () => {
 
     return (
         <aside className="w-xs border-r bg-sidebar">
-            <div className="border-b h-12 p-2 text-lg font-bold flex items-center gap-2">
+            <div className="border-b h-14 p-2 text-lg font-bold flex items-center gap-2">
                 <Wrench className="ml-2" />
                 FutureOffice
             </div>
@@ -57,7 +57,7 @@ const MainSidebar = () => {
                             size="lg"
                             onClick={() => navigate(item.path)}
                             data-state={active ? "open" : "closed"}
-                            className={active ? "bg-primary! text-background" : undefined}
+                            className={`text-lg ${active ? "bg-primary! text-background dark:text-foreground" : undefined}`}
                         >
                             <Icon />
                             {item.label}

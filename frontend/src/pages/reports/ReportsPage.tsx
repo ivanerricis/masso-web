@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateReportDialog from "@/components/dialogs/createReportDialog";
 import PageHeader from "@/components/page-header";
+import SearchInput from "@/components/search-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -13,8 +14,6 @@ type ReportColumn = {
     className?: string;
     render: (row: ReportDto) => ReactNode;
 };
-
-const reportRows: ReportDto[] = [];
 
 const reportColumns: ReportColumn[] = [
     {
@@ -69,6 +68,8 @@ const reportColumns: ReportColumn[] = [
     },
 ];
 
+const reportRows: ReportDto[] = [];
+
 const ReportsPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -79,10 +80,14 @@ const ReportsPage = () => {
                 description="Gestisci i rapporti del laboratorio."
                 action={<CreateEntityButton label="Crea nuovo rapporto" onClick={() => setIsCreateDialogOpen(true)} />}
             />
+
             <CreateReportDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
             />
+
+            <SearchInput />
+
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
                     <TableRow>

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import {
     createReport,
     deleteReportById,
@@ -6,9 +7,33 @@ import {
     listReports,
     updateReportById,
 } from "../db/queries/report";
-import { parseId } from "./utils";
+import { validate } from "./validation";
 
 const reportsRouter = Router();
+
+const reportIdParamsSchema = z.object({
+    id: z.coerce.number().int().positive(),
+});
+
+const reportCreateBodySchema = z
+    .object({
+        deviceId: z.coerce.number().int().positive(),
+        issueId: z.coerce.number().int().positive(),
+        collaboratorId: z.coerce.number().int().positive(),
+        customerId: z.coerce.number().int().positive(),
+        note: z.string().trim().min(1).max(255).nullable().optional(),
+        issueDescription: z.string().trim().min(1).max(255).nullable().optional(),
+        serviceDescription: z.string().trim().min(1).max(255).nullable().optional(),
+        dataBackup: z.boolean().optional(),
+        closed: z.boolean().optional(),
+        toInvoice: z.boolean().optional(),
+        price: z.coerce.number().int().min(0).optional(),
+    })
+    .strict();
+
+const reportUpdateBodySchema = reportCreateBodySchema.partial().refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required",
+});
 
 reportsRouter.get("/", async (_, res) => {
     const reports = await listReports();
@@ -16,14 +41,8 @@ reportsRouter.get("/", async (_, res) => {
     res.json(reports);
 });
 
-reportsRouter.get("/:id", async (req, res) => {
-    const id = parseId(req.params.id);
-
-    if (!id) {
-        res.status(400).json({ message: "Invalid report id" });
-        return;
-    }
-
+reportsRouter.get("/:id", validate({ params: reportIdParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
     const report = await getReportById(id);
 
     if (report.length === 0) {
@@ -34,38 +53,30 @@ reportsRouter.get("/:id", async (req, res) => {
     res.json(report[0]);
 });
 
-reportsRouter.post("/", async (req, res) => {
+reportsRouter.post("/", validate({ body: reportCreateBodySchema }), async (req, res) => {
     const createdReport = await createReport(req.body);
 
     res.status(201).json(createdReport[0]);
 });
 
-reportsRouter.put("/:id", async (req, res) => {
-    const id = parseId(req.params.id);
+reportsRouter.put(
+    "/:id",
+    validate({ params: reportIdParamsSchema, body: reportUpdateBodySchema }),
+    async (req, res) => {
+        const { id } = req.params as unknown as { id: number };
+        const updatedReport = await updateReportById(id, req.body);
 
-    if (!id) {
-        res.status(400).json({ message: "Invalid report id" });
-        return;
+        if (updatedReport.length === 0) {
+            res.status(404).json({ message: "Report not found" });
+            return;
+        }
+
+        res.json(updatedReport[0]);
     }
+);
 
-    const updatedReport = await updateReportById(id, req.body);
-
-    if (updatedReport.length === 0) {
-        res.status(404).json({ message: "Report not found" });
-        return;
-    }
-
-    res.json(updatedReport[0]);
-});
-
-reportsRouter.delete("/:id", async (req, res) => {
-    const id = parseId(req.params.id);
-
-    if (!id) {
-        res.status(400).json({ message: "Invalid report id" });
-        return;
-    }
-
+reportsRouter.delete("/:id", validate({ params: reportIdParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
     const deletedReport = await deleteReportById(id);
 
     if (deletedReport.length === 0) {
