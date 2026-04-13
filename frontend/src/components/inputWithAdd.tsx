@@ -1,20 +1,125 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
-const InputWithAdd = () => {
-    const [result, setResult] = useState<string[]>([]);
+type Props = Readonly<{
+    id: string;
+    placeholder?: string;
+    value: string;
+    onChange: (value: string) => void;
+    options?: string[];
+    onCreate?: (value: string) => Promise<void> | void;
+    required?: boolean;
+}>;
+
+const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onCreate, required }: Props) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+
+    const normalizedValue = value.trim().toLowerCase();
+
+    const filteredOptions = useMemo(() => {
+        if (normalizedValue.length === 0) {
+            return options.slice(0, 8);
+        }
+
+        return options
+            .filter((option) => option.toLowerCase().includes(normalizedValue))
+            .slice(0, 8);
+    }, [normalizedValue, options]);
+
+    const hasExactMatch = useMemo(() => {
+        if (!normalizedValue) {
+            return false;
+        }
+
+        return options.some((option) => option.toLowerCase() === normalizedValue);
+    }, [normalizedValue, options]);
+
+    const canCreate = normalizedValue.length > 0 && !hasExactMatch;
+
+    const handleCreate = async () => {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return;
+        }
+
+        if (!onCreate) {
+            setIsOpen(false);
+            return;
+        }
+
+        try {
+            setIsCreating(true);
+            await onCreate(trimmed);
+            onChange(trimmed);
+            setIsOpen(false);
+        } finally {
+            setIsCreating(false);
+        }
+    };
 
     return (
         <div className="relative w-full">
-            <Input className="text-lg!" />
-            <div className="absolute b-0 w-full">
-                {result.length === 0 ? (
-                    <Button variant="outline" />
-                ) : (
-                    <div>Risultati</div>
-                )}
-            </div>
+            <Input
+                className="group text-lg!"
+                id={id}
+                placeholder={placeholder}
+                value={value}
+                onFocus={() => setIsOpen(true)}
+                onBlur={() => {
+                    setTimeout(() => setIsOpen(false), 100);
+                }}
+                onChange={(event) => {
+                    onChange(event.target.value);
+                    setIsOpen(true);
+                }}
+                required={required}
+            />
+
+            {isOpen ? (
+                <div className="absolute z-10 mt-2 w-full rounded-md border bg-background p-2 shadow-sm">
+                    {filteredOptions.length > 0 ? (
+                        <div className="max-h-48 overflow-auto">
+                            {filteredOptions.map((option) => (
+                                <Button
+                                    key={option}
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-8 w-full justify-start"
+                                    onMouseDown={() => {
+                                        onChange(option);
+                                        setIsOpen(false);
+                                    }}
+                                >
+                                    {option}
+                                </Button>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="px-2 py-1 text-sm text-muted-foreground">Nessun risultato</p>
+                    )}
+
+                    {canCreate ? (
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="mt-2 w-full"
+                            onMouseDown={() => {
+                                void handleCreate();
+                            }}
+                            disabled={isCreating}
+                        >
+                            {isCreating
+                                ? "Creazione..."
+                                : onCreate
+                                    ? `Crea \"${value.trim()}\"`
+                                    : `Usa \"${value.trim()}\"`}
+                        </Button>
+                    ) : null}
+                </div>
+            ) : null}
         </div>
     );
 };

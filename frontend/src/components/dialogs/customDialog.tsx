@@ -29,6 +29,9 @@ type Props = Readonly<{
   onCancel?: () => void;
   onConfirm?: () => void;
 
+  cancelDisabled?: boolean;
+  confirmDisabled?: boolean;
+
   showCancelButton?: boolean;
   showConfirmButton?: boolean;
 
@@ -47,6 +50,8 @@ const CustomDialog = ({
   confirmLabel = "Conferma",
   onCancel,
   onConfirm,
+  cancelDisabled = false,
+  confirmDisabled = false,
   showCancelButton = true,
   showConfirmButton = true,
   destructive = false,
@@ -66,7 +71,7 @@ const CustomDialog = ({
         {(showCancelButton || showConfirmButton) && (
           <DialogFooter>
             {showCancelButton && (
-              <Button size={"lg"} className="text-lg" variant="outline" onClick={onCancel}>
+              <Button size={"lg"} className="text-lg" variant="outline" onClick={onCancel} disabled={cancelDisabled}>
                 {cancelLabel}
               </Button>
             )}
@@ -74,7 +79,10 @@ const CustomDialog = ({
             {showConfirmButton && (
               <Button
                 size={"lg"}
-                variant={destructive ? "destructive" : "default"} onClick={onConfirm}>
+                variant={destructive ? "destructive" : "default"}
+                onClick={onConfirm}
+                disabled={confirmDisabled}
+              >
                 {destructive ?
                   (
                     <Trash className="size-5"/>

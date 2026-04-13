@@ -7,6 +7,7 @@ export type ReportDto = {
     totalPrice: number;
     closed: boolean;
     toInvoice: boolean;
+    dataBackup: boolean;
     createdAt: string;
 };
 
@@ -15,7 +16,7 @@ export type CustomerDto = {
     firstName: string;
     lastName: string | null;
     phoneNumber: string | null;
-    email: string;
+    email: string | null;
     vatNumber: string | null;
     createdAt: string;
     updatedAt: string | null;

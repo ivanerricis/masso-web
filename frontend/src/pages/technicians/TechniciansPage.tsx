@@ -4,9 +4,12 @@ import PageHeader from "@/components/page-header";
 import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { createTechnician, getApiErrorMessage, listTechnicians } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { TechnicianDto } from "@/types/dtos";
+import { toast } from "sonner";
 
 type TechnicianColumn = {
     key: keyof TechnicianDto | "actions";
@@ -39,7 +42,7 @@ const technicianColumns: TechnicianColumn[] = [
     {
         key: "createdAt",
         header: "Creato il",
-        render: (row) => row.createdAt,
+        render: (row) => formatDateTime(row.createdAt),
     },
     {
         key: "actions",
@@ -53,10 +56,42 @@ const technicianColumns: TechnicianColumn[] = [
     },
 ];
 
-const technicianRows: TechnicianDto[] = [];
-
 const TechniciansPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [technicianRows, setTechnicianRows] = useState<TechnicianDto[]>([]);
+
+    const loadTechnicians = async () => {
+        try {
+            const technicians = await listTechnicians();
+            setTechnicianRows(technicians);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile caricare i tecnici"));
+        }
+    };
+
+    const handleCreateTechnician = async (values: Record<string, string | boolean>) => {
+        await createTechnician({
+            firstName: String(values.firstName).trim(),
+            lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
+            phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+            vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
+        });
+
+        await loadTechnicians();
+    };
+
+    useEffect(() => {
+        const loadInitialTechnicians = async () => {
+            try {
+                const technicians = await listTechnicians();
+                setTechnicianRows(technicians);
+            } catch (error) {
+                toast.error(getApiErrorMessage(error, "Impossibile caricare i tecnici"));
+            }
+        };
+
+        void loadInitialTechnicians();
+    }, []);
 
     return (
         <div className="flex flex-col gap-4">
@@ -69,6 +104,7 @@ const TechniciansPage = () => {
             <CreateTechnicianDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
+                onSubmit={handleCreateTechnician}
             />
 
             <SearchInput />

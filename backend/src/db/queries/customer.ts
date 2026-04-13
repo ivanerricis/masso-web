@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../index";
 import { customerTable } from "../schema";
 import type { NewCustomer, UpdateCustomer } from "../types";
 
-export const listCustomers = () => db.select().from(customerTable);
+export const listCustomers = () => db.select().from(customerTable).orderBy(desc(customerTable.created_at));
 
 export const getCustomerById = (id: number) =>
     db.select().from(customerTable).where(eq(customerTable.id, id));

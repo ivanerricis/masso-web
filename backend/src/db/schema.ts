@@ -23,14 +23,14 @@ export const reportTable = pgTable("report", {
     ...timestamps,
     deviceId: integer("device_id").notNull().references(() => deviceTable.id),
     issueId: integer("issue_id").notNull().references(() => IssueTable.id),
-    collaboratorId: integer("collaborator_id").notNull().references(() => collaboratorTable.id),
+    collaboratorId: integer("collaborator_id").references(() => collaboratorTable.id),
     customerId: integer("customer_id").notNull().references(() => customerTable.id),
 });
 
 export const customerTable = pgTable("customer", {
     id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
     ...userFields,
-    email: varchar("email", { length: 255 }).notNull(),
+    email: varchar("email", { length: 255 }),
     vatNumber: varchar("vat_number", { length: 20 }).unique(),
     ...timestamps
 })

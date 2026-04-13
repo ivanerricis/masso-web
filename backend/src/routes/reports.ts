@@ -19,7 +19,7 @@ const reportCreateBodySchema = z
     .object({
         deviceId: z.coerce.number().int().positive(),
         issueId: z.coerce.number().int().positive(),
-        collaboratorId: z.coerce.number().int().positive(),
+        collaboratorId: z.coerce.number().int().positive().nullable().optional(),
         customerId: z.coerce.number().int().positive(),
         note: z.string().trim().min(1).max(255).nullable().optional(),
         issueDescription: z.string().trim().min(1).max(255).nullable().optional(),

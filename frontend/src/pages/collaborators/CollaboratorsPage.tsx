@@ -4,9 +4,12 @@ import PageHeader from "@/components/page-header";
 import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { createCollaborator, getApiErrorMessage, listCollaborators } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { CollaboratorDto } from "@/types/dtos";
+import { toast } from "sonner";
 
 type CollaboratorColumn = {
     key: keyof CollaboratorDto | "actions";
@@ -34,7 +37,7 @@ const collaboratorColumns: CollaboratorColumn[] = [
     {
         key: "createdAt",
         header: "Creato il",
-        render: (row) => row.createdAt,
+        render: (row) => formatDateTime(row.createdAt),
     },
     {
         key: "actions",
@@ -48,10 +51,41 @@ const collaboratorColumns: CollaboratorColumn[] = [
     },
 ];
 
-const collaboratorRows: CollaboratorDto[] = [];
-
 const CollaboratorsPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [collaboratorRows, setCollaboratorRows] = useState<CollaboratorDto[]>([]);
+
+    const loadCollaborators = async () => {
+        try {
+            const collaborators = await listCollaborators();
+            setCollaboratorRows(collaborators);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile caricare i collaboratori"));
+        }
+    };
+
+    const handleCreateCollaborator = async (values: Record<string, string | boolean>) => {
+        await createCollaborator({
+            firstName: String(values.firstName).trim(),
+            lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
+            phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+        });
+
+        await loadCollaborators();
+    };
+
+    useEffect(() => {
+        const loadInitialCollaborators = async () => {
+            try {
+                const collaborators = await listCollaborators();
+                setCollaboratorRows(collaborators);
+            } catch (error) {
+                toast.error(getApiErrorMessage(error, "Impossibile caricare i collaboratori"));
+            }
+        };
+
+        void loadInitialCollaborators();
+    }, []);
 
     return (
         <div className="flex flex-col gap-4">
@@ -64,6 +98,7 @@ const CollaboratorsPage = () => {
             <CreateCollaboratorDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
+                onSubmit={handleCreateCollaborator}
             />
 
             <SearchInput />

@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../index";
 import { reportTable } from "../schema";
 import type { NewReport, UpdateReport } from "../types";
 
-export const listReports = () => db.select().from(reportTable);
+export const listReports = () => db.select().from(reportTable).orderBy(desc(reportTable.created_at));
 
 export const getReportById = (id: number) =>
     db.select().from(reportTable).where(eq(reportTable.id, id));

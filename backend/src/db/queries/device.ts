@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../index";
 import { deviceTable } from "../schema";
 import type { NewDevice, UpdateDevice } from "../types";
 
-export const listDevices = () => db.select().from(deviceTable);
+export const listDevices = () => db.select().from(deviceTable).orderBy(desc(deviceTable.created_at));
 
 export const getDeviceById = (id: number) =>
     db.select().from(deviceTable).where(eq(deviceTable.id, id));

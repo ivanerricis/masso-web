@@ -4,9 +4,12 @@ import PageHeader from "@/components/page-header";
 import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { createCustomer, getApiErrorMessage, listCustomers } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { CustomerDto } from "@/types/dtos";
+import { toast } from "sonner";
 
 type CustomerColumn = {
     key: keyof CustomerDto | "actions";
@@ -34,7 +37,7 @@ const customerColumns: CustomerColumn[] = [
     {
         key: "email",
         header: "Email",
-        render: (row) => row.email,
+        render: (row) => row.email ?? "-",
     },
     {
         key: "vatNumber",
@@ -44,7 +47,7 @@ const customerColumns: CustomerColumn[] = [
     {
         key: "createdAt",
         header: "Creato il",
-        render: (row) => row.createdAt,
+        render: (row) => formatDateTime(row.createdAt),
     },
     {
         key: "actions",
@@ -58,10 +61,43 @@ const customerColumns: CustomerColumn[] = [
     },
 ];
 
-const customerRows: CustomerDto[] = [];
-
 const CustomersPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [customerRows, setCustomerRows] = useState<CustomerDto[]>([]);
+
+    const loadCustomers = async () => {
+        try {
+            const customers = await listCustomers();
+            setCustomerRows(customers);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile caricare i clienti"));
+        }
+    };
+
+    const handleCreateCustomer = async (values: Record<string, string | boolean>) => {
+        await createCustomer({
+            firstName: String(values.firstName).trim(),
+            lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
+            phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+            email: String(values.email).trim() === "" ? null : String(values.email).trim(),
+            vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
+        });
+
+        await loadCustomers();
+    };
+
+    useEffect(() => {
+        const loadInitialCustomers = async () => {
+            try {
+                const customers = await listCustomers();
+                setCustomerRows(customers);
+            } catch (error) {
+                toast.error(getApiErrorMessage(error, "Impossibile caricare i clienti"));
+            }
+        };
+
+        void loadInitialCustomers();
+    }, []);
 
     return (
         <div className="flex flex-col gap-4">
@@ -74,6 +110,7 @@ const CustomersPage = () => {
             <CreateCustomerDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
+                onSubmit={handleCreateCustomer}
             />
 
             <SearchInput />

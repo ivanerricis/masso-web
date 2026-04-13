@@ -4,9 +4,12 @@ import PageHeader from "@/components/page-header";
 import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { createDevice, getApiErrorMessage, listDevices } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { DeviceDto } from "@/types/dtos";
+import { toast } from "sonner";
 
 type DeviceColumn = {
     key: keyof DeviceDto | "actions";
@@ -24,7 +27,7 @@ const deviceColumns: DeviceColumn[] = [
     {
         key: "createdAt",
         header: "Creato il",
-        render: (row) => row.createdAt,
+        render: (row) => formatDateTime(row.createdAt),
     },
     {
         key: "actions",
@@ -38,10 +41,39 @@ const deviceColumns: DeviceColumn[] = [
     },
 ];
 
-const deviceRows: DeviceDto[] = [];
-
 const DevicesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [deviceRows, setDeviceRows] = useState<DeviceDto[]>([]);
+
+    const loadDevices = async () => {
+        try {
+            const devices = await listDevices();
+            setDeviceRows(devices);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile caricare i dispositivi"));
+        }
+    };
+
+    const handleCreateDevice = async (values: Record<string, string | boolean>) => {
+        await createDevice({
+            name: String(values.name).trim(),
+        });
+
+        await loadDevices();
+    };
+
+    useEffect(() => {
+        const loadInitialDevices = async () => {
+            try {
+                const devices = await listDevices();
+                setDeviceRows(devices);
+            } catch (error) {
+                toast.error(getApiErrorMessage(error, "Impossibile caricare i dispositivi"));
+            }
+        };
+
+        void loadInitialDevices();
+    }, []);
 
     return (
         <div className="flex flex-col gap-4">
@@ -54,6 +86,7 @@ const DevicesPage = () => {
             <CreateDeviceDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
+                onSubmit={handleCreateDevice}
             />
 
             <SearchInput />

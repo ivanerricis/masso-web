@@ -1,25 +1,115 @@
-import EntityDialogBase, { type FieldConfig } from "./entity-dialog-base";
+import CustomDialog from "@/components/dialogs/customDialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { getApiErrorMessage } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
 };
 
-const fields: FieldConfig[] = [
-    { key: "firstName", label: "Nome", type: "text", placeholder: "Anna" },
-    { key: "lastName", label: "Cognome", type: "text", placeholder: "Verdi" },
-    { key: "phoneNumber", label: "Telefono", type: "tel", placeholder: "+39 333 1234567" },
-    { key: "vatNumber", label: "Partita IVA", type: "text", placeholder: "IT12345678901" },
-];
+const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+    const [formValues, setFormValues] = useState({
+        firstName: "",
+        lastName: "",
+        phoneNumber: "",
+        vatNumber: "",
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-const CreateTechnicianDialog = ({ open, onOpenChange }: Props) => {
+    useEffect(() => {
+        if (open) {
+            setFormValues({
+                firstName: "",
+                lastName: "",
+                phoneNumber: "",
+                vatNumber: "",
+            });
+        }
+    }, [open]);
+
+    const handleConfirm = async () => {
+        if (isSubmitting) {
+            return;
+        }
+
+        if (!onSubmit) {
+            onOpenChange(false);
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            await onSubmit(formValues);
+            onOpenChange(false);
+            toast.success("Tecnico creato con successo");
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
-        <EntityDialogBase
+        <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
             title="Nuovo tecnico"
             description="Inserisci i dati del tecnico e conferma per salvare."
-            fields={fields}
+            confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
+            cancelLabel="Annulla"
+            onCancel={() => onOpenChange(false)}
+            onConfirm={() => void handleConfirm()}
+            cancelDisabled={isSubmitting}
+            confirmDisabled={isSubmitting}
+            content={
+                <div className="grid gap-6">
+                    <div className="grid">
+                        <Label htmlFor="firstName" className="text-lg">Nome</Label>
+                        <Input
+                            className="text-lg!"
+                            id="firstName"
+                            placeholder="Anna"
+                            value={formValues.firstName}
+                            onChange={(event) => setFormValues((prev) => ({ ...prev, firstName: event.target.value }))}
+                        />
+                    </div>
+                    <div className="grid">
+                        <Label htmlFor="lastName" className="text-lg">Cognome</Label>
+                        <Input
+                            className="text-lg!"
+                            id="lastName"
+                            placeholder="Verdi"
+                            value={formValues.lastName}
+                            onChange={(event) => setFormValues((prev) => ({ ...prev, lastName: event.target.value }))}
+                        />
+                    </div>
+                    <div className="grid">
+                        <Label htmlFor="phoneNumber" className="text-lg">Telefono</Label>
+                        <Input
+                            className="text-lg!"
+                            id="phoneNumber"
+                            type="tel"
+                            placeholder="+39 333 1234567"
+                            value={formValues.phoneNumber}
+                            onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))}
+                        />
+                    </div>
+                    <div className="grid">
+                        <Label htmlFor="vatNumber" className="text-lg">Partita IVA</Label>
+                        <Input
+                            className="text-lg!"
+                            id="vatNumber"
+                            placeholder="IT12345678901"
+                            value={formValues.vatNumber}
+                            onChange={(event) => setFormValues((prev) => ({ ...prev, vatNumber: event.target.value }))}
+                        />
+                    </div>
+                </div>
+            }
         />
     );
 };
