@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { eq } from "drizzle-orm";
+import puppeteer from "puppeteer";
 import { z } from "zod";
 import {
     createReport,
@@ -7,6 +9,13 @@ import {
     listReports,
     updateReportById,
 } from "../db/queries/report";
+import { db } from "../db";
+import {
+    customerTable,
+    deviceTable,
+    reportTable,
+} from "../db/schema";
+import { buildReportPrintHtml } from "../templates/reportPrintTemplate";
 import { validate } from "./validation";
 
 const reportsRouter = Router();
@@ -41,6 +50,89 @@ reportsRouter.get("/", async (_, res) => {
     const reports = await listReports();
 
     res.json(reports);
+});
+
+reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
+
+    const reportRows = await db
+        .select({
+            id: reportTable.id,
+            note: reportTable.note,
+            password: reportTable.password,
+            issueDescription: reportTable.issueDescription,
+            dataBackup: reportTable.dataBackup,
+            charger: reportTable.charger,
+            createdAt: reportTable.created_at,
+            customerFirstName: customerTable.firstName,
+            customerLastName: customerTable.lastName,
+            customerPhone: customerTable.phoneNumber,
+            deviceName: deviceTable.name,
+        })
+        .from(reportTable)
+        .innerJoin(customerTable, eq(customerTable.id, reportTable.customerId))
+        .innerJoin(deviceTable, eq(deviceTable.id, reportTable.deviceId))
+        .where(eq(reportTable.id, id));
+
+    if (reportRows.length === 0) {
+        res.status(404).json({ message: "Report not found" });
+        return;
+    }
+
+    const report = reportRows[0];
+    const customerName = `${report.customerFirstName} ${report.customerLastName ?? ""}`.trim();
+    const labName = process.env.LAB_NAME ?? "Masso";
+    const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
+    const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
+    const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
+    const labLogoUrl = process.env.LAB_LOGO_URL ?? "http://localhost:3000/assets/logo.jpg";
+
+    const html = buildReportPrintHtml({
+        id: report.id,
+        labName,
+        labEmail,
+        labAddress,
+        labPhone,
+        labLogoUrl,
+        customerName,
+        customerPhone: report.customerPhone ?? "N/D",
+        deviceName: report.deviceName,
+        issueDescription: report.issueDescription ?? "-",
+        note: report.note ?? "-",
+        password: report.password ?? "-",
+        dataBackup: report.dataBackup,
+        charger: report.charger,
+        createdAtLabel: new Intl.DateTimeFormat("it-IT", {
+            dateStyle: "medium",
+        }).format(report.createdAt),
+    });
+
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    try {
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: "networkidle0" });
+
+        const pdfBuffer = await page.pdf({
+            format: "A4",
+            printBackground: true,
+            margin: {
+                top: "0mm",
+                right: "0mm",
+                bottom: "0mm",
+                left: "0mm",
+            },
+        });
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename=report-${id}.pdf`);
+        res.send(pdfBuffer);
+    } finally {
+        await browser.close();
+    }
 });
 
 reportsRouter.get("/:id", validate({ params: reportIdParamsSchema }), async (req, res) => {

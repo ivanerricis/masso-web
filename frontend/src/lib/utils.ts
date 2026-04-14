@@ -24,6 +24,23 @@ export function formatDateTime(value: string | null | undefined) {
   }).format(date)
 }
 
+export function formatDate(value: string | null | undefined) {
+  if (!value) {
+    return "-"
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return "-"
+  }
+
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date)
+}
+
 export function formatEuro(value: number | null | undefined) {
   const amount = typeof value === "number" && Number.isFinite(value) ? value : 0
 

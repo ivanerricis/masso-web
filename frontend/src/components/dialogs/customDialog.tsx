@@ -61,39 +61,52 @@ const CustomDialog = ({
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
 
       <DialogContent className={destructive ? "border-destructive! border!" : "border-primary! border!"}>
-        <DialogHeader>
-          {title ? <DialogTitle className="text-lg">{title}</DialogTitle> : null}
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
-        </DialogHeader>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            onConfirm?.();
+          }}
+        >
+          <DialogHeader>
+            {title ? <DialogTitle className="text-lg">{title}</DialogTitle> : null}
+            {description ? <DialogDescription>{description}</DialogDescription> : null}
+          </DialogHeader>
 
-        {content}
+          {content}
 
-        {(showCancelButton || showConfirmButton) && (
-          <DialogFooter>
-            {showCancelButton && (
-              <Button size={"lg"} className="text-lg" variant="outline" onClick={onCancel} disabled={cancelDisabled}>
-                {cancelLabel}
-              </Button>
-            )}
+          {(showCancelButton || showConfirmButton) && (
+            <DialogFooter className="mt-2">
+              {showCancelButton && (
+                <Button
+                  type="button"
+                  size={"lg"}
+                  className="text-lg"
+                  variant="outline"
+                  onClick={onCancel}
+                  disabled={cancelDisabled}
+                >
+                  {cancelLabel}
+                </Button>
+              )}
 
-            {showConfirmButton && (
-              <Button
-                size={"lg"}
-                variant={destructive ? "destructive" : "default"}
-                onClick={onConfirm}
-                disabled={confirmDisabled}
-              >
-                {destructive ?
-                  (
-                    <Trash className="size-5"/>
-                  )
-                  : (<Save className="size-5"/>)
-                }
-                <Label className="text-lg">{confirmLabel}</Label>
-              </Button>
-            )}
-          </DialogFooter>
-        )}
+              {showConfirmButton && (
+                <Button
+                  type="submit"
+                  size={"lg"}
+                  variant={destructive ? "destructive" : "default"}
+                  disabled={confirmDisabled}
+                >
+                  {destructive ? (
+                    <Trash className="size-5" />
+                  ) : (
+                    <Save className="size-5" />
+                  )}
+                  <Label className="text-lg">{confirmLabel}</Label>
+                </Button>
+              )}
+            </DialogFooter>
+          )}
+        </form>
       </DialogContent>
     </Dialog>
   );

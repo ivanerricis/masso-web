@@ -1,5 +1,7 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import path from "node:path";
 import reportsRouter from "./routes/reports";
 import customersRouter from "./routes/customers";
 import collaboratorsRouter from "./routes/collaborators";
@@ -12,6 +14,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/assets", express.static(path.join(process.cwd(), "public")));
 
 app.use("/api/reports", reportsRouter);
 app.use("/api/customers", customersRouter);

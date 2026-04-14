@@ -29,6 +29,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         customer: "",
         deviceType: "",
         issueDescription: "",
+        saveIssueInCatalog: false,
         password: "",
         charger: false,
         dataBackup: false,
@@ -48,6 +49,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 customer: "",
                 deviceType: "",
                 issueDescription: "",
+                saveIssueInCatalog: false,
                 password: "",
                 charger: false,
                 dataBackup: false,
@@ -78,6 +80,11 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
 
     const handleConfirm = async () => {
         if (isSubmitting) {
+            return;
+        }
+
+        if (formValues.issueDescription.trim() === "") {
+            toast.error("La descrizione difetto e obbligatoria");
             return;
         }
 
@@ -113,7 +120,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 confirmDisabled={isSubmitting}
                 content={
                     <div className="grid gap-6">
-                        <div className="grid gap-2">
+                        <div className="grid">
                             <Label htmlFor="issueDescription" className="text-lg">Cliente</Label>
                             <div className="flex gap-2">
                                 <InputWithAdd
@@ -134,7 +141,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                 </Button>
                             </div>
                         </div>
-                        <div className="grid gap-2">
+                        <div className="grid">
                             <Label htmlFor="deviceType" className="text-lg">Tipologia dispositivo</Label>
                             <div className="flex gap-2">
                                 <InputWithAdd
@@ -167,10 +174,6 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                     placeholder="Descrivi il difetto"
                                     value={formValues.issueDescription}
                                     options={issueOptions}
-                                    onCreate={async (value: string) => {
-                                        await createIssue({ description: value });
-                                        setIssueOptions((prev) => Array.from(new Set([...prev, value])));
-                                    }}
                                     onChange={(value: string) => setFormValues((prev) => ({ ...prev, issueDescription: value }))}
                                     required
                                 />
@@ -183,8 +186,21 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                     <Plus className="size-5" />
                                 </Button>
                             </div>
+                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                <Checkbox
+                                    id="saveIssueInCatalog"
+                                    className="size-5"
+                                    checked={formValues.saveIssueInCatalog}
+                                    onCheckedChange={(checked) =>
+                                        setFormValues((prev) => ({ ...prev, saveIssueInCatalog: checked === true }))
+                                    }
+                                />
+                                <Label htmlFor="saveIssueInCatalog" className="cursor-pointer text-sm sm:text-base">
+                                    Salva questa descrizione tra i difetti
+                                </Label>
+                            </div>
                         </div>
-                        <div className="grid gap-2">
+                        <div className="grid">
                             <Label htmlFor="password" className="text-lg">Password sblocco</Label>
                             <Input
                                 className="text-lg!"
@@ -196,7 +212,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                 }
                             />
                         </div>
-                        <div className="grid gap-3">
+                        <div className="grid gap-2">
                             <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
                                 <Checkbox
                                     id="charger"
@@ -211,7 +227,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                 </Label>
                             </div>
                         </div>
-                        <div className="grid gap-3">
+                        <div className="grid gap-2">
                             <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
                                 <Checkbox
                                     id="dataBackup"
@@ -225,7 +241,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                     Backup dati
                                 </Label>
                             </div>
-                            <div className="grid gap-2">
+                            <div className="grid">
                                 <Label htmlFor="notes" className="text-lg">Note</Label>
                                 <Input
                                     className="text-lg!"
@@ -235,7 +251,6 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                     onChange={(event: ChangeEvent<HTMLInputElement>) =>
                                         setFormValues((prev) => ({ ...prev, notes: event.target.value }))
                                     }
-                                    required
                                 />
                             </div>
                         </div>

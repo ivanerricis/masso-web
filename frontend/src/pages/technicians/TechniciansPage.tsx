@@ -2,85 +2,25 @@ import CreateEntityButton from "@/components/create-entity-button";
 import CreateTechnicianDialog from "@/components/dialogs/create/createTechnicianDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
-import SearchInput from "@/components/search-input";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { createTechnician, deleteTechnician, getApiErrorMessage, listTechnicians } from "@/lib/api";
-import { formatDateTime } from "@/lib/utils";
+import { createTechnician, deleteTechnician, getApiErrorMessage } from "@/lib/api";
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import type { TechnicianDto } from "@/types/dtos";
 import { toast } from "sonner";
-import { ChevronRight, Pencil, Trash2 } from "lucide-react";
+import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { useNavigate } from "react-router-dom";
-
-type TechnicianColumn = {
-    key: keyof TechnicianDto | "actions";
-    header: string;
-    className?: string;
-    render: (row: TechnicianDto) => ReactNode;
-};
-
-const technicianColumns: TechnicianColumn[] = [
-    {
-        key: "id",
-        header: "ID",
-        render: (row) => row.id,
-    },
-    {
-        key: "firstName",
-        header: "Nome",
-        render: (row) => row.firstName,
-    },
-    {
-        key: "lastName",
-        header: "Cognome",
-        render: (row) => row.lastName ?? "-",
-    },
-    {
-        key: "phoneNumber",
-        header: "Telefono",
-        render: (row) => row.phoneNumber ?? "-",
-    },
-    {
-        key: "vatNumber",
-        header: "Partita IVA",
-        render: (row) => row.vatNumber ?? "-",
-    },
-    {
-        key: "createdAt",
-        header: "Creato il",
-        render: (row) => formatDateTime(row.createdAt),
-    },
-    {
-        key: "actions",
-        header: "Azioni",
-        className: "text-right",
-        render: () => (
-            <Button variant="outline" size="sm">
-                Apri
-            </Button>
-        ),
-    },
-];
+import { technicianColumns } from "./components/technician-columns";
+import TechniciansFilters from "./components/technicians-filters";
+import TechniciansTable from "./components/technicians-table";
+import { useTechniciansRows } from "./hooks/useTechniciansRows";
 
 const TechniciansPage = () => {
     const navigate = useNavigate();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [technicianRows, setTechnicianRows] = useState<TechnicianDto[]>([]);
     const [searchText, setSearchText] = useState("");
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [technicianToDelete, setTechnicianToDelete] = useState<TechnicianDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    const loadTechnicians = async () => {
-        try {
-            const technicians = await listTechnicians();
-            setTechnicianRows(technicians);
-        } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile caricare i tecnici"));
-        }
-    };
+    const { technicianRows, visibleTechnicianRows, isLoading, loadTechnicians } = useTechniciansRows({ searchText });
 
     const handleCreateTechnician = async (values: Record<string, string | boolean>) => {
         await createTechnician({
@@ -121,35 +61,8 @@ const TechniciansPage = () => {
         }
     };
 
-    const visibleTechnicianRows = technicianRows.filter((technician) => {
-        const query = searchText.trim().toLowerCase();
-        if (!query) {
-            return true;
-        }
-
-        return [
-            String(technician.id),
-            technician.firstName,
-            technician.lastName ?? "",
-            technician.phoneNumber ?? "",
-            technician.vatNumber ?? "",
-        ]
-            .join(" ")
-            .toLowerCase()
-            .includes(query);
-    });
-
     useEffect(() => {
-        const loadInitialTechnicians = async () => {
-            try {
-                const technicians = await listTechnicians();
-                setTechnicianRows(technicians);
-            } catch (error) {
-                toast.error(getApiErrorMessage(error, "Impossibile caricare i tecnici"));
-            }
-        };
-
-        void loadInitialTechnicians();
+        void loadTechnicians();
     }, []);
 
     return (
@@ -184,64 +97,19 @@ const TechniciansPage = () => {
                 onConfirm={handleDeleteTechnician}
             />
 
-            <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca tecnico..." />
+            <TechniciansFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            <Table className="hidden sm:table bg-background">
-                <TableHeader className="w-full">
-                    <TableRow>
-                        {technicianColumns.map((column) => (
-                            <TableHead key={column.key} className={column.className}>
-                                {column.header}
-                            </TableHead>
-                        ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {visibleTechnicianRows.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={technicianColumns.length} className="py-6 text-center text-muted-foreground">
-                                Nessun tecnico disponibile.
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        visibleTechnicianRows.map((row) => (
-                            <TableRow key={row.id}>
-                                {technicianColumns.map((column) => (
-                                    <TableCell key={`${row.id}-${column.key}`} className={column.className}>
-                                        {column.key === "actions" ? (
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button variant="outline" size="lg" onClick={() => handleOpenTechnician(row.id)}>
-                                                    Apri
-                                                    <ChevronRight className="size-5" />
-                                                </Button>
-                                                <Button
-                                                    variant="default"
-                                                    size="icon-lg"
-                                                    className="bg-primary/10 hover:bg-primary/20"
-                                                    onClick={() => toast.info("Modifica non ancora disponibile")}
-                                                    aria-label={`Modifica tecnico ${row.id}`}
-                                                >
-                                                    <Pencil className="size-5 text-primary" />
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    size="icon-lg"
-                                                    onClick={() => handleOpenDeleteDialog(row)}
-                                                    aria-label={`Elimina tecnico ${row.id}`}
-                                                >
-                                                    <Trash2 className="size-5" />
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            column.render(row)
-                                        )}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
+            {isLoading && technicianRows.length === 0 ? (
+                <TableLoadingSkeleton columns={technicianColumns.length} />
+            ) : (
+                <TechniciansTable
+                    columns={technicianColumns}
+                    rows={visibleTechnicianRows}
+                    onOpenTechnician={handleOpenTechnician}
+                    onEditTechnician={() => toast.info("Modifica non ancora disponibile")}
+                    onDeleteTechnician={handleOpenDeleteDialog}
+                />
+            )}
         </div>
     );
 }

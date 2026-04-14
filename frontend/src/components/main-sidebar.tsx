@@ -45,13 +45,14 @@ const isPathActive = (pathname: string, itemPath: string) => {
 const MainSidebar = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
+    const logoUrl = import.meta.env.VITE_LOGO_URL ?? "http://localhost:3000/assets/logo.jpg";
 
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader className="border-b border-sidebar-border px-3 py-2">
                 <div className="flex items-center gap-2 overflow-hidden">
-                    <div className="flex size-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                        <Wrench className="size-5" />
+                    <div className="flex size-9 items-center justify-center overflow-hidden rounded-md border border-sidebar-border bg-white">
+                        <img src={logoUrl} alt="Logo laboratorio" className="size-full object-cover" />
                     </div>
                     <div className="grid leading-tight group-data-[collapsible=icon]:hidden">
                         <span className="text-sm font-semibold text-sidebar-foreground">FutureOffice</span>
@@ -76,7 +77,7 @@ const MainSidebar = () => {
                                     className={active ? "bg-primary! text-background! dark:text-foreground!" : undefined}
                                 >
                                     <Icon />
-                                    <span>{item.label}</span>
+                                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         );

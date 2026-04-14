@@ -5,7 +5,9 @@ import PageHeader from "@/components/page-header";
 import { useEffect, useState } from "react";
 import CreateEntityButton from "@/components/create-entity-button";
 import {
+    createIssue,
     createReport,
+    getReportPrintUrl,
     getApiErrorMessage,
     listCustomers,
     listDevices,
@@ -15,14 +17,17 @@ import {
 } from "@/lib/api";
 import { formatEuro } from "@/lib/utils";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const DashboardPage = () => {
     const [dialogCreateReportOpen, setDialogCreateReportOpen] = useState(false);
     const [openReports, setOpenReports] = useState(0);
     const [closedReports, setClosedReports] = useState(0);
     const [totalRevenue, setTotalRevenue] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
     const loadDashboardMetrics = async () => {
+        setIsLoading(true);
         try {
             const [reports, reportTechnicians] = await Promise.all([
                 listReports(),
@@ -51,6 +56,8 @@ const DashboardPage = () => {
             setTotalRevenue(revenue);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare i dati dashboard"));
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -76,9 +83,7 @@ const DashboardPage = () => {
             (device) => device.name.toLowerCase() === String(values.deviceType).trim().toLowerCase()
         );
 
-        const selectedIssue = issues.find(
-            (issue) => issue.description.toLowerCase() === String(values.issueDescription).trim().toLowerCase()
-        );
+        const issueDescription = String(values.issueDescription).trim();
 
         if (!selectedCustomer) {
             throw new Error("Seleziona un cliente esistente o creane uno nuovo.");
@@ -88,23 +93,54 @@ const DashboardPage = () => {
             throw new Error("Seleziona una tipologia dispositivo esistente o creane una nuova.");
         }
 
-        if (!selectedIssue) {
-            throw new Error("Seleziona un difetto esistente o creane uno nuovo.");
+        if (issueDescription === "") {
+            throw new Error("La descrizione difetto e obbligatoria.");
         }
 
-        await createReport({
+        let selectedIssue = issues.find(
+            (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
+        );
+
+        if (!selectedIssue && Boolean(values.saveIssueInCatalog)) {
+            selectedIssue = await createIssue({ description: issueDescription });
+        }
+
+        if (!selectedIssue) {
+            selectedIssue = issues.find((issue) => issue.description.toLowerCase() === "altro");
+
+            if (!selectedIssue) {
+                try {
+                    selectedIssue = await createIssue({ description: "Altro" });
+                } catch {
+                    const refreshedIssues = await listIssues();
+                    selectedIssue = refreshedIssues.find((issue) => issue.description.toLowerCase() === "altro");
+                }
+            }
+        }
+
+        if (!selectedIssue) {
+            throw new Error("Impossibile risolvere il difetto di riferimento.");
+        }
+
+        const createdReport = await createReport({
             deviceId: selectedDevice.id,
             issueId: selectedIssue.id,
             customerId: selectedCustomer.id,
             note: String(values.notes).trim() === "" ? null : String(values.notes).trim(),
             password: String(values.password).trim() === "" ? null : String(values.password).trim(),
-            issueDescription:
-                String(values.issueDescription).trim() === "" ? null : String(values.issueDescription).trim(),
+            issueDescription,
             dataBackup: Boolean(values.dataBackup),
             charger: Boolean(values.charger),
         });
 
         await loadDashboardMetrics();
+
+        if (window.confirm("Rapporto creato. Vuoi stamparlo adesso?")) {
+            const printWindow = window.open(getReportPrintUrl(createdReport.id), "_blank", "noopener,noreferrer");
+            if (!printWindow) {
+                toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
+            }
+        }
     };
 
     useEffect(() => {
@@ -122,24 +158,38 @@ const DashboardPage = () => {
             />
 
             <div className="flex flex-wrap gap-4">
-                <CardDashboard
-                    text="Rapportini aperti"
-                    icon={CircleDashed}
-                    number={String(openReports)}
-                    iconColor="text-destructive"
-                />
-                <CardDashboard
-                    text="Rapportini chiusi"
-                    icon={CircleCheck}
-                    number={String(closedReports)}
-                    iconColor="text-green-400"
-                />
-                <CardDashboard
-                    text="Incassi totali"
-                    icon={Euro}
-                    number={formatEuro(totalRevenue)}
-                    iconColor="text-yellow-400"
-                />
+                {isLoading && openReports === 0 && closedReports === 0 && totalRevenue === 0 ? (
+                    Array.from({ length: 3 }).map((_, index) => (
+                        <div key={`dashboard-skeleton-${index}`} className="flex w-58 flex-col gap-2 rounded-lg border bg-card p-6 shadow">
+                            <div className="flex items-center justify-between">
+                                <Skeleton className="h-5 w-30" />
+                                <Skeleton className="size-6 rounded-full" />
+                            </div>
+                            <Skeleton className="mt-1 h-8 w-24" />
+                        </div>
+                    ))
+                ) : (
+                    <>
+                        <CardDashboard
+                            text="Rapportini aperti"
+                            icon={CircleDashed}
+                            number={String(openReports)}
+                            iconColor="text-destructive"
+                        />
+                        <CardDashboard
+                            text="Rapportini chiusi"
+                            icon={CircleCheck}
+                            number={String(closedReports)}
+                            iconColor="text-green-400"
+                        />
+                        <CardDashboard
+                            text="Incassi totali"
+                            icon={Euro}
+                            number={formatEuro(totalRevenue)}
+                            iconColor="text-yellow-400"
+                        />
+                    </>
+                )}
             </div>
 
             <CreateReportDialog

@@ -22,6 +22,12 @@ services:
     restart: always
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      LAB_NAME: ${LAB_NAME}
+      LAB_EMAIL: ${LAB_EMAIL}
+      LAB_ADDRESS: ${LAB_ADDRESS}
+      LAB_PHONE: ${LAB_PHONE}
+      LAB_LOGO_TEXT: ${LAB_LOGO_TEXT}
+      LAB_LOGO_URL: ${LAB_LOGO_URL}
     ports:
       - "3000:3000"
     depends_on:
@@ -34,6 +40,7 @@ services:
     restart: always
     environment:
       VITE_API_URL: http://localhost:3000/api
+      VITE_LOGO_URL: ${VITE_LOGO_URL}
     ports:
       - "5173:5173"
     depends_on:

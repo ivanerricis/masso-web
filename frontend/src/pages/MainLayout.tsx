@@ -8,7 +8,7 @@ export const MainLayout = () => {
         <SidebarProvider defaultOpen>
             <MainSidebar />
             <SidebarInset>
-                <header className="flex h-14 items-center justify-between border-b px-3">
+                <header className="flex h-13 items-center justify-between border-b px-3">
                     <SidebarTrigger />
                     <ModeToggle />
                 </header>
