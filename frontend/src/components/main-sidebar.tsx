@@ -1,4 +1,11 @@
-import { Button } from "@/components/ui/button";
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from "@/components/ui/sidebar";
 import {
     BookUser,
     Bug,
@@ -40,32 +47,43 @@ const MainSidebar = () => {
     const { pathname } = useLocation();
 
     return (
-        <aside className="w-xs border-r bg-sidebar">
-            <div className="border-b h-14 p-2 text-lg font-bold flex items-center gap-2">
-                <Wrench className="ml-2" />
-                FutureOffice
-            </div>
-            <div className="w-full p-2 flex flex-col gap-1">
-                {sidebarItems.map((item) => {
-                    const Icon = item.icon;
-                    const active = isPathActive(pathname, item.path);
+        <Sidebar collapsible="icon">
+            <SidebarHeader className="border-b border-sidebar-border px-3 py-2">
+                <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="flex size-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+                        <Wrench className="size-5" />
+                    </div>
+                    <div className="grid leading-tight group-data-[collapsible=icon]:hidden">
+                        <span className="text-sm font-semibold text-sidebar-foreground">FutureOffice</span>
+                        <span className="text-xs text-sidebar-foreground/70">Laboratorio</span>
+                    </div>
+                </div>
+            </SidebarHeader>
 
-                    return (
-                        <Button
-                            key={item.path}
-                            variant="sidebar"
-                            size="lg"
-                            onClick={() => navigate(item.path)}
-                            data-state={active ? "open" : "closed"}
-                            className={`text-lg ${active ? "bg-primary! text-background dark:text-foreground" : undefined}`}
-                        >
-                            <Icon />
-                            {item.label}
-                        </Button>
-                    );
-                })}
-            </div>
-        </aside>
+            <SidebarContent className="px-2 py-3">
+                <SidebarMenu className="gap-1">
+                    {sidebarItems.map((item) => {
+                        const Icon = item.icon;
+                        const active = isPathActive(pathname, item.path);
+
+                        return (
+                            <SidebarMenuItem key={item.path}>
+                                <SidebarMenuButton
+                                    tooltip={item.label}
+                                    isActive={active}
+                                    onClick={() => navigate(item.path)}
+                                    size={"lg"}
+                                    className={active ? "bg-primary! text-background! dark:text-foreground!" : undefined}
+                                >
+                                    <Icon />
+                                    <span>{item.label}</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        );
+                    })}
+                </SidebarMenu>
+            </SidebarContent>
+        </Sidebar>
     );
 };
 

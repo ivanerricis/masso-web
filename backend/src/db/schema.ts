@@ -14,9 +14,11 @@ const userFields = {
 export const reportTable = pgTable("report", {
     id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
     note: varchar("note", { length: 255 }),
+    password: varchar("password", { length: 255 }),
     issueDescription: varchar("issue_description", { length: 255 }),
     serviceDescription: varchar("service_description", { length: 255 }),
     dataBackup: boolean("data_backup").notNull().default(false),
+    charger: boolean("charger").notNull().default(false),
     closed: boolean("closed").notNull().default(false),
     toInvoice: boolean("to_invoice").notNull().default(false),
     price: integer("price").notNull().default(0),
@@ -66,6 +68,6 @@ export const reportTechnicianTable = pgTable("report_technician",
         technicianId: integer("technician_id").notNull().references(() => technicianTable.id),
         price: integer("price").notNull().default(0),
     }, (table) => ([
-        primaryKey({ columns: [table.reportId, table.technicianId] }),
+        primaryKey({ columns: [table.reportId] }),
     ])
 )

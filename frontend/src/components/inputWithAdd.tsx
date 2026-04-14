@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Plus } from "lucide-react";
 
 type Props = Readonly<{
     id: string;
@@ -62,7 +63,7 @@ const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onCreate
     return (
         <div className="relative w-full">
             <Input
-                className="group text-lg!"
+                className="group text-lg! h-full"
                 id={id}
                 placeholder={placeholder}
                 value={value}
@@ -78,39 +79,36 @@ const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onCreate
             />
 
             {isOpen ? (
-                <div className="absolute z-10 mt-2 w-full rounded-md border bg-background p-2 shadow-sm">
-                    {filteredOptions.length > 0 ? (
-                        <div className="max-h-48 overflow-auto">
-                            {filteredOptions.map((option) => (
-                                <Button
-                                    key={option}
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-8 w-full justify-start"
-                                    onMouseDown={() => {
-                                        onChange(option);
-                                        setIsOpen(false);
-                                    }}
-                                >
-                                    {option}
-                                </Button>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="px-2 py-1 text-sm text-muted-foreground">Nessun risultato</p>
-                    )}
+                <div className="absolute z-10 mt-2 w-full rounded-md border bg-background shadow-sm">
+                    <div className="max-h-48 overflow-auto">
+                        {filteredOptions.map((option) => (
+                            <Button
+                                key={option}
+                                type="button"
+                                variant="ghost"
+                                size={"lg"}
+                                className="w-full justify-start rounded-sm"
+                                onMouseDown={() => {
+                                    onChange(option);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                {option}
+                            </Button>
+                        ))}
+                    </div>
 
                     {canCreate ? (
                         <Button
                             type="button"
-                            size="sm"
-                            variant="outline"
-                            className="mt-2 w-full"
+                            size="lg"
+                            className="w-full rounded-sm"
                             onMouseDown={() => {
                                 void handleCreate();
                             }}
                             disabled={isCreating}
                         >
+                            <Plus className="size-5"/>
                             {isCreating
                                 ? "Creazione..."
                                 : onCreate

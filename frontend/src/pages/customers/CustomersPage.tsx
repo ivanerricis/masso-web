@@ -1,15 +1,18 @@
 import CreateEntityButton from "@/components/create-entity-button";
-import CreateCustomerDialog from "@/components/dialogs/createCustomerDialog";
+import CreateCustomerDialog from "@/components/dialogs/create/createCustomerDialog";
+import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
 import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { createCustomer, getApiErrorMessage, listCustomers } from "@/lib/api";
+import { createCustomer, deleteCustomer, getApiErrorMessage, listCustomers } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { CustomerDto } from "@/types/dtos";
 import { toast } from "sonner";
+import { ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type CustomerColumn = {
     key: keyof CustomerDto | "actions";
@@ -19,6 +22,11 @@ type CustomerColumn = {
 };
 
 const customerColumns: CustomerColumn[] = [
+    {
+        key: "id",
+        header: "ID",
+        render: (row) => row.id,
+    },
     {
         key: "firstName",
         header: "Nome",
@@ -62,8 +70,13 @@ const customerColumns: CustomerColumn[] = [
 ];
 
 const CustomersPage = () => {
+    const navigate = useNavigate();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [customerRows, setCustomerRows] = useState<CustomerDto[]>([]);
+    const [searchText, setSearchText] = useState("");
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [customerToDelete, setCustomerToDelete] = useState<CustomerDto | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const loadCustomers = async () => {
         try {
@@ -85,6 +98,53 @@ const CustomersPage = () => {
 
         await loadCustomers();
     };
+
+    const handleOpenDeleteDialog = (customer: CustomerDto) => {
+        setCustomerToDelete(customer);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleOpenCustomer = (id: number) => {
+        navigate(`/clients/${id}`);
+    };
+
+    const handleDeleteCustomer = async () => {
+        if (!customerToDelete || isDeleting) {
+            return;
+        }
+
+        try {
+            setIsDeleting(true);
+            await deleteCustomer(customerToDelete.id);
+            toast.success("Cliente eliminato con successo");
+            setIsDeleteDialogOpen(false);
+            setCustomerToDelete(null);
+            await loadCustomers();
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile eliminare il cliente"));
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const visibleCustomerRows = customerRows.filter((customer) => {
+        const query = searchText.trim().toLowerCase();
+        if (!query) {
+            return true;
+        }
+
+        return [
+            String(customer.id),
+            customer.firstName,
+            customer.lastName ?? "",
+            customer.phoneNumber ?? "",
+            customer.email ?? "",
+            customer.vatNumber ?? "",
+        ]
+            .join(" ")
+            .toLowerCase()
+            .includes(query);
+    });
 
     useEffect(() => {
         const loadInitialCustomers = async () => {
@@ -113,7 +173,25 @@ const CustomersPage = () => {
                 onSubmit={handleCreateCustomer}
             />
 
-            <SearchInput />
+            <ConfirmDeleteDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setIsDeleteDialogOpen(open);
+                    if (!open) {
+                        setCustomerToDelete(null);
+                    }
+                }}
+                title="Elimina cliente"
+                description={
+                    customerToDelete
+                        ? `Sei sicuro di voler eliminare il cliente ${customerToDelete.firstName} ${customerToDelete.lastName ?? ""}?`
+                        : "Sei sicuro di voler eliminare questo cliente?"
+                }
+                isDeleting={isDeleting}
+                onConfirm={handleDeleteCustomer}
+            />
+
+            <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca cliente..." />
 
             <Table className="hidden sm:table bg-background">
                 <TableHeader className="w-full">
@@ -126,18 +204,44 @@ const CustomersPage = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {customerRows.length === 0 ? (
+                    {visibleCustomerRows.length === 0 ? (
                         <TableRow>
                             <TableCell colSpan={customerColumns.length} className="py-6 text-center text-muted-foreground">
                                 Nessun cliente disponibile.
                             </TableCell>
                         </TableRow>
                     ) : (
-                        customerRows.map((row) => (
+                        visibleCustomerRows.map((row) => (
                             <TableRow key={row.id}>
                                 {customerColumns.map((column) => (
                                     <TableCell key={`${row.id}-${column.key}`} className={column.className}>
-                                        {column.render(row)}
+                                        {column.key === "actions" ? (
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button variant="outline" size="lg" onClick={() => handleOpenCustomer(row.id)}>
+                                                    Apri
+                                                    <ChevronRight className="size-5" />
+                                                </Button>
+                                                <Button
+                                                    variant="default"
+                                                    size="icon-lg"
+                                                    className="bg-primary/10 hover:bg-primary/20"
+                                                    onClick={() => toast.info("Modifica non ancora disponibile")}
+                                                    aria-label={`Modifica cliente ${row.id}`}
+                                                >
+                                                    <Pencil className="size-5 text-primary" />
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon-lg"
+                                                    onClick={() => handleOpenDeleteDialog(row)}
+                                                    aria-label={`Elimina cliente ${row.id}`}
+                                                >
+                                                    <Trash2 className="size-5" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            column.render(row)
+                                        )}
                                     </TableCell>
                                 ))}
                             </TableRow>

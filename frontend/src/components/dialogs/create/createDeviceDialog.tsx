@@ -1,6 +1,6 @@
 import CustomDialog from "@/components/dialogs/customDialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -11,17 +11,22 @@ type Props = {
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
 };
 
-const CreateIssueDialog = ({ open, onOpenChange, onSubmit }: Props) => {
-    const [description, setDescription] = useState("");
+const CreateDeviceDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+    const [name, setName] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (open) {
-            setDescription("");
+            setName("");
         }
     }, [open]);
 
     const handleConfirm = async () => {
+        if(name === "") {
+            toast.error("Il nome del dispositivo non può essere vuoto")
+            return
+        }
+
         if (isSubmitting) {
             return;
         }
@@ -33,9 +38,9 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit }: Props) => {
 
         try {
             setIsSubmitting(true);
-            await onSubmit({ description });
+            await onSubmit({ name });
             onOpenChange(false);
-            toast.success("Segnalazione creata con successo");
+            toast.success("Dispositivo creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -47,8 +52,8 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo difetto"
-            description="Inserisci i dati del difetto e conferma per salvare."
+            title="Nuovo dispositivo"
+            description="Inserisci i dati del dispositivo e conferma per salvare."
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}
@@ -57,13 +62,13 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             confirmDisabled={isSubmitting}
             content={
                 <div className="grid">
-                    <Label htmlFor="description" className="text-lg">Descrizione</Label>
-                    <Textarea
+                    <Label htmlFor="name" className="text-lg">Nome dispositivo</Label>
+                    <Input
                         className="text-lg!"
-                        id="description"
-                        placeholder="Display rotto"
-                        value={description}
-                        onChange={(event) => setDescription(event.target.value)}
+                        id="name"
+                        placeholder="iPhone 13"
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
                     />
                 </div>
             }
@@ -71,4 +76,4 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     );
 };
 
-export default CreateIssueDialog;
+export default CreateDeviceDialog;

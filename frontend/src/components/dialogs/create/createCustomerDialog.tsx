@@ -11,11 +11,13 @@ type Props = {
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
 };
 
-const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     const [formValues, setFormValues] = useState({
         firstName: "",
         lastName: "",
         phoneNumber: "",
+        email: "",
+        vatNumber: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -25,11 +27,23 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 firstName: "",
                 lastName: "",
                 phoneNumber: "",
+                email: "",
+                vatNumber: "",
             });
         }
     }, [open]);
 
     const handleConfirm = async () => {
+        if (formValues.firstName === "") {
+            toast.error("Il nome non può essere vuoto")
+            return
+        }
+
+        if (formValues.phoneNumber === "") {
+            toast.error("Il numero di telefono non può essere vuoto")
+            return
+        }
+
         if (isSubmitting) {
             return;
         }
@@ -43,7 +57,7 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit(formValues);
             onOpenChange(false);
-            toast.success("Collaboratore creato con successo");
+            toast.success("Cliente creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -55,8 +69,8 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo collaboratore"
-            description="Inserisci i dati del collaboratore e conferma per salvare."
+            title="Nuovo cliente"
+            description="Inserisci i dati del cliente e conferma per salvare."
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}
@@ -66,11 +80,11 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             content={
                 <div className="grid gap-6">
                     <div className="grid">
-                        <Label htmlFor="firstName" className="text-lg">Nome</Label>
+                        <Label htmlFor="firstName" className="text-lg">Nome (Nome azienda)</Label>
                         <Input
                             className="text-lg!"
                             id="firstName"
-                            placeholder="Luca"
+                            placeholder="Mario"
                             value={formValues.firstName}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, firstName: event.target.value }))}
                         />
@@ -80,7 +94,7 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         <Input
                             className="text-lg!"
                             id="lastName"
-                            placeholder="Neri"
+                            placeholder="Rossi"
                             value={formValues.lastName}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, lastName: event.target.value }))}
                         />
@@ -91,9 +105,30 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                             className="text-lg!"
                             id="phoneNumber"
                             type="tel"
-                            placeholder="+39 333 1234567"
+                            placeholder="333 1234567"
                             value={formValues.phoneNumber}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))}
+                        />
+                    </div>
+                    <div className="grid">
+                        <Label htmlFor="email" className="text-lg">Email (opzionale)</Label>
+                        <Input
+                            className="text-lg!"
+                            id="email"
+                            type="email"
+                            placeholder="mario.rossi@email.com"
+                            value={formValues.email}
+                            onChange={(event) => setFormValues((prev) => ({ ...prev, email: event.target.value }))}
+                        />
+                    </div>
+                    <div className="grid">
+                        <Label htmlFor="vatNumber" className="text-lg">Partita IVA (opzionale)</Label>
+                        <Input
+                            className="text-lg!"
+                            id="vatNumber"
+                            placeholder="IT12345678901"
+                            value={formValues.vatNumber}
+                            onChange={(event) => setFormValues((prev) => ({ ...prev, vatNumber: event.target.value }))}
                         />
                     </div>
                 </div>
@@ -102,4 +137,4 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     );
 };
 
-export default CreateCollaboratorDialog;
+export default CreateCustomerDialog;

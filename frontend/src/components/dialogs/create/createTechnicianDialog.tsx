@@ -11,12 +11,11 @@ type Props = {
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
 };
 
-const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     const [formValues, setFormValues] = useState({
         firstName: "",
         lastName: "",
         phoneNumber: "",
-        email: "",
         vatNumber: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,13 +26,22 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 firstName: "",
                 lastName: "",
                 phoneNumber: "",
-                email: "",
                 vatNumber: "",
             });
         }
     }, [open]);
 
     const handleConfirm = async () => {
+        if(formValues.firstName === "") {
+            toast.error("Il nome non può essere vuoto")
+            return
+        }
+
+        if(formValues.lastName === "") {
+            toast.error("Il cognome non può essere vuoto")
+            return
+        }
+
         if (isSubmitting) {
             return;
         }
@@ -47,7 +55,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit(formValues);
             onOpenChange(false);
-            toast.success("Cliente creato con successo");
+            toast.success("Tecnico creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -59,8 +67,8 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo cliente"
-            description="Inserisci i dati del cliente e conferma per salvare."
+            title="Nuovo tecnico"
+            description="Inserisci i dati del tecnico e conferma per salvare."
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}
@@ -74,7 +82,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         <Input
                             className="text-lg!"
                             id="firstName"
-                            placeholder="Mario"
+                            placeholder="Anna"
                             value={formValues.firstName}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, firstName: event.target.value }))}
                         />
@@ -84,7 +92,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         <Input
                             className="text-lg!"
                             id="lastName"
-                            placeholder="Rossi"
+                            placeholder="Verdi"
                             value={formValues.lastName}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, lastName: event.target.value }))}
                         />
@@ -95,20 +103,9 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                             className="text-lg!"
                             id="phoneNumber"
                             type="tel"
-                            placeholder="+39 333 1234567"
+                            placeholder="333 1234567"
                             value={formValues.phoneNumber}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))}
-                        />
-                    </div>
-                    <div className="grid">
-                        <Label htmlFor="email" className="text-lg">Email (opzionale)</Label>
-                        <Input
-                            className="text-lg!"
-                            id="email"
-                            type="email"
-                            placeholder="mario.rossi@email.com"
-                            value={formValues.email}
-                            onChange={(event) => setFormValues((prev) => ({ ...prev, email: event.target.value }))}
                         />
                     </div>
                     <div className="grid">
@@ -127,4 +124,4 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     );
 };
 
-export default CreateCustomerDialog;
+export default CreateTechnicianDialog;

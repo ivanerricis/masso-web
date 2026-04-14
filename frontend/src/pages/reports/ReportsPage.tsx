@@ -1,23 +1,32 @@
 import { Button } from "@/components/ui/button";
 import CreateEntityButton from "@/components/create-entity-button";
-import CreateReportDialog from "@/components/dialogs/createReportDialog";
+import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
+import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
 import SearchInput from "@/components/search-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     createReport,
+    deleteReport,
     getApiErrorMessage,
     listCustomers,
     listDevices,
     listIssues,
     listReports,
     listReportTechnicians,
+    listTechnicians,
 } from "@/lib/api";
 import { formatDateTime, formatEuro } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { ReportDto } from "@/types/dtos";
 import { toast } from "sonner";
+import { ChevronRight, Pencil, Trash2 } from "lucide-react";
+import LoadingPage from "@/components/loadingPage";
+import { useNavigate } from "react-router-dom";
+
+type ReportVisibilityFilter = "all" | "open" | "closed";
 
 type ReportColumn = {
     key: keyof ReportDto | "actions";
@@ -27,6 +36,11 @@ type ReportColumn = {
 };
 
 const reportColumns: ReportColumn[] = [
+    {
+        key: "id",
+        header: "ID",
+        render: (row) => row.id,
+    },
     {
         key: "customer",
         header: "Cliente",
@@ -43,13 +57,33 @@ const reportColumns: ReportColumn[] = [
         render: (row) => row.issue,
     },
     {
-        key: "technicians",
-        header: "Tecnici",
-        render: (row) => row.technicians,
+        key: "dataBackup",
+        header: "Backup dati",
+        render: (row) => (row.dataBackup ? "Si" : "No"),
+    },
+    {
+        key: "charger",
+        header: "Alimentatore",
+        render: (row) => (row.charger ? "Si" : "No"),
+    },
+    {
+        key: "technician",
+        header: "Tecnico",
+        render: (row) => row.technician,
+    },
+    {
+        key: "internalPrice",
+        header: "Prezzo interno",
+        render: (row) => formatEuro(row.internalPrice),
+    },
+    {
+        key: "technicianPrice",
+        header: "Prezzo tecnico",
+        render: (row) => formatEuro(row.technicianPrice),
     },
     {
         key: "totalPrice",
-        header: "Prezzo",
+        header: "Prezzo totale",
         render: (row) => formatEuro(row.totalPrice),
     },
     {
@@ -71,11 +105,7 @@ const reportColumns: ReportColumn[] = [
         key: "actions",
         header: "Azioni",
         className: "text-right",
-        render: () => (
-            <Button variant="outline" size="sm">
-                Apri
-            </Button>
-        ),
+        render: () => null,
     },
 ];
 
@@ -85,28 +115,80 @@ const formatCustomerOption = (firstName: string, lastName: string | null, phoneN
 };
 
 const ReportsPage = () => {
+    const navigate = useNavigate();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [reportRows, setReportRows] = useState<ReportDto[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [reportToDelete, setReportToDelete] = useState<ReportDto | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>("open");
+    const [searchText, setSearchText] = useState("");
+
+    const visibleReportRows = reportRows.filter((report) => {
+        const query = searchText.trim().toLowerCase();
+        const matchesSearch = !query
+            ? true
+            : [
+                    String(report.id),
+                    report.customer,
+                    report.device,
+                    report.issue,
+                    report.technician,
+                    report.internalPrice,
+                    report.technicianPrice,
+                    report.totalPrice,
+                    report.closed ? "chiuso" : "aperto",
+                    report.toInvoice ? "da fatturare" : "non fatturare",
+                    report.dataBackup ? "backup dati" : "",
+                    report.charger ? "alimentatore" : "",
+              ]
+                    .join(" ")
+                    .toLowerCase()
+                    .includes(query);
+
+        if (!matchesSearch) {
+            return false;
+        }
+
+        if (visibilityFilter === "open") {
+            return !report.closed;
+        }
+
+        if (visibilityFilter === "closed") {
+            return report.closed;
+        }
+
+        return true;
+    });
 
     const loadReports = async () => {
+        setIsLoading(true)
         try {
-            const [reports, customers, devices, issues, reportTechnicians] = await Promise.all([
+            const [reports, customers, devices, issues, reportTechnicians, technicians] = await Promise.all([
                 listReports(),
                 listCustomers(),
                 listDevices(),
                 listIssues(),
                 listReportTechnicians(),
+                listTechnicians(),
             ]);
 
             const customerById = new Map(customers.map((customer) => [customer.id, customer]));
             const deviceById = new Map(devices.map((device) => [device.id, device]));
             const issueById = new Map(issues.map((issue) => [issue.id, issue]));
+            const technicianById = new Map(
+                technicians.map((technician) => [
+                    technician.id,
+                    `${technician.firstName} ${technician.lastName ?? ""}`.trim(),
+                ])
+            );
 
-            const techniciansByReportId = new Map<number, number>();
+            const technicianByReportId = new Map<number, string>();
             const techniciansPriceByReportId = new Map<number, number>();
 
             for (const item of reportTechnicians) {
-                techniciansByReportId.set(item.reportId, (techniciansByReportId.get(item.reportId) ?? 0) + 1);
+                technicianByReportId.set(item.reportId, technicianById.get(item.technicianId) ?? "-");
                 techniciansPriceByReportId.set(item.reportId, (techniciansPriceByReportId.get(item.reportId) ?? 0) + item.price);
             }
 
@@ -114,7 +196,7 @@ const ReportsPage = () => {
                 const customer = customerById.get(report.customerId);
                 const device = deviceById.get(report.deviceId);
                 const issue = issueById.get(report.issueId);
-                const techniciansCount = techniciansByReportId.get(report.id) ?? 0;
+                const technician = technicianByReportId.get(report.id) ?? "-";
                 const techniciansPrice = techniciansPriceByReportId.get(report.id) ?? 0;
 
                 return {
@@ -122,7 +204,12 @@ const ReportsPage = () => {
                     customer: customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "-",
                     device: device?.name ?? "-",
                     issue: issue?.description ?? "-",
-                    technicians: techniciansCount,
+                    password: report.password,
+                    charger: report.charger,
+                    dataBackup: report.dataBackup,
+                    technician,
+                    internalPrice: report.price,
+                    technicianPrice: techniciansPrice,
                     totalPrice: report.price + techniciansPrice,
                     closed: report.closed,
                     toInvoice: report.toInvoice,
@@ -133,6 +220,8 @@ const ReportsPage = () => {
             setReportRows(mappedRows);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare i rapporti"));
+        } finally {
+            setIsLoading(false)
         }
     };
 
@@ -175,9 +264,11 @@ const ReportsPage = () => {
                 issueId: selectedIssue.id,
                 customerId: selectedCustomer.id,
                 note: String(values.notes).trim() === "" ? null : String(values.notes).trim(),
+                    password: String(values.password).trim() === "" ? null : String(values.password).trim(),
                 issueDescription:
                     String(values.issueDescription).trim() === "" ? null : String(values.issueDescription).trim(),
                 dataBackup: Boolean(values.dataBackup),
+                    charger: Boolean(values.charger),
             });
 
             await loadReports();
@@ -187,56 +278,146 @@ const ReportsPage = () => {
         }
     };
 
+    const handleOpenDeleteDialog = (report: ReportDto) => {
+        setReportToDelete(report);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleOpenReport = (id: number) => {
+        navigate(`/reports/${id}`);
+    };
+
+    const handleDeleteReport = async () => {
+        if (!reportToDelete || isDeleting) {
+            return;
+        }
+
+        try {
+            setIsDeleting(true);
+            await deleteReport(reportToDelete.id);
+            toast.success("Rapporto eliminato con successo");
+            setIsDeleteDialogOpen(false);
+            setReportToDelete(null);
+            await loadReports();
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile eliminare il rapporto"));
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     useEffect(() => {
         void loadReports();
     }, []);
 
     return (
-        <div className="flex flex-col gap-4">
-            <PageHeader
-                title="Rapporti"
-                description="Gestisci i rapporti del laboratorio."
-                action={<CreateEntityButton label="Crea nuovo rapporto" onClick={() => setIsCreateDialogOpen(true)} />}
-            />
+        <div className="flex flex-col gap-4 w-full h-full">
+            {isLoading ? (
+                <LoadingPage />
+            ) : (
+                <>
+                    <PageHeader
+                        title="Rapporti"
+                        description="Gestisci i rapporti del laboratorio."
+                        action={<CreateEntityButton label="Crea nuovo rapporto" onClick={() => setIsCreateDialogOpen(true)} />}
+                    />
 
-            <CreateReportDialog
-                open={isCreateDialogOpen}
-                onOpenChange={setIsCreateDialogOpen}
-                onSubmit={handleCreateReport}
-            />
+                    <CreateReportDialog
+                        open={isCreateDialogOpen}
+                        onOpenChange={setIsCreateDialogOpen}
+                        onSubmit={handleCreateReport}
+                    />
 
-            <SearchInput />
+                    <ConfirmDeleteDialog
+                        open={isDeleteDialogOpen}
+                        onOpenChange={(open) => {
+                            setIsDeleteDialogOpen(open);
+                            if (!open) {
+                                setReportToDelete(null);
+                            }
+                        }}
+                        title="Elimina rapporto"
+                        description={
+                            reportToDelete
+                                ? `Sei sicuro di voler eliminare il rapporto ID ${reportToDelete.id}?`
+                                : "Sei sicuro di voler eliminare questo rapporto?"
+                        }
+                        isDeleting={isDeleting}
+                        onConfirm={handleDeleteReport}
+                    />
 
-            <Table className="hidden sm:table bg-background">
-                <TableHeader className="w-full">
-                    <TableRow>
-                        {reportColumns.map((column) => (
-                            <TableHead key={column.key} className={column.className}>
-                                {column.header}
-                            </TableHead>
-                        ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {reportRows.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={reportColumns.length} className="py-6 text-center text-muted-foreground">
-                                Nessun rapporto disponibile.
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        reportRows.map((row) => (
-                            <TableRow key={row.id}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca rapporto..." />
+                        <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as ReportVisibilityFilter)}>
+                            <SelectTrigger className="w-full sm:w-56">
+                                <SelectValue placeholder="Filtra per stato" />
+                            </SelectTrigger>
+                            <SelectContent position="popper">
+                                <SelectItem value="all">Tutti i rapportini</SelectItem>
+                                <SelectItem value="open">Rapportini aperti</SelectItem>
+                                <SelectItem value="closed">Rapportini chiusi</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <Table className="hidden sm:table bg-background">
+                        <TableHeader className="w-full">
+                            <TableRow>
                                 {reportColumns.map((column) => (
-                                    <TableCell key={`${row.id}-${column.key}`} className={column.className}>
-                                        {column.render(row)}
-                                    </TableCell>
+                                    <TableHead key={column.key} className={column.className}>
+                                        {column.header}
+                                    </TableHead>
                                 ))}
                             </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {visibleReportRows.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={reportColumns.length} className="py-6 text-center text-muted-foreground">
+                                        Nessun rapporto disponibile.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                visibleReportRows.map((row) => (
+                                    <TableRow key={row.id}>
+                                        {reportColumns.map((column) => (
+                                            <TableCell key={`${row.id}-${column.key}`} className={column.className}>
+                                                {column.key === "actions" ? (
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button variant="outline" size="lg" onClick={() => handleOpenReport(row.id)}>
+                                                            Apri
+                                                            <ChevronRight className="size-5" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="default"
+                                                            size="icon-lg"
+                                                            className="bg-primary/10 hover:bg-primary/20"
+                                                            onClick={() => toast.info("Modifica non ancora disponibile")}
+                                                            aria-label={`Modifica rapporto ${row.id}`}
+                                                        >
+                                                            <Pencil className="size-5 text-primary" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="icon-lg"
+                                                            onClick={() => handleOpenDeleteDialog(row)}
+                                                            aria-label={`Elimina rapporto ${row.id}`}
+                                                        >
+                                                            <Trash2 className="size-5" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    column.render(row)
+                                                )}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </>
+            )}
         </div>
     );
 }

@@ -1,10 +1,18 @@
 import { CircleCheck, CircleDashed, Euro } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
-import CustomDialog from "@/components/dialogs/customDialog";
+import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
 import PageHeader from "@/components/page-header";
 import { useEffect, useState } from "react";
 import CreateEntityButton from "@/components/create-entity-button";
-import { getApiErrorMessage, listReports, listReportTechnicians } from "@/lib/api";
+import {
+    createReport,
+    getApiErrorMessage,
+    listCustomers,
+    listDevices,
+    listIssues,
+    listReports,
+    listReportTechnicians,
+} from "@/lib/api";
 import { formatEuro } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -14,39 +22,92 @@ const DashboardPage = () => {
     const [closedReports, setClosedReports] = useState(0);
     const [totalRevenue, setTotalRevenue] = useState(0);
 
-    useEffect(() => {
-        const loadDashboardMetrics = async () => {
-            try {
-                const [reports, reportTechnicians] = await Promise.all([
-                    listReports(),
-                    listReportTechnicians(),
-                ]);
+    const loadDashboardMetrics = async () => {
+        try {
+            const [reports, reportTechnicians] = await Promise.all([
+                listReports(),
+                listReportTechnicians(),
+            ]);
 
-                const techniciansPriceByReportId = new Map<number, number>();
-                for (const item of reportTechnicians) {
-                    techniciansPriceByReportId.set(
-                        item.reportId,
-                        (techniciansPriceByReportId.get(item.reportId) ?? 0) + item.price
-                    );
-                }
-
-                const openCount = reports.filter((report) => !report.closed).length;
-                const closedCount = reports.filter((report) => report.closed).length;
-                const revenue = reports
-                    .filter((report) => report.closed)
-                    .reduce(
-                        (acc, report) => acc + report.price + (techniciansPriceByReportId.get(report.id) ?? 0),
-                        0
-                    );
-
-                setOpenReports(openCount);
-                setClosedReports(closedCount);
-                setTotalRevenue(revenue);
-            } catch (error) {
-                toast.error(getApiErrorMessage(error, "Impossibile caricare i dati dashboard"));
+            const techniciansPriceByReportId = new Map<number, number>();
+            for (const item of reportTechnicians) {
+                techniciansPriceByReportId.set(
+                    item.reportId,
+                    (techniciansPriceByReportId.get(item.reportId) ?? 0) + item.price
+                );
             }
-        };
 
+            const openCount = reports.filter((report) => !report.closed).length;
+            const closedCount = reports.filter((report) => report.closed).length;
+            const revenue = reports
+                .filter((report) => report.closed)
+                .reduce(
+                    (acc, report) => acc + report.price + (techniciansPriceByReportId.get(report.id) ?? 0),
+                    0
+                );
+
+            setOpenReports(openCount);
+            setClosedReports(closedCount);
+            setTotalRevenue(revenue);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile caricare i dati dashboard"));
+        }
+    };
+
+    const formatCustomerOption = (firstName: string, lastName: string | null, phoneNumber: string | null) => {
+        const fullName = `${firstName} ${lastName ?? ""}`.trim();
+        return `${fullName} - ${phoneNumber?.trim() || "N/D"}`;
+    };
+
+    const handleCreateReport = async (values: Record<string, string | boolean>) => {
+        const [customers, devices, issues] = await Promise.all([
+            listCustomers(),
+            listDevices(),
+            listIssues(),
+        ]);
+
+        const selectedCustomer = customers.find(
+            (customer) =>
+                formatCustomerOption(customer.firstName, customer.lastName, customer.phoneNumber) ===
+                String(values.customer)
+        );
+
+        const selectedDevice = devices.find(
+            (device) => device.name.toLowerCase() === String(values.deviceType).trim().toLowerCase()
+        );
+
+        const selectedIssue = issues.find(
+            (issue) => issue.description.toLowerCase() === String(values.issueDescription).trim().toLowerCase()
+        );
+
+        if (!selectedCustomer) {
+            throw new Error("Seleziona un cliente esistente o creane uno nuovo.");
+        }
+
+        if (!selectedDevice) {
+            throw new Error("Seleziona una tipologia dispositivo esistente o creane una nuova.");
+        }
+
+        if (!selectedIssue) {
+            throw new Error("Seleziona un difetto esistente o creane uno nuovo.");
+        }
+
+        await createReport({
+            deviceId: selectedDevice.id,
+            issueId: selectedIssue.id,
+            customerId: selectedCustomer.id,
+            note: String(values.notes).trim() === "" ? null : String(values.notes).trim(),
+            password: String(values.password).trim() === "" ? null : String(values.password).trim(),
+            issueDescription:
+                String(values.issueDescription).trim() === "" ? null : String(values.issueDescription).trim(),
+            dataBackup: Boolean(values.dataBackup),
+            charger: Boolean(values.charger),
+        });
+
+        await loadDashboardMetrics();
+    };
+
+    useEffect(() => {
         void loadDashboardMetrics();
     }, []);
 
@@ -81,15 +142,10 @@ const DashboardPage = () => {
                 />
             </div>
 
-            <CustomDialog
+            <CreateReportDialog
                 open={dialogCreateReportOpen}
                 onOpenChange={setDialogCreateReportOpen}
-                title="Crea nuovo rapportino"
-                content={
-                    <div>
-                        <p>Contenuto del dialog per creare un nuovo rapportino</p>
-                    </div>
-                }
+                onSubmit={handleCreateReport}
             />
         </div>
     );

@@ -3,7 +3,11 @@ export type ReportDto = {
     customer: string;
     device: string;
     issue: string;
-    technicians: number;
+    password: string | null;
+    charger: boolean;
+    technician: string;
+    internalPrice: number;
+    technicianPrice: number;
     totalPrice: number;
     closed: boolean;
     toInvoice: boolean;

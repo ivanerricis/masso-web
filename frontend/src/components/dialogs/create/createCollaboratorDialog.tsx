@@ -11,12 +11,11 @@ type Props = {
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
 };
 
-const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     const [formValues, setFormValues] = useState({
         firstName: "",
         lastName: "",
         phoneNumber: "",
-        vatNumber: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,12 +25,16 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 firstName: "",
                 lastName: "",
                 phoneNumber: "",
-                vatNumber: "",
             });
         }
     }, [open]);
 
     const handleConfirm = async () => {
+        if(formValues.firstName === "") {
+            toast.error("Il nome non può essere vuoto")
+            return
+        }
+
         if (isSubmitting) {
             return;
         }
@@ -45,7 +48,7 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit(formValues);
             onOpenChange(false);
-            toast.success("Tecnico creato con successo");
+            toast.success("Collaboratore creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -57,8 +60,8 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo tecnico"
-            description="Inserisci i dati del tecnico e conferma per salvare."
+            title="Nuovo collaboratore"
+            description="Inserisci i dati del collaboratore e conferma per salvare."
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}
@@ -72,7 +75,7 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         <Input
                             className="text-lg!"
                             id="firstName"
-                            placeholder="Anna"
+                            placeholder="Luca"
                             value={formValues.firstName}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, firstName: event.target.value }))}
                         />
@@ -82,7 +85,7 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         <Input
                             className="text-lg!"
                             id="lastName"
-                            placeholder="Verdi"
+                            placeholder="Neri"
                             value={formValues.lastName}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, lastName: event.target.value }))}
                         />
@@ -93,19 +96,9 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                             className="text-lg!"
                             id="phoneNumber"
                             type="tel"
-                            placeholder="+39 333 1234567"
+                            placeholder="333 1234567"
                             value={formValues.phoneNumber}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))}
-                        />
-                    </div>
-                    <div className="grid">
-                        <Label htmlFor="vatNumber" className="text-lg">Partita IVA</Label>
-                        <Input
-                            className="text-lg!"
-                            id="vatNumber"
-                            placeholder="IT12345678901"
-                            value={formValues.vatNumber}
-                            onChange={(event) => setFormValues((prev) => ({ ...prev, vatNumber: event.target.value }))}
                         />
                     </div>
                 </div>
@@ -114,4 +107,4 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     );
 };
 
-export default CreateTechnicianDialog;
+export default CreateCollaboratorDialog;

@@ -1,15 +1,17 @@
 import CustomDialog from "@/components/dialogs/customDialog";
-import CreateCustomerDialog from "@/components/dialogs/createCustomerDialog";
-import CreateDeviceDialog from "@/components/dialogs/createDeviceDialog";
-import CreateIssueDialog from "@/components/dialogs/createIssueDialog";
+import CreateCustomerDialog from "@/components/dialogs/create/createCustomerDialog";
+import CreateDeviceDialog from "@/components/dialogs/create/createDeviceDialog";
+import CreateIssueDialog from "@/components/dialogs/create/createIssueDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { createCustomer, createDevice, createIssue, getApiErrorMessage, listCustomers, listDevices, listIssues } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import InputWithAdd from "../inputWithAdd";
-import { Input } from "../ui/input";
-import { Bug, Laptop, UserPlus } from "lucide-react";
+import InputWithAdd from "@/components/inputWithAdd";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus } from "lucide-react";
+import type { ChangeEvent } from "react";
 
 const formatCustomerOption = (firstName: string, lastName: string | null, phoneNumber: string | null) => {
     const fullName = `${firstName} ${lastName ?? ""}`.trim();
@@ -27,6 +29,8 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         customer: "",
         deviceType: "",
         issueDescription: "",
+        password: "",
+        charger: false,
         dataBackup: false,
         notes: "",
     });
@@ -44,6 +48,8 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 customer: "",
                 deviceType: "",
                 issueDescription: "",
+                password: "",
+                charger: false,
                 dataBackup: false,
                 notes: "",
             });
@@ -109,93 +115,129 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                     <div className="grid gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="issueDescription" className="text-lg">Cliente</Label>
-                            <InputWithAdd
-                                id="client"
-                                placeholder="Cliente"
-                                value={formValues.customer}
-                                options={customerOptions}
-                                onChange={(value) => setFormValues((prev) => ({ ...prev, customer: value }))}
-                                required
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-fit"
-                                onClick={() => setIsCreateCustomerDialogOpen(true)}
-                            >
-                                <UserPlus className="size-5" />
-                                Crea nuovo cliente
-                            </Button>
+                            <div className="flex gap-2">
+                                <InputWithAdd
+                                    id="client"
+                                    placeholder="Cliente"
+                                    value={formValues.customer}
+                                    options={customerOptions}
+                                    onChange={(value: string) => setFormValues((prev) => ({ ...prev, customer: value }))}
+                                    required
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size={"icon-lg"}
+                                    onClick={() => setIsCreateCustomerDialogOpen(true)}
+                                >
+                                    <Plus className="size-5" />
+                                </Button>
+                            </div>
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="deviceType" className="text-lg">Tipologia dispositivo</Label>
-                            <InputWithAdd
-                                id="deviceType"
-                                placeholder="Es. iPhone 13"
-                                value={formValues.deviceType}
-                                options={deviceOptions}
-                                onCreate={async (value) => {
-                                    await createDevice({ name: value });
-                                    setDeviceOptions((prev) => Array.from(new Set([...prev, value])));
-                                }}
-                                onChange={(value) => setFormValues((prev) => ({ ...prev, deviceType: value }))}
-                                required
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-fit"
-                                onClick={() => setIsCreateDeviceDialogOpen(true)}
-                            >
-                                <Laptop className="size-5" />
-                                Crea nuova tipologia dispositivo
-                            </Button>
+                            <div className="flex gap-2">
+                                <InputWithAdd
+                                    id="deviceType"
+                                    placeholder="Es. iPhone 13"
+                                    value={formValues.deviceType}
+                                    options={deviceOptions}
+                                    onCreate={async (value: string) => {
+                                        await createDevice({ name: value });
+                                        setDeviceOptions((prev) => Array.from(new Set([...prev, value])));
+                                    }}
+                                    onChange={(value: string) => setFormValues((prev) => ({ ...prev, deviceType: value }))}
+                                    required
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size={"icon-lg"}
+                                    onClick={() => setIsCreateDeviceDialogOpen(true)}
+                                >
+                                    <Plus className="size-5" />
+                                </Button>
+                            </div>
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="issueDescription" className="text-lg">Descrizione difetto</Label>
-                            <InputWithAdd
-                                id="issueDescription"
-                                placeholder="Descrivi il difetto"
-                                value={formValues.issueDescription}
-                                options={issueOptions}
-                                onCreate={async (value) => {
-                                    await createIssue({ description: value });
-                                    setIssueOptions((prev) => Array.from(new Set([...prev, value])));
-                                }}
-                                onChange={(value) => setFormValues((prev) => ({ ...prev, issueDescription: value }))}
-                                required
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-fit"
-                                onClick={() => setIsCreateIssueDialogOpen(true)}
-                            >
-                                <Bug className="size-5" />
-                                Crea nuovo difetto
-                            </Button>
+                            <div className="flex gap-2">
+                                <InputWithAdd
+                                    id="issueDescription"
+                                    placeholder="Descrivi il difetto"
+                                    value={formValues.issueDescription}
+                                    options={issueOptions}
+                                    onCreate={async (value: string) => {
+                                        await createIssue({ description: value });
+                                        setIssueOptions((prev) => Array.from(new Set([...prev, value])));
+                                    }}
+                                    onChange={(value: string) => setFormValues((prev) => ({ ...prev, issueDescription: value }))}
+                                    required
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size={"icon-lg"}
+                                    onClick={() => setIsCreateIssueDialogOpen(true)}
+                                >
+                                    <Plus className="size-5" />
+                                </Button>
+                            </div>
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="notes" className="text-lg">Note</Label>
+                            <Label htmlFor="password" className="text-lg">Password sblocco</Label>
                             <Input
                                 className="text-lg!"
-                                id="notes"
-                                placeholder="Note"
-                                value={formValues.notes}
-                                onChange={(event) => setFormValues((prev) => ({ ...prev, notes: event.target.value }))}
-                                required
+                                id="password"
+                                placeholder="Password dispositivo"
+                                value={formValues.password}
+                                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                                    setFormValues((prev) => ({ ...prev, password: event.target.value }))
+                                }
                             />
                         </div>
                         <div className="grid gap-3">
-                            <Label className="flex w-fit cursor-pointer items-center gap-2 text-lg">
-                                <input
-                                    className="size-5 cursor-pointer"
-                                    type="checkbox"
-                                    checked={formValues.dataBackup}
-                                    onChange={(event) => setFormValues((prev) => ({ ...prev, dataBackup: event.target.checked }))}
+                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                <Checkbox
+                                    id="charger"
+                                    className="size-5"
+                                    checked={formValues.charger}
+                                    onCheckedChange={(checked) =>
+                                        setFormValues((prev) => ({ ...prev, charger: checked === true }))
+                                    }
                                 />
-                                Backup dati
-                            </Label>
+                                <Label htmlFor="charger" className="cursor-pointer text-lg">
+                                    Alimentatore presente
+                                </Label>
+                            </div>
+                        </div>
+                        <div className="grid gap-3">
+                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                <Checkbox
+                                    id="dataBackup"
+                                    className="size-5"
+                                    checked={formValues.dataBackup}
+                                    onCheckedChange={(checked) =>
+                                        setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))
+                                    }
+                                />
+                                <Label htmlFor="dataBackup" className="cursor-pointer text-lg">
+                                    Backup dati
+                                </Label>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="notes" className="text-lg">Note</Label>
+                                <Input
+                                    className="text-lg!"
+                                    id="notes"
+                                    placeholder="Note"
+                                    value={formValues.notes}
+                                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                                        setFormValues((prev) => ({ ...prev, notes: event.target.value }))
+                                    }
+                                    required
+                                />
+                            </div>
                         </div>
                     </div>
                 }
