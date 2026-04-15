@@ -85,7 +85,10 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
     const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
     const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
     const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
-    const labLogoUrl = process.env.LAB_LOGO_URL ?? "http://localhost:3000/assets/logo.jpg";
+    const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
+    const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
+        ? configuredLogoUrl
+        : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
 
     const html = buildReportPrintHtml({
         id: report.id,
