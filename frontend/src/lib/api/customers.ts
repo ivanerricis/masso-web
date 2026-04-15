@@ -6,6 +6,7 @@ export type CustomerCreateInput = {
     firstName: string;
     lastName?: string | null;
     phoneNumber?: string | null;
+    phoneNumberSecondary?: string | null;
     email?: string | null;
     vatNumber?: string | null;
 };

@@ -27,8 +27,13 @@ export const customerColumns: CustomerColumn[] = [
     },
     {
         key: "phoneNumber",
-        header: "Telefono",
+        header: "Telefono 1",
         render: (row) => row.phoneNumber ?? "-",
+    },
+    {
+        key: "phoneNumberSecondary",
+        header: "Telefono 2",
+        render: (row) => row.phoneNumberSecondary ?? "-",
     },
     {
         key: "email",

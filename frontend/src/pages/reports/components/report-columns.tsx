@@ -21,6 +21,11 @@ export const reportColumns: ReportColumn[] = [
         render: (row) => row.customer,
     },
     {
+        key: "customerPhone",
+        header: "Telefono",
+        render: (row) => row.customerPhone ?? "-",
+    },
+    {
         key: "device",
         header: "Dispositivo",
         render: (row) => row.device,
@@ -59,11 +64,6 @@ export const reportColumns: ReportColumn[] = [
         key: "totalPrice",
         header: "Prezzo totale",
         render: (row) => formatEuro(row.totalPrice),
-    },
-    {
-        key: "closed",
-        header: "Chiuso",
-        render: (row) => (row.closed ? "Si" : "No"),
     },
     {
         key: "toInvoice",

@@ -1,6 +1,7 @@
 export type ReportDto = {
     id: number;
     customer: string;
+    customerPhone: string | null;
     device: string;
     issue: string;
     password: string | null;
@@ -20,6 +21,7 @@ export type CustomerDto = {
     firstName: string;
     lastName: string | null;
     phoneNumber: string | null;
+    phoneNumberSecondary: string | null;
     email: string | null;
     vatNumber: string | null;
     createdAt: string;

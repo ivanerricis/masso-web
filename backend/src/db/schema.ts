@@ -32,6 +32,7 @@ export const reportTable = pgTable("report", {
 export const customerTable = pgTable("customer", {
     id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
     ...userFields,
+    phoneNumberSecondary: varchar("phone_number_secondary", { length: 20 }),
     email: varchar("email", { length: 255 }),
     vatNumber: varchar("vat_number", { length: 20 }).unique(),
     ...timestamps

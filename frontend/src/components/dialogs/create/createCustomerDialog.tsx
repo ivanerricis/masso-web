@@ -21,6 +21,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
         firstName: "",
         lastName: "",
         phoneNumber: "",
+        phoneNumberSecondary: "",
         email: "",
         vatNumber: "",
     });
@@ -32,6 +33,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                 firstName: initialValues?.firstName ?? "",
                 lastName: initialValues?.lastName ?? "",
                 phoneNumber: initialValues?.phoneNumber ?? "",
+                phoneNumberSecondary: initialValues?.phoneNumberSecondary ?? "",
                 email: initialValues?.email ?? "",
                 vatNumber: initialValues?.vatNumber ?? "",
             });
@@ -44,8 +46,8 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
             return
         }
 
-        if (formValues.phoneNumber === "") {
-            toast.error("Il numero di telefono non può essere vuoto")
+        if (formValues.phoneNumber.trim() === "" && formValues.phoneNumberSecondary.trim() === "") {
+            toast.error("Almeno un numero di telefono e obbligatorio")
             return
         }
 
@@ -109,7 +111,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="phoneNumber" className="text-lg">Telefono</Label>
+                        <Label htmlFor="phoneNumber" className="text-lg">Telefono 1</Label>
                         <Input
                             className="text-lg!"
                             id="phoneNumber"
@@ -117,6 +119,17 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                             placeholder="333 1234567"
                             value={formValues.phoneNumber}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))}
+                        />
+                    </div>
+                    <div className="grid">
+                        <Label htmlFor="phoneNumberSecondary" className="text-lg">Telefono 2 (opzionale)</Label>
+                        <Input
+                            className="text-lg!"
+                            id="phoneNumberSecondary"
+                            type="tel"
+                            placeholder="333 9876543"
+                            value={formValues.phoneNumberSecondary}
+                            onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumberSecondary: event.target.value }))}
                         />
                     </div>
                     <div className="grid">

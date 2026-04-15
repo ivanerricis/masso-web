@@ -29,6 +29,8 @@ const CustomersPage = () => {
             firstName: String(values.firstName).trim(),
             lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
             phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+            phoneNumberSecondary:
+                String(values.phoneNumberSecondary).trim() === "" ? null : String(values.phoneNumberSecondary).trim(),
             email: String(values.email).trim() === "" ? null : String(values.email).trim(),
             vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
         });
@@ -62,6 +64,8 @@ const CustomersPage = () => {
             firstName: String(values.firstName).trim(),
             lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
             phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+            phoneNumberSecondary:
+                String(values.phoneNumberSecondary).trim() === "" ? null : String(values.phoneNumberSecondary).trim(),
             email: String(values.email).trim() === "" ? null : String(values.email).trim(),
             vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
         });

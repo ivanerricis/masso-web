@@ -1,0 +1,1 @@
+ALTER TABLE "customer" ADD COLUMN "phone_number_secondary" varchar(20);

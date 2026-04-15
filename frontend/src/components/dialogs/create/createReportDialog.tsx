@@ -13,9 +13,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
 
-const formatCustomerOption = (firstName: string, lastName: string | null, phoneNumber: string | null) => {
+const formatCustomerOption = (
+    firstName: string,
+    lastName: string | null,
+    phoneNumber: string | null,
+    phoneNumberSecondary: string | null
+) => {
     const fullName = `${firstName} ${lastName ?? ""}`.trim();
-    return `${fullName} - ${phoneNumber?.trim() || "N/D"}`;
+    return `${fullName} - ${phoneNumber?.trim() || phoneNumberSecondary?.trim() || "N/D"}`;
 };
 
 type Props = {
@@ -29,7 +34,6 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         customer: "",
         deviceType: "",
         issueDescription: "",
-        saveIssueInCatalog: false,
         password: "",
         charger: false,
         dataBackup: false,
@@ -49,7 +53,6 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 customer: "",
                 deviceType: "",
                 issueDescription: "",
-                saveIssueInCatalog: false,
                 password: "",
                 charger: false,
                 dataBackup: false,
@@ -65,7 +68,14 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                     ]);
 
                     setCustomerOptions(
-                        customers.map((customer) => formatCustomerOption(customer.firstName, customer.lastName, customer.phoneNumber))
+                        customers.map((customer) =>
+                            formatCustomerOption(
+                                customer.firstName,
+                                customer.lastName,
+                                customer.phoneNumber,
+                                customer.phoneNumberSecondary
+                            )
+                        )
                     );
                     setDeviceOptions(devices.map((device) => device.name));
                     setIssueOptions(issues.map((issue) => issue.description));
@@ -112,6 +122,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 onOpenChange={onOpenChange}
                 title="Nuovo rapporto"
                 description="Inserisci i dati del rapporto e conferma per salvare."
+                contentClassName="sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl"
                 confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
                 cancelLabel="Annulla"
                 onCancel={() => onOpenChange(false)}
@@ -119,141 +130,161 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 cancelDisabled={isSubmitting}
                 confirmDisabled={isSubmitting}
                 content={
-                    <div className="grid gap-6">
-                        <div className="grid">
-                            <Label htmlFor="issueDescription" className="text-lg">Cliente</Label>
-                            <div className="flex gap-2">
-                                <InputWithAdd
-                                    id="client"
-                                    placeholder="Cliente"
-                                    value={formValues.customer}
-                                    options={customerOptions}
-                                    onChange={(value: string) => setFormValues((prev) => ({ ...prev, customer: value }))}
-                                    required
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size={"icon-lg"}
-                                    onClick={() => setIsCreateCustomerDialogOpen(true)}
-                                >
-                                    <Plus className="size-5" />
-                                </Button>
+                    <div className="grid max-h-[72vh] gap-4 overflow-y-auto py-1 pr-1">
+                        <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Anagrafica</h3>
+
+                            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-2">
+                                <div className="grid lg:col-span-1">
+                                    <Label htmlFor="client" className="text-lg">Cliente</Label>
+                                    <div className="flex">
+                                        <InputWithAdd
+                                            id="client"
+                                            placeholder="Cliente"
+                                            inputClassName="rounded-r-none"
+                                            value={formValues.customer}
+                                            options={customerOptions}
+                                            onChange={(value: string) => setFormValues((prev) => ({ ...prev, customer: value }))}
+                                            required
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size={"icon-lg"}
+                                            className="border-l-0! rounded-l-none"
+                                            onClick={() => setIsCreateCustomerDialogOpen(true)}
+                                        >
+                                            <Plus className="size-5" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="grid lg:col-span-2 xl:col-span-1">
+                                    <Label htmlFor="deviceType" className="text-lg">Tipologia dispositivo</Label>
+                                    <div className="flex">
+                                        <InputWithAdd
+                                            id="deviceType"
+                                            placeholder="Es. iPhone 13"
+                                            inputClassName="rounded-r-none"
+                                            value={formValues.deviceType}
+                                            options={deviceOptions}
+                                            onCreate={async (value: string) => {
+                                                await createDevice({ name: value });
+                                                setDeviceOptions((prev) => Array.from(new Set([...prev, value])));
+                                            }}
+                                            onChange={(value: string) => setFormValues((prev) => ({ ...prev, deviceType: value }))}
+                                            required
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size={"icon-lg"}
+                                            className="border-l-0! rounded-l-none"
+                                            onClick={() => setIsCreateDeviceDialogOpen(true)}
+                                        >
+                                            <Plus className="size-5" />
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="grid">
-                            <Label htmlFor="deviceType" className="text-lg">Tipologia dispositivo</Label>
-                            <div className="flex gap-2">
-                                <InputWithAdd
-                                    id="deviceType"
-                                    placeholder="Es. iPhone 13"
-                                    value={formValues.deviceType}
-                                    options={deviceOptions}
-                                    onCreate={async (value: string) => {
-                                        await createDevice({ name: value });
-                                        setDeviceOptions((prev) => Array.from(new Set([...prev, value])));
-                                    }}
-                                    onChange={(value: string) => setFormValues((prev) => ({ ...prev, deviceType: value }))}
-                                    required
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size={"icon-lg"}
-                                    onClick={() => setIsCreateDeviceDialogOpen(true)}
-                                >
-                                    <Plus className="size-5" />
-                                </Button>
+                        </section>
+
+                        <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Intervento</h3>
+
+                            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-2">
+                                <div className="grid lg:col-span-2 xl:col-span-1">
+                                    <Label htmlFor="issueDescription" className="text-lg">Descrizione difetto</Label>
+                                    <div className="flex">
+                                        <InputWithAdd
+                                            id="issueDescription"
+                                            placeholder="Descrivi il difetto"
+                                            inputClassName="rounded-r-none"
+                                            value={formValues.issueDescription}
+                                            options={issueOptions}
+                                            onCreate={async (value: string) => {
+                                                await createIssue({ description: value });
+                                                setIssueOptions((prev) => Array.from(new Set([...prev, value])));
+                                            }}
+                                            onChange={(value: string) => setFormValues((prev) => ({ ...prev, issueDescription: value }))}
+                                            required
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size={"icon-lg"}
+                                            className="border-l-0! rounded-l-none"
+                                            onClick={() => setIsCreateIssueDialogOpen(true)}
+                                        >
+                                            <Plus className="size-5" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="grid">
+                                    <Label htmlFor="password" className="text-lg">Password sblocco</Label>
+                                    <Input
+                                        className="text-lg!"
+                                        id="password"
+                                        placeholder="Password dispositivo"
+                                        value={formValues.password}
+                                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                                            setFormValues((prev) => ({ ...prev, password: event.target.value }))
+                                        }
+                                    />
+                                </div>
+
+                                <div className="grid lg:col-span-2 xl:col-span-3">
+                                    <Label htmlFor="notes" className="text-lg">Note</Label>
+                                    <Input
+                                        className="text-lg!"
+                                        id="notes"
+                                        placeholder="Note"
+                                        value={formValues.notes}
+                                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                                            setFormValues((prev) => ({ ...prev, notes: event.target.value }))
+                                        }
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="issueDescription" className="text-lg">Descrizione difetto</Label>
-                            <div className="flex gap-2">
-                                <InputWithAdd
-                                    id="issueDescription"
-                                    placeholder="Descrivi il difetto"
-                                    value={formValues.issueDescription}
-                                    options={issueOptions}
-                                    onChange={(value: string) => setFormValues((prev) => ({ ...prev, issueDescription: value }))}
-                                    required
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size={"icon-lg"}
-                                    onClick={() => setIsCreateIssueDialogOpen(true)}
-                                >
-                                    <Plus className="size-5" />
-                                </Button>
+                        </section>
+
+                        <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Stato</h3>
+
+                            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-2">
+                                <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                    <Checkbox
+                                        id="charger"
+                                        className="size-5"
+                                        checked={formValues.charger}
+                                        onCheckedChange={(checked) =>
+                                            setFormValues((prev) => ({ ...prev, charger: checked === true }))
+                                        }
+                                    />
+                                    <Label htmlFor="charger" className="cursor-pointer text-lg w-full">
+                                        Alimentatore presente
+                                    </Label>
+                                </div>
+
+                                <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                    <Checkbox
+                                        id="dataBackup"
+                                        className="size-5"
+                                        checked={formValues.dataBackup}
+                                        onCheckedChange={(checked) =>
+                                            setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))
+                                        }
+                                    />
+                                    <Label htmlFor="dataBackup" className="cursor-pointer text-lg w-full">
+                                        Backup dati
+                                    </Label>
+                                </div>
                             </div>
-                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                <Checkbox
-                                    id="saveIssueInCatalog"
-                                    className="size-5"
-                                    checked={formValues.saveIssueInCatalog}
-                                    onCheckedChange={(checked) =>
-                                        setFormValues((prev) => ({ ...prev, saveIssueInCatalog: checked === true }))
-                                    }
-                                />
-                                <Label htmlFor="saveIssueInCatalog" className="cursor-pointer text-sm sm:text-base">
-                                    Salva questa descrizione tra i difetti
-                                </Label>
-                            </div>
-                        </div>
-                        <div className="grid">
-                            <Label htmlFor="password" className="text-lg">Password sblocco</Label>
-                            <Input
-                                className="text-lg!"
-                                id="password"
-                                placeholder="Password dispositivo"
-                                value={formValues.password}
-                                onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                                    setFormValues((prev) => ({ ...prev, password: event.target.value }))
-                                }
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                <Checkbox
-                                    id="charger"
-                                    className="size-5"
-                                    checked={formValues.charger}
-                                    onCheckedChange={(checked) =>
-                                        setFormValues((prev) => ({ ...prev, charger: checked === true }))
-                                    }
-                                />
-                                <Label htmlFor="charger" className="cursor-pointer text-lg">
-                                    Alimentatore presente
-                                </Label>
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                <Checkbox
-                                    id="dataBackup"
-                                    className="size-5"
-                                    checked={formValues.dataBackup}
-                                    onCheckedChange={(checked) =>
-                                        setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))
-                                    }
-                                />
-                                <Label htmlFor="dataBackup" className="cursor-pointer text-lg">
-                                    Backup dati
-                                </Label>
-                            </div>
-                            <div className="grid">
-                                <Label htmlFor="notes" className="text-lg">Note</Label>
-                                <Input
-                                    className="text-lg!"
-                                    id="notes"
-                                    placeholder="Note"
-                                    value={formValues.notes}
-                                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                                        setFormValues((prev) => ({ ...prev, notes: event.target.value }))
-                                    }
-                                />
-                            </div>
-                        </div>
+                        </section>
                     </div>
                 }
             />
@@ -266,6 +297,8 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         firstName: String(values.firstName).trim(),
                         lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
                         phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+                        phoneNumberSecondary:
+                            String(values.phoneNumberSecondary).trim() === "" ? null : String(values.phoneNumberSecondary).trim(),
                         email: String(values.email).trim() === "" ? null : String(values.email).trim(),
                         vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
                     });
@@ -273,7 +306,8 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                     const customerOption = formatCustomerOption(
                         createdCustomer.firstName,
                         createdCustomer.lastName,
-                        createdCustomer.phoneNumber
+                        createdCustomer.phoneNumber,
+                        createdCustomer.phoneNumberSecondary
                     );
                     setCustomerOptions((prev) => Array.from(new Set([...prev, customerOption])));
                     setFormValues((prev) => ({ ...prev, customer: customerOption }));

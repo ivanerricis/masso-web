@@ -49,6 +49,7 @@ export const useReportsRows = ({ searchText, visibilityFilter }: UseReportsRowsP
                 return {
                     id: report.id,
                     customer: customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "-",
+                    customerPhone: customer?.phoneNumber ?? customer?.phoneNumberSecondary ?? null,
                     device: device?.name ?? "-",
                     issue: issue?.description ?? "-",
                     password: report.password,
@@ -80,6 +81,7 @@ export const useReportsRows = ({ searchText, visibilityFilter }: UseReportsRowsP
                 : [
                         String(report.id),
                         report.customer,
+                        report.customerPhone ?? "",
                         report.device,
                         report.issue,
                         report.password ?? "",

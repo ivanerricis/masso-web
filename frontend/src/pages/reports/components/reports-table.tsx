@@ -1,7 +1,8 @@
+import OpenEntityButton from "@/components/open-entity-button";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ReportDto } from "@/types/dtos";
-import { ChevronRight, Pencil, Printer, Trash2 } from "lucide-react";
+import { Pencil, Printer, Trash2 } from "lucide-react";
 import type { ReportColumn } from "./report-columns";
 
 type ReportsTableProps = {
@@ -41,15 +42,18 @@ const ReportsTable = ({
                     </TableRow>
                 ) : (
                     rows.map((row) => (
-                        <TableRow key={row.id}>
+                        <TableRow
+                            key={row.id}
+                            className={row.closed ? "bg-green-500/15 hover:bg-green-500/20" : "bg-red-500/15 hover:bg-red-500/20"}
+                        >
                             {columns.map((column) => (
                                 <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="outline" size="lg" onClick={() => onOpenReport(row.id)}>
-                                                Apri
-                                                <ChevronRight className="size-5" />
-                                            </Button>
+                                            <OpenEntityButton
+                                                size="icon-lg"
+                                                onClick={() => onOpenReport(row.id)}
+                                                aria-label={`Apri rapporto ${row.id}`} />
                                             <Button
                                                 variant="default"
                                                 size="icon-lg"

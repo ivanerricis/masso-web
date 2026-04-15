@@ -35,6 +35,7 @@ export const useCustomersRows = ({ searchText }: UseCustomersRowsParams) => {
                 customer.firstName,
                 customer.lastName ?? "",
                 customer.phoneNumber ?? "",
+                customer.phoneNumberSecondary ?? "",
                 customer.email ?? "",
                 customer.vatNumber ?? "",
             ]

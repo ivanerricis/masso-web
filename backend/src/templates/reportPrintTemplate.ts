@@ -29,332 +29,350 @@ export type ReportPrintData = {
 export const buildReportPrintHtml = (report: ReportPrintData) => `
 <!DOCTYPE html>
 <html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rapporto #${report.id}</title>
+<head>
+<meta charset="UTF-8" />
+<title>Rapporto #${report.id}</title>
 
-    <style>
-      @page {
-        size: A4;
-        margin: 0;
-      }
+<style>
+@page {
+  size: A4;
+  margin: 0;
+}
 
-      * { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-      :root {
-        --primary: #2563eb;
-        --primary-soft: #eff6ff;
-        --primary-border: #bfdbfe;
-        --text-strong: #0f172a;
-        --text-muted: #475569;
-      }
+:root {
+  --blue: #2563eb;
+}
 
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 210mm;
-        height: 297mm;
-        font-family: "Helvetica Neue", Arial, sans-serif;
-        color: var(--text-strong);
-        font-size: 12pt;
-      }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  font-size: 13.5pt;
+  color: #111;
+}
 
-      .sheet {
-        width: 210mm;
-        height: 297mm;
-        padding: 3mm;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-      }
+.sheet {
+  width: 210mm;
+  height: 297mm;
+  padding: 5mm;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-      .copy {
-        padding: 3mm 2.5mm;
-      }
+.copy {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
 
-      .copy + .copy {
-        margin-top: 1.5mm;
-        padding-top: 2.5mm;
-        border-top: 0.3mm dashed black;
-      }
+.line-dashed {
+  border-top: 1px dashed #000;
+  margin-top: 2mm;
+  margin-bottom: 2mm;
+}
 
-      .header {
-        display: flex;
-        justify-content: space-between;
-        border-bottom: 0.3mm solid var(--primary-border);
-        padding-bottom: 2mm;
-        margin-bottom: 2.5mm;
-      }
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2mm;
+}
 
-      .header.single {
-        justify-content: flex-end;
-      }
+.brand {
+  display: flex;
+  gap: 2mm;
+}
 
-      .brand {
-        display: flex;
-        gap: 3mm;
-      }
+.logo {
+  width: 10mm;
+  height: 10mm;
+  flex-shrink: 0;
+}
 
-      .brand-logo {
-        width: 11mm;
-        height: 11mm;
-      }
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
-      .brand-logo img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
+.brand-name {
+  font-size: 15pt;
+  font-weight: bold;
+  color: var(--blue);
+}
 
-      .brand-name {
-        margin: 0;
-        font-size: 12pt;
-        font-weight: 700;
-      }
+.brand-info {
+  font-size: 10.5pt;
+  line-height: 1.3;
+}
 
-      .brand-info {
-        margin: 1mm 0 0;
-        font-size: 9pt;
-        color: var(--text-muted);
-        line-height: 1.4;
-      }
+.meta {
+  flex-shrink: 0;
+  text-align: right;
+  border: 1px solid var(--blue);
+  padding: 1.5mm 2mm;
+}
 
-      .meta {
-        font-size: 10pt;
-        text-align: right;
-      }
+.meta-title {
+  font-weight: bold;
+  font-size: 13pt;
+  color: var(--blue);
+}
 
-      .report-meta-title {
-        font-size: 12pt;
-        color: var(--primary);
-        margin: 0;
-        font-weight: 700;
-      }
+.meta-date {
+  font-size: 10.5pt;
+}
 
-      .report-meta-date {
-        font-weight: 600;
-      }
+.section {
+  margin-bottom: 3mm;
+}
 
-      .section {
-        margin-top: 4mm;
-      }
+.section-title {
+  font-weight: bold;
+  font-size: 11pt;
+  margin-bottom: 1mm;
+  color: var(--blue);
+  border-bottom: 1px solid var(--blue);
+}
 
-      .section-title {
-        font-size: 9pt;
-        color: var(--primary);
-        margin-bottom: 1.5mm;
-        text-transform: uppercase;
-        font-weight: 700;
-      }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
 
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 3mm;
-      }
+.table td {
+  border: 1px solid #000;
+  padding: 1.5mm;
+}
 
-      .row {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5mm;
-        background: var(--primary-soft);
-        border: 0.3mm solid var(--primary-border);
-        border-left: 1mm solid var(--primary);
-        border-radius: 2mm;
-        padding: 2.5mm;
-      }
+.label {
+  font-size: 9pt;
+  color: #555;
+}
 
-      .label {
-        font-size: 8pt;
-        font-weight: 700;
-        color: var(--primary);
-        text-transform: uppercase;
-        line-height: 1.1;
-      }
+.value {
+  font-weight: bold;
+  font-size: 11.75pt;
+}
 
-      .value {
-        font-size: 10pt;
-        font-weight: 600;
-        line-height: 1.3;
-        word-break: break-word;
-      }
+.section-grow {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 3mm;
+}
 
-      .handwritten-box {
-        margin-top: 4mm;
-      }
+.notes-grow {
+  flex: 1;
+  border: 1px solid #000;
+  border-bottom: 0;
+  height: 25mm;
+}
 
-      .work-container {
-        display: flex;
-        gap: 4mm;
-      }
+.line {
+  width: 100%;
+  margin-top: 8mm;
+  height: 0.3mm;
+  background-color: black;
+}
 
-      .work-left {
-        flex: 1;
-      }
+.payment-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 4mm;
+}
 
-      .work-caption {
-        font-size: 9pt;
-        margin-bottom: 1.5mm;
-        font-weight: 700;
-        color: var(--primary);
-        text-transform: uppercase;
-      }
+.price-container {
+  flex-shrink: 0;
+}
 
-      .work-layout {
-        display: flex;
-        gap: 2mm;
-      }
+.price-box {
+  width: 35mm;
+  height: 18mm;
+  border: 1px solid #000;
+}
 
-      .work-square {
-        width: 20mm;
-        height: 20mm;
-        border: 0.3mm solid var(--primary-border);
-      }
+.payment-methods {
+  display: flex;
+  gap: 3mm;
+}
 
-      .work-space {
-        flex: 1;
-        border: 0.3mm solid var(--primary-border);
-      }
+.payment-box {
+  width: 22mm;
+  height: 18mm;
+  border: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5mm;
+}
 
-      .work-line {
-        height: 6mm;
-        border-bottom: 0.2mm solid #93c5fd;
-      }
+.payment-label {
+  font-size: 9pt;
+  color: #555;
+  text-align: center;
+  line-height: 1.2;
+}
+</style>
+</head>
 
-      .price-container {
-        width: 20mm;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
+<body>
+<main class="sheet">
 
-      .price-label {
-        font-size: 9pt;
-        margin-bottom: 1.5mm;
-        font-weight: 700;
-        color: var(--primary);
-        text-transform: uppercase;
-      }
+  <!-- COPIA CLIENTE -->
+  <section class="copy">
 
-      .price-box {
-        width: 20mm;
-        height: 20mm;
-        border: 0.3mm solid var(--primary-border);
-      }
-    </style>
-  </head>
-
-  <body>
-    <main class="sheet">
-
-      <section class="copy">
-        <header class="header">
-          <div class="brand">
-            <div class="brand-logo">
-              <img src="${escapeHtml(report.labLogoUrl)}" />
-            </div>
-            <div>
-              <p class="brand-name">${escapeHtml(report.labName)}</p>
-              <p class="brand-info">
-                Email: ${escapeHtml(report.labEmail)}<br />
-                Indirizzo: ${escapeHtml(report.labAddress)}<br />
-                Tel: ${escapeHtml(report.labPhone)}
-              </p>
-            </div>
+    <div class="header">
+      <div class="brand">
+        <div class="logo">
+          <img src="${escapeHtml(report.labLogoUrl)}" alt="logo" />
+        </div>
+        <div>
+          <p class="brand-name">${escapeHtml(report.labName)}</p>
+          <div class="brand-info">
+            ${escapeHtml(report.labAddress)}<br>
+            ${escapeHtml(report.labEmail)}<br>
+            ${escapeHtml(report.labPhone)}
           </div>
-          <div class="meta">
-            <p class="report-meta-title">Rapporto #${report.id}</p>
-            <div class="report-meta-date">Data: ${escapeHtml(report.createdAtLabel)}</div>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-title">Rapporto #${report.id}</div>
+        <div class="meta-date">${escapeHtml(report.createdAtLabel)}</div>
+      </div>
+    </div>
+
+    ${sectionCliente(report)}
+    ${sectionDevice(report)}
+    ${sectionDettagli(report)}
+    ${sectionStato(report)}
+
+  </section>
+
+  <div class="line-dashed"></div>
+
+  <!-- COPIA INTERNA -->
+  <section class="copy">
+
+    <div class="header" style="justify-content: flex-end;">
+      <div class="meta">
+        <div class="meta-title">Rapporto #${report.id}</div>
+        <div class="meta-date">${escapeHtml(report.createdAtLabel)}</div>
+      </div>
+    </div>
+
+    ${sectionCliente(report)}
+    ${sectionDevice(report)}
+    ${sectionDettagli(report)}
+    ${sectionStato(report)}
+
+    <div class="section-grow">
+      <div class="section-title">Lavoro eseguito</div>
+      <div class="notes-grow">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+    </div>
+    </div>
+
+    <div class="payment-row">
+
+      <div class="price-container">
+        <div class="section-title">Importo</div>
+        <div class="price-box"></div>
+      </div>
+
+      <div>
+        <div class="section-title">Pagamento</div>
+        <div class="payment-methods">
+
+          <!-- Contanti -->
+          <div class="payment-box">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+                 stroke="#111" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="6" width="22" height="13" rx="2"/>
+              <circle cx="12" cy="12" r="3"/>
+              <circle cx="5"  cy="12" r="1.2"/>
+              <circle cx="19" cy="12" r="1.2"/>
+            </svg>
+            <div class="payment-label">Contanti</div>
           </div>
-        </header>
 
-        <section class="section">
-          <h2 class="section-title">Cliente e dispositivo</h2>
-          <div class="grid">
-            <div class="row"><span class="label">Cliente</span><span class="value">${escapeHtml(report.customerName)}</span></div>
-            <div class="row"><span class="label">Telefono</span><span class="value">${escapeHtml(report.customerPhone)}</span></div>
-            <div class="row"><span class="label">Dispositivo</span><span class="value">${escapeHtml(report.deviceName)}</span></div>
+          <!-- Carta -->
+          <div class="payment-box">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+                 stroke="#111" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="5" width="22" height="15" rx="2"/>
+              <line x1="1"  y1="10" x2="23" y2="10"/>
+              <rect x="3" y="13" width="4" height="3" rx="0.5"/>
+              <line x1="9"  y1="14"  x2="13" y2="14"/>
+              <line x1="9"  y1="15.5" x2="11" y2="15.5"/>
+            </svg>
+            <div class="payment-label">Carta</div>
           </div>
-        </section>
 
-        <section class="section">
-          <h2 class="section-title">Dettagli lavorazione</h2>
-          <div class="grid">
-            <div class="row"><span class="label">Descrizione problema</span><span class="value">${escapeHtml(report.issueDescription)}</span></div>
-            <div class="row"><span class="label">Password</span><span class="value">${escapeHtml(report.password)}</span></div>
-            <div class="row"><span class="label">Note</span><span class="value">${escapeHtml(report.note)}</span></div>
-          </div>
-        </section>
+        </div>
+      </div>
 
-        <section class="section">
-          <h2 class="section-title">Stato</h2>
-          <div class="grid">
-            <div class="row"><span class="label">Backup dati</span><span class="value">${yesNo(report.dataBackup)}</span></div>
-            <div class="row"><span class="label">Alimentatore</span><span class="value">${yesNo(report.charger)}</span></div>
-          </div>
-        </section>
-      </section>
+    </div>
 
-      <section class="copy">
-        <header class="header single">
-          <div class="meta">
-            <p class="report-meta-title">Rapporto #${report.id}</p>
-            <div class="report-meta-date">Data: ${escapeHtml(report.createdAtLabel)}</div>
-          </div>
-        </header>
+  </section>
 
-        <section class="section">
-          <h2 class="section-title">Cliente e dispositivo</h2>
-          <div class="grid">
-            <div class="row"><span class="label">Cliente</span><span class="value">${escapeHtml(report.customerName)}</span></div>
-            <div class="row"><span class="label">Telefono</span><span class="value">${escapeHtml(report.customerPhone)}</span></div>
-            <div class="row"><span class="label">Dispositivo</span><span class="value">${escapeHtml(report.deviceName)}</span></div>
-          </div>
-        </section>
-
-        <section class="section">
-          <h2 class="section-title">Dettagli lavorazione</h2>
-          <div class="grid">
-            <div class="row"><span class="label">Descrizione problema</span><span class="value">${escapeHtml(report.issueDescription)}</span></div>
-            <div class="row"><span class="label">Password</span><span class="value">${escapeHtml(report.password)}</span></div>
-            <div class="row"><span class="label">Note</span><span class="value">${escapeHtml(report.note)}</span></div>
-          </div>
-        </section>
-
-        <section class="section">
-          <h2 class="section-title">Stato</h2>
-          <div class="grid">
-            <div class="row"><span class="label">Backup dati</span><span class="value">${yesNo(report.dataBackup)}</span></div>
-            <div class="row"><span class="label">Alimentatore</span><span class="value">${yesNo(report.charger)}</span></div>
-          </div>
-        </section>
-
-        <section class="handwritten-box">
-          <div class="work-container">
-            <div class="work-left">
-              <p class="work-caption">Lavoro eseguito</p>
-              <div class="work-layout">
-                <div class="work-square"></div>
-                <div class="work-space">
-                  <div class="work-line"></div>
-                  <div class="work-line"></div>
-                  <div class="work-line"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="price-container">
-              <p class="price-label">Importo</p>
-              <div class="price-box"></div>
-            </div>
-          </div>
-        </section>
-
-      </section>
-
-    </main>
-  </body>
+</main>
+</body>
 </html>
 `;
+
+const sectionCliente = (r: ReportPrintData) => `
+<div class="section">
+  <div class="section-title">Cliente</div>
+  <table class="table">
+    <tr>
+      <td><div class="label">Nome</div><div class="value">${escapeHtml(r.customerName)}</div></td>
+      <td><div class="label">Telefono</div><div class="value">${escapeHtml(r.customerPhone)}</div></td>
+    </tr>
+  </table>
+</div>`;
+
+const sectionDevice = (r: ReportPrintData) => `
+<div class="section">
+  <div class="section-title">Dispositivo</div>
+  <table class="table">
+    <tr>
+      <td><div class="label">Nome</div><div class="value">${escapeHtml(r.deviceName)}</div></td>
+    </tr>
+  </table>
+</div>`;
+
+const sectionDettagli = (r: ReportPrintData) => `
+<div class="section">
+  <div class="section-title">Dettagli</div>
+  <table class="table">
+    <tr>
+      <td><div class="label">Problema</div><div class="value">${escapeHtml(r.issueDescription)}</div></td>
+      <td><div class="label">Password</div><div class="value">${escapeHtml(r.password)}</div></td>
+    </tr>
+    <tr>
+      <td colspan="2"><div class="label">Note</div><div class="value">${escapeHtml(r.note)}</div></td>
+    </tr>
+  </table>
+</div>`;
+
+const sectionStato = (r: ReportPrintData) => `
+<div class="section">
+  <div class="section-title">Stato</div>
+  <table class="table">
+    <tr>
+      <td><div class="label">Backup dati</div><div class="value">${yesNo(r.dataBackup)}</div></td>
+      <td><div class="label">Alimentatore</div><div class="value">${yesNo(r.charger)}</div></td>
+    </tr>
+  </table>
+</div>`;

@@ -67,6 +67,7 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
             customerFirstName: customerTable.firstName,
             customerLastName: customerTable.lastName,
             customerPhone: customerTable.phoneNumber,
+            customerPhoneSecondary: customerTable.phoneNumberSecondary,
             deviceName: deviceTable.name,
         })
         .from(reportTable)
@@ -89,6 +90,11 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
     const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
         ? configuredLogoUrl
         : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
+    const customerPhonePrimary = report.customerPhone?.trim() ?? "";
+    const customerPhoneSecondary = report.customerPhoneSecondary?.trim() ?? "";
+    const customerPhoneLabel = customerPhonePrimary && customerPhoneSecondary
+        ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
+        : customerPhonePrimary || customerPhoneSecondary || "N/D";
 
     const html = buildReportPrintHtml({
         id: report.id,
@@ -98,7 +104,7 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
         labPhone,
         labLogoUrl,
         customerName,
-        customerPhone: report.customerPhone ?? "N/D",
+        customerPhone: customerPhoneLabel,
         deviceName: report.deviceName,
         issueDescription: report.issueDescription ?? "-",
         note: report.note ?? "-",

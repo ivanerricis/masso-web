@@ -21,6 +21,7 @@ import { toast } from "sonner";
 type ReportPageDetails = {
     report: ReportEntityDto;
     customerName: string;
+    customerPhone: string | null;
     deviceName: string;
     issueName: string;
     collaboratorName: string;
@@ -101,6 +102,7 @@ const ReportPage = () => {
                 setDetails({
                     report,
                     customerName: customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "Cliente sconosciuto",
+                    customerPhone: customer?.phoneNumber ?? customer?.phoneNumberSecondary ?? null,
                     deviceName: device?.name ?? "Dispositivo sconosciuto",
                     issueName: issue?.description ?? "Difetto sconosciuto",
                     collaboratorName: collaborator
@@ -150,11 +152,12 @@ const ReportPage = () => {
                 </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 xl:grid-cols-2">
                 <section className="rounded-md border border-primary p-4">
                     <h2 className="text-lg font-semibold">Anagrafica</h2>
-                    <div className="mt-3 space-y-2 text-base">
+                    <div className="mt-3 grid gap-2 text-base sm:grid-cols-2">
                         <p><span className="font-semibold">Cliente:</span> {details.customerName}</p>
+                        <p><span className="font-semibold">Telefono:</span> {details.customerPhone ?? "-"}</p>
                         <p><span className="font-semibold">Collaboratore:</span> {details.collaboratorName}</p>
                         <p><span className="font-semibold">Dispositivo:</span> {details.deviceName}</p>
                         <p><span className="font-semibold">Difetto:</span> {details.issueName}</p>
@@ -163,7 +166,7 @@ const ReportPage = () => {
 
                 <section className="rounded-md border border-primary p-4">
                     <h2 className="text-lg font-semibold">Stato</h2>
-                    <div className="mt-3 space-y-2 text-base">
+                    <div className="mt-3 grid gap-2 text-base sm:grid-cols-2">
                         <p><span className="font-semibold">Chiuso:</span> {yesNo(details.report.closed)}</p>
                         <p><span className="font-semibold">Da fatturare:</span> {yesNo(details.report.toInvoice)}</p>
                         <p><span className="font-semibold">Backup dati:</span> {yesNo(details.report.dataBackup)}</p>
@@ -173,7 +176,7 @@ const ReportPage = () => {
 
                 <section className="rounded-md border border-primary p-4">
                     <h2 className="text-lg font-semibold">Dettagli Intervento</h2>
-                    <div className="mt-3 space-y-2 text-base">
+                    <div className="mt-3 grid gap-2 text-base sm:grid-cols-2">
                         <p><span className="font-semibold">Descrizione problema:</span> {details.report.issueDescription ?? "-"}</p>
                         <p><span className="font-semibold">Descrizione servizio:</span> {details.report.serviceDescription ?? "-"}</p>
                         <p><span className="font-semibold">Password:</span> {details.report.password ?? "-"}</p>
@@ -191,29 +194,34 @@ const ReportPage = () => {
                 </section>
             </div>
 
-            <section className="rounded-md border border-primary p-4">
-                <h2 className="text-lg font-semibold">Tecnici Associati</h2>
-                {details.technicians.length === 0 ? (
-                    <p className="mt-3 text-muted-foreground">Nessun tecnico associato a questo report.</p>
-                ) : (
-                    <div className="mt-3 space-y-2">
-                        {details.technicians.map((technician) => (
-                            <div key={technician.id} className="flex items-center justify-between rounded-md border p-3">
-                                <span>{technician.name}</span>
-                                <span className="font-semibold">{formatEuro(technician.price)}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </section>
+            <div className="grid gap-4 xl:grid-cols-2">
+                <section className="rounded-md border border-primary p-4">
+                    <h2 className="text-lg font-semibold">Tecnici Associati</h2>
+                    {details.technicians.length === 0 ? (
+                        <p className="mt-3 text-muted-foreground">Nessun tecnico associato a questo report.</p>
+                    ) : (
+                        <div className="mt-3 space-y-2">
+                            {details.technicians.map((technician) => (
+                                <div key={technician.id} className="flex items-center justify-between rounded-md border p-3">
+                                    <span>{technician.name}</span>
+                                    <span className="font-semibold">{formatEuro(technician.price)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
 
-            <section className="rounded-md border border-primary p-4">
-                <h2 className="text-lg font-semibold">Date</h2>
-                <div className="mt-3 space-y-2 text-base">
-                    <p><span className="font-semibold">Creato il:</span> {formatDateTime(details.report.created_at)}</p>
-                    <p><span className="font-semibold">Ultimo aggiornamento:</span> {formatDateTime(details.report.updated_at)}</p>
-                </div>
-            </section>
+                <section className="rounded-md border border-primary p-4">
+                    <h2 className="text-lg font-semibold">Date</h2>
+                    <div className="mt-3 space-y-2 text-base">
+                        <p><span className="font-semibold">Creato il:</span> {formatDateTime(details.report.created_at)}</p>
+                        <p>
+                            <span className="font-semibold">Ultimo aggiornamento:</span>{" "}
+                            {details.report.updated_at ? formatDateTime(details.report.updated_at) : "-"}
+                        </p>
+                    </div>
+                </section>
+            </div>
         </div>
     );
 };

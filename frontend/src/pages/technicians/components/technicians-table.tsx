@@ -1,7 +1,8 @@
+import OpenEntityButton from "@/components/open-entity-button";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { TechnicianDto } from "@/types/dtos";
-import { ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import type { TechnicianColumn } from "./technician-columns";
 
 type TechniciansTableProps = {
@@ -44,10 +45,7 @@ const TechniciansTable = ({
                                 <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="outline" size="lg" onClick={() => onOpenTechnician(row.id)}>
-                                                Apri
-                                                <ChevronRight className="size-5" />
-                                            </Button>
+                                            <OpenEntityButton size="lg" onClick={() => onOpenTechnician(row.id)} aria-label={`Apri tecnico ${row.id}`} />
                                             <Button
                                                 variant="default"
                                                 size="icon-lg"

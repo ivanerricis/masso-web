@@ -43,6 +43,9 @@ export const getReport = async (id: number) =>
 export const createReport = async (payload: ReportCreateInput) =>
     (await api.post<ReportEntityDto>("/reports", payload)).data;
 
+export const updateReport = async (id: number, payload: Partial<ReportCreateInput>) =>
+    (await api.put<ReportEntityDto>(`/reports/${id}`, payload)).data;
+
 export const deleteReport = async (id: number) =>
     (await api.delete<ReportEntityDto>(`/reports/${id}`)).data;
 

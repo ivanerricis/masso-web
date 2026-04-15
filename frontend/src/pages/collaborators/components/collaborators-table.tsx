@@ -1,7 +1,8 @@
+import OpenEntityButton from "@/components/open-entity-button";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { CollaboratorDto } from "@/types/dtos";
-import { ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import type { CollaboratorColumn } from "./collaborator-columns";
 
 type CollaboratorsTableProps = {
@@ -44,10 +45,7 @@ const CollaboratorsTable = ({
                                 <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="outline" size="lg" onClick={() => onOpenCollaborator(row.id)}>
-                                                Apri
-                                                <ChevronRight className="size-5" />
-                                            </Button>
+                                            <OpenEntityButton size="lg" onClick={() => onOpenCollaborator(row.id)} aria-label={`Apri collaboratore ${row.id}`} />
                                             <Button
                                                 variant="default"
                                                 size="icon-lg"

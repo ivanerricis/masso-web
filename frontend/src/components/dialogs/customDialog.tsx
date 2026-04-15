@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import { Label } from "../ui/label";
 type Props = Readonly<{
   content?: ReactNode;
   trigger?: ReactNode;
+  contentClassName?: string;
 
   open?: boolean;
   defaultOpen?: boolean;
@@ -55,12 +57,18 @@ const CustomDialog = ({
   showCancelButton = true,
   showConfirmButton = true,
   destructive = false,
+  contentClassName,
 }: Props) => {
   return (
     <Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
 
-      <DialogContent className={destructive ? "border-destructive! border!" : "border-primary! border!"}>
+      <DialogContent
+        className={cn(
+          destructive ? "border-destructive! border!" : "border-primary! border!",
+          contentClassName
+        )}
+      >
         <form
           onSubmit={(event) => {
             event.preventDefault();

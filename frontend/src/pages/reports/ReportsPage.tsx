@@ -1,16 +1,21 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
+import EditReportDialog, { type EditReportSubmitValues } from "@/components/dialogs/edit/editReportDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
 import {
+    createReportTechnician,
     createIssue,
     createReport,
+    deleteReportTechnician,
     deleteReport,
     getApiErrorMessage,
     listCustomers,
     listDevices,
     listIssues,
     getReportPrintUrl,
+    updateReport,
+    updateReportTechnician,
 } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { ReportDto } from "@/types/dtos";
@@ -23,15 +28,22 @@ import ReportsTable from "./components/reports-table";
 import type { ReportVisibilityFilter } from "./components/types";
 import { useReportsRows } from "./hooks/useReportsRows";
 
-const formatCustomerOption = (firstName: string, lastName: string | null, phoneNumber: string | null) => {
+const formatCustomerOption = (
+    firstName: string,
+    lastName: string | null,
+    phoneNumber: string | null,
+    phoneNumberSecondary: string | null
+) => {
     const fullName = `${firstName} ${lastName ?? ""}`.trim();
-    return `${fullName} - ${phoneNumber?.trim() || "N/D"}`;
+    return `${fullName} - ${phoneNumber?.trim() || phoneNumberSecondary?.trim() || "N/D"}`;
 };
 
 const ReportsPage = () => {
     const navigate = useNavigate();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [reportIdToEdit, setReportIdToEdit] = useState<number | null>(null);
     const [reportToDelete, setReportToDelete] = useState<ReportDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>("open");
@@ -51,7 +63,12 @@ const ReportsPage = () => {
 
             const selectedCustomer = customers.find(
                 (customer) =>
-                    formatCustomerOption(customer.firstName, customer.lastName, customer.phoneNumber) ===
+                    formatCustomerOption(
+                        customer.firstName,
+                        customer.lastName,
+                        customer.phoneNumber,
+                        customer.phoneNumberSecondary
+                    ) ===
                     String(values.customer)
             );
 
@@ -77,20 +94,14 @@ const ReportsPage = () => {
                 (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
             );
 
-            if (!selectedIssue && Boolean(values.saveIssueInCatalog)) {
-                selectedIssue = await createIssue({ description: issueDescription });
-            }
-
             if (!selectedIssue) {
-                selectedIssue = issues.find((issue) => issue.description.toLowerCase() === "altro");
-
-                if (!selectedIssue) {
-                    try {
-                        selectedIssue = await createIssue({ description: "Altro" });
-                    } catch {
-                        const refreshedIssues = await listIssues();
-                        selectedIssue = refreshedIssues.find((issue) => issue.description.toLowerCase() === "altro");
-                    }
+                try {
+                    selectedIssue = await createIssue({ description: issueDescription });
+                } catch {
+                    const refreshedIssues = await listIssues();
+                    selectedIssue = refreshedIssues.find(
+                        (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
+                    );
                 }
             }
 
@@ -127,6 +138,52 @@ const ReportsPage = () => {
 
     const handleOpenReport = (id: number) => {
         navigate(`/reports/${id}`);
+    };
+
+    const handleOpenEditDialog = (id: number) => {
+        setReportIdToEdit(id);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditReport = async (values: EditReportSubmitValues) => {
+        await updateReport(values.reportId, {
+            customerId: values.customerId,
+            deviceId: values.deviceId,
+            issueId: values.issueId,
+            collaboratorId: values.collaboratorId,
+            issueDescription: values.issueDescription,
+            serviceDescription: values.serviceDescription,
+            note: values.note,
+            password: values.password,
+            dataBackup: values.dataBackup,
+            charger: values.charger,
+            closed: values.closed,
+            toInvoice: values.toInvoice,
+            price: values.internalPrice,
+        });
+
+        if (values.technicianId != null) {
+            if (values.existingTechnicianId == null) {
+                await createReportTechnician({
+                    reportId: values.reportId,
+                    technicianId: values.technicianId,
+                    price: values.technicianPrice,
+                });
+            } else if (values.existingTechnicianId === values.technicianId) {
+                await updateReportTechnician(values.reportId, values.technicianId, values.technicianPrice);
+            } else {
+                await deleteReportTechnician(values.reportId, values.existingTechnicianId);
+                await createReportTechnician({
+                    reportId: values.reportId,
+                    technicianId: values.technicianId,
+                    price: values.technicianPrice,
+                });
+            }
+        } else if (values.existingTechnicianId != null) {
+            await deleteReportTechnician(values.reportId, values.existingTechnicianId);
+        }
+
+        await loadReports();
     };
 
     const handleDeleteReport = async () => {
@@ -175,6 +232,18 @@ const ReportsPage = () => {
                     onSubmit={handleCreateReport}
                 />
 
+                <EditReportDialog
+                    open={isEditDialogOpen}
+                    reportId={reportIdToEdit}
+                    onOpenChange={(open) => {
+                        setIsEditDialogOpen(open);
+                        if (!open) {
+                            setReportIdToEdit(null);
+                        }
+                    }}
+                    onSubmit={handleEditReport}
+                />
+
                 <ConfirmDeleteDialog
                     open={isDeleteDialogOpen}
                     onOpenChange={(open) => {
@@ -207,7 +276,7 @@ const ReportsPage = () => {
                         columns={reportColumns}
                         rows={visibleReportRows}
                         onOpenReport={handleOpenReport}
-                        onEditReport={() => toast.info("Modifica non ancora disponibile")}
+                        onEditReport={handleOpenEditDialog}
                         onPrintReport={handlePrintReport}
                         onDeleteReport={handleOpenDeleteDialog}
                     />

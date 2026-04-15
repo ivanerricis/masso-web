@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Props = Readonly<{
     id: string;
@@ -11,9 +12,10 @@ type Props = Readonly<{
     options?: string[];
     onCreate?: (value: string) => Promise<void> | void;
     required?: boolean;
+    inputClassName?: string;
 }>;
 
-const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onCreate, required }: Props) => {
+const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onCreate, required, inputClassName }: Props) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
 
@@ -63,7 +65,7 @@ const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onCreate
     return (
         <div className="relative w-full">
             <Input
-                className="group text-lg! h-full"
+                className={cn("group text-lg! h-full", inputClassName)}
                 id={id}
                 placeholder={placeholder}
                 value={value}

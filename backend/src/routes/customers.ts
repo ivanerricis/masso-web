@@ -15,18 +15,37 @@ const customerIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
-const customerCreateBodySchema = z
-    .object({
-        email: z.string().trim().email().max(255).nullable().optional(),
-        firstName: z.string().trim().min(1).max(255),
-        lastName: z.string().trim().min(1).max(255).nullable().optional(),
-        phoneNumber: z.string().trim().min(1).max(20).nullable().optional(),
-        vatNumber: z.string().trim().min(1).max(20).nullable().optional(),
+const customerBodySchemaBase = z.object({
+    email: z.string().trim().email().max(255).nullable().optional(),
+    firstName: z.string().trim().min(1).max(255),
+    lastName: z.string().trim().min(1).max(255).nullable().optional(),
+    phoneNumber: z.string().trim().min(1).max(20).nullable().optional(),
+    phoneNumberSecondary: z.string().trim().min(1).max(20).nullable().optional(),
+    vatNumber: z.string().trim().min(1).max(20).nullable().optional(),
+});
+
+const customerCreateBodySchema = customerBodySchemaBase
+    .refine((value) => value.phoneNumber != null || value.phoneNumberSecondary != null, {
+        message: "At least one phone number is required",
+        path: ["phoneNumber"],
     })
     .strict();
 
-const customerUpdateBodySchema = customerCreateBodySchema
+const customerUpdateBodySchema = customerBodySchemaBase
     .partial()
+    .refine(
+        (value) => {
+            if (!("phoneNumber" in value) && !("phoneNumberSecondary" in value)) {
+                return true;
+            }
+
+            return value.phoneNumber != null || value.phoneNumberSecondary != null;
+        },
+        {
+            message: "At least one phone number is required",
+            path: ["phoneNumber"],
+        }
+    )
     .refine((value) => Object.keys(value).length > 0, {
         message: "At least one field is required",
     });
