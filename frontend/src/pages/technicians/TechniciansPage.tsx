@@ -2,7 +2,7 @@ import CreateEntityButton from "@/components/create-entity-button";
 import CreateTechnicianDialog from "@/components/dialogs/create/createTechnicianDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
-import { createTechnician, deleteTechnician, getApiErrorMessage } from "@/lib/api";
+import { createTechnician, deleteTechnician, getApiErrorMessage, updateTechnician } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { TechnicianDto } from "@/types/dtos";
 import { toast } from "sonner";
@@ -16,8 +16,10 @@ import { useTechniciansRows } from "./hooks/useTechniciansRows";
 const TechniciansPage = () => {
     const navigate = useNavigate();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [technicianToEdit, setTechnicianToEdit] = useState<TechnicianDto | null>(null);
     const [technicianToDelete, setTechnicianToDelete] = useState<TechnicianDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const { technicianRows, visibleTechnicianRows, isLoading, loadTechnicians } = useTechniciansRows({ searchText });
@@ -36,6 +38,33 @@ const TechniciansPage = () => {
     const handleOpenDeleteDialog = (technician: TechnicianDto) => {
         setTechnicianToDelete(technician);
         setIsDeleteDialogOpen(true);
+    };
+
+    const handleOpenEditDialog = (id: number) => {
+        const technician = technicianRows.find((item) => item.id === id);
+
+        if (!technician) {
+            toast.error("Tecnico non trovato");
+            return;
+        }
+
+        setTechnicianToEdit(technician);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditTechnician = async (values: Record<string, string | boolean>) => {
+        if (!technicianToEdit) {
+            return;
+        }
+
+        await updateTechnician(technicianToEdit.id, {
+            firstName: String(values.firstName).trim(),
+            lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
+            phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+            vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
+        });
+
+        await loadTechnicians();
     };
 
     const handleOpenTechnician = (id: number) => {
@@ -79,6 +108,19 @@ const TechniciansPage = () => {
                 onSubmit={handleCreateTechnician}
             />
 
+            <CreateTechnicianDialog
+                open={isEditDialogOpen}
+                onOpenChange={(open) => {
+                    setIsEditDialogOpen(open);
+                    if (!open) {
+                        setTechnicianToEdit(null);
+                    }
+                }}
+                mode="edit"
+                initialValues={technicianToEdit}
+                onSubmit={handleEditTechnician}
+            />
+
             <ConfirmDeleteDialog
                 open={isDeleteDialogOpen}
                 onOpenChange={(open) => {
@@ -106,7 +148,7 @@ const TechniciansPage = () => {
                     columns={technicianColumns}
                     rows={visibleTechnicianRows}
                     onOpenTechnician={handleOpenTechnician}
-                    onEditTechnician={() => toast.info("Modifica non ancora disponibile")}
+                    onEditTechnician={handleOpenEditDialog}
                     onDeleteTechnician={handleOpenDeleteDialog}
                 />
             )}

@@ -49,19 +49,24 @@ const MainSidebar = () => {
 
     return (
         <Sidebar collapsible="icon">
-            <SidebarHeader className="border-b border-sidebar-border px-3 py-2">
-                <div className="flex items-center gap-2 overflow-hidden">
-                    <div className="flex size-9 items-center justify-center overflow-hidden rounded-md border border-sidebar-border bg-white">
+            <SidebarHeader className="border-b border-sidebar-border px-3 group-data-[collapsible=icon]:px-2 py-2">
+                <SidebarMenuItem className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
+                    <div className="flex size-8 items-center justify-center overflow-hidden rounded-sm border border-sidebar-border bg-background group-data-[collapsible=icon]:size-9">
                         <img src={logoUrl} alt="Logo laboratorio" className="size-full object-cover" />
                     </div>
+
                     <div className="grid leading-tight group-data-[collapsible=icon]:hidden">
-                        <span className="text-sm font-semibold text-sidebar-foreground">FutureOffice</span>
-                        <span className="text-xs text-sidebar-foreground/70">Laboratorio</span>
+                        <span className="text-sm font-semibold text-sidebar-foreground">
+                            FutureOffice
+                        </span>
+                        <span className="text-xs text-sidebar-foreground/70">
+                            Laboratorio
+                        </span>
                     </div>
-                </div>
+                </SidebarMenuItem>
             </SidebarHeader>
 
-            <SidebarContent className="px-2 py-3">
+            <SidebarContent className="p-2">
                 <SidebarMenu className="gap-1">
                     {sidebarItems.map((item) => {
                         const Icon = item.icon;
@@ -73,11 +78,20 @@ const MainSidebar = () => {
                                     tooltip={item.label}
                                     isActive={active}
                                     onClick={() => navigate(item.path)}
-                                    size={"lg"}
-                                    className={active ? "bg-primary! text-background! dark:text-foreground!" : undefined}
+                                    size="lg"
+                                    className={`
+        ${active ? "bg-primary! text-background! dark:text-foreground!" : ""}
+        flex items-center gap-2 w-full
+        group-data-[collapsible=icon]:justify-center
+        group-data-[collapsible=icon]:w-10
+        group-data-[collapsible=icon]:h-10
+        group-data-[collapsible=icon]:p-0
+    `}
                                 >
-                                    <Icon />
-                                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                                    <Icon className="size-7 shrink-0" />
+                                    <span className="group-data-[collapsible=icon]:hidden">
+                                        {item.label}
+                                    </span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         );

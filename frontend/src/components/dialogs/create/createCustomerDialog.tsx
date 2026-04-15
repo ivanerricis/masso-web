@@ -2,16 +2,21 @@ import CustomDialog from "@/components/dialogs/customDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api";
+import type { CustomerDto } from "@/types/dtos";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+type CustomerDialogMode = "create" | "edit";
 
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
+    mode?: CustomerDialogMode;
+    initialValues?: CustomerDto | null;
 };
 
-const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", initialValues = null }: Props) => {
     const [formValues, setFormValues] = useState({
         firstName: "",
         lastName: "",
@@ -24,14 +29,14 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     useEffect(() => {
         if (open) {
             setFormValues({
-                firstName: "",
-                lastName: "",
-                phoneNumber: "",
-                email: "",
-                vatNumber: "",
+                firstName: initialValues?.firstName ?? "",
+                lastName: initialValues?.lastName ?? "",
+                phoneNumber: initialValues?.phoneNumber ?? "",
+                email: initialValues?.email ?? "",
+                vatNumber: initialValues?.vatNumber ?? "",
             });
         }
-    }, [open]);
+    }, [open, initialValues]);
 
     const handleConfirm = async () => {
         if (formValues.firstName === "") {
@@ -57,7 +62,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit(formValues);
             onOpenChange(false);
-            toast.success("Cliente creato con successo");
+            toast.success(mode === "edit" ? "Cliente aggiornato con successo" : "Cliente creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -69,8 +74,12 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo cliente"
-            description="Inserisci i dati del cliente e conferma per salvare."
+            title={mode === "edit" ? "Modifica cliente" : "Nuovo cliente"}
+            description={
+                mode === "edit"
+                    ? "Aggiorna i dati del cliente e conferma per salvare."
+                    : "Inserisci i dati del cliente e conferma per salvare."
+            }
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}

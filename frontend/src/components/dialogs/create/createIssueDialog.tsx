@@ -2,24 +2,29 @@ import CustomDialog from "@/components/dialogs/customDialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage } from "@/lib/api";
+import type { IssueDto } from "@/types/dtos";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+type IssueDialogMode = "create" | "edit";
 
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
+    mode?: IssueDialogMode;
+    initialValues?: IssueDto | null;
 };
 
-const CreateIssueDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateIssueDialog = ({ open, onOpenChange, onSubmit, mode = "create", initialValues = null }: Props) => {
     const [description, setDescription] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (open) {
-            setDescription("");
+            setDescription(initialValues?.description ?? "");
         }
-    }, [open]);
+    }, [open, initialValues]);
 
     const handleConfirm = async () => {
         if (description === "") {
@@ -40,7 +45,7 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit({ description });
             onOpenChange(false);
-            toast.success("Segnalazione creata con successo");
+            toast.success(mode === "edit" ? "Difetto aggiornato con successo" : "Segnalazione creata con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -52,8 +57,12 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo difetto"
-            description="Inserisci i dati del difetto e conferma per salvare."
+            title={mode === "edit" ? "Modifica difetto" : "Nuovo difetto"}
+            description={
+                mode === "edit"
+                    ? "Aggiorna i dati del difetto e conferma per salvare."
+                    : "Inserisci i dati del difetto e conferma per salvare."
+            }
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}

@@ -2,16 +2,21 @@ import CustomDialog from "@/components/dialogs/customDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api";
+import type { TechnicianDto } from "@/types/dtos";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+type TechnicianDialogMode = "create" | "edit";
 
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
+    mode?: TechnicianDialogMode;
+    initialValues?: TechnicianDto | null;
 };
 
-const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit, mode = "create", initialValues = null }: Props) => {
     const [formValues, setFormValues] = useState({
         firstName: "",
         lastName: "",
@@ -23,13 +28,13 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     useEffect(() => {
         if (open) {
             setFormValues({
-                firstName: "",
-                lastName: "",
-                phoneNumber: "",
-                vatNumber: "",
+                firstName: initialValues?.firstName ?? "",
+                lastName: initialValues?.lastName ?? "",
+                phoneNumber: initialValues?.phoneNumber ?? "",
+                vatNumber: initialValues?.vatNumber ?? "",
             });
         }
-    }, [open]);
+    }, [open, initialValues]);
 
     const handleConfirm = async () => {
         if(formValues.firstName === "") {
@@ -55,7 +60,7 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit(formValues);
             onOpenChange(false);
-            toast.success("Tecnico creato con successo");
+            toast.success(mode === "edit" ? "Tecnico aggiornato con successo" : "Tecnico creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -67,8 +72,12 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo tecnico"
-            description="Inserisci i dati del tecnico e conferma per salvare."
+            title={mode === "edit" ? "Modifica tecnico" : "Nuovo tecnico"}
+            description={
+                mode === "edit"
+                    ? "Aggiorna i dati del tecnico e conferma per salvare."
+                    : "Inserisci i dati del tecnico e conferma per salvare."
+            }
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}

@@ -6,6 +6,8 @@ export type IssueCreateInput = {
     description: string;
 };
 
+export type IssueUpdateInput = Partial<IssueCreateInput>;
+
 export const listIssues = async () => {
     const response = await api.get<EntityWithRawTimestamps<IssueDto>[]>("/issues");
     return response.data.map((issue) => mapEntityTimestamps(issue));
@@ -13,6 +15,9 @@ export const listIssues = async () => {
 
 export const createIssue = async (payload: IssueCreateInput) =>
     mapEntityTimestamps((await api.post<EntityWithRawTimestamps<IssueDto>>("/issues", payload)).data);
+
+export const updateIssue = async (id: number, payload: IssueUpdateInput) =>
+    mapEntityTimestamps((await api.put<EntityWithRawTimestamps<IssueDto>>(`/issues/${id}`, payload)).data);
 
 export const deleteIssue = async (id: number) =>
     mapEntityTimestamps((await api.delete<EntityWithRawTimestamps<IssueDto>>(`/issues/${id}`)).data);

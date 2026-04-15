@@ -2,7 +2,7 @@ import CreateEntityButton from "@/components/create-entity-button";
 import CreateIssueDialog from "@/components/dialogs/create/createIssueDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
-import { createIssue, deleteIssue, getApiErrorMessage } from "@/lib/api";
+import { createIssue, deleteIssue, getApiErrorMessage, updateIssue } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { IssueDto } from "@/types/dtos";
 import { toast } from "sonner";
@@ -14,8 +14,10 @@ import { useIssuesRows } from "./hooks/useIssuesRows";
 
 const IssuesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [issueToEdit, setIssueToEdit] = useState<IssueDto | null>(null);
     const [issueToDelete, setIssueToDelete] = useState<IssueDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const { issueRows, visibleIssueRows, isLoading, loadIssues } = useIssuesRows({ searchText });
@@ -31,6 +33,30 @@ const IssuesPage = () => {
     const handleOpenDeleteDialog = (issue: IssueDto) => {
         setIssueToDelete(issue);
         setIsDeleteDialogOpen(true);
+    };
+
+    const handleOpenEditDialog = (id: number) => {
+        const issue = issueRows.find((item) => item.id === id);
+
+        if (!issue) {
+            toast.error("Difetto non trovato");
+            return;
+        }
+
+        setIssueToEdit(issue);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditIssue = async (values: Record<string, string | boolean>) => {
+        if (!issueToEdit) {
+            return;
+        }
+
+        await updateIssue(issueToEdit.id, {
+            description: String(values.description).trim(),
+        });
+
+        await loadIssues();
     };
 
     const handleDeleteIssue = async () => {
@@ -69,6 +95,19 @@ const IssuesPage = () => {
                 onSubmit={handleCreateIssue}
             />
 
+            <CreateIssueDialog
+                open={isEditDialogOpen}
+                onOpenChange={(open) => {
+                    setIsEditDialogOpen(open);
+                    if (!open) {
+                        setIssueToEdit(null);
+                    }
+                }}
+                mode="edit"
+                initialValues={issueToEdit}
+                onSubmit={handleEditIssue}
+            />
+
             <ConfirmDeleteDialog
                 open={isDeleteDialogOpen}
                 onOpenChange={(open) => {
@@ -95,7 +134,7 @@ const IssuesPage = () => {
                 <IssuesTable
                     columns={issueColumns}
                     rows={visibleIssueRows}
-                    onEditIssue={() => toast.info("Modifica non ancora disponibile")}
+                    onEditIssue={handleOpenEditDialog}
                     onDeleteIssue={handleOpenDeleteDialog}
                 />
             )}

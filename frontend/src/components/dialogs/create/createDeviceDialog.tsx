@@ -2,24 +2,29 @@ import CustomDialog from "@/components/dialogs/customDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api";
+import type { DeviceDto } from "@/types/dtos";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+type DeviceDialogMode = "create" | "edit";
 
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
+    mode?: DeviceDialogMode;
+    initialValues?: DeviceDto | null;
 };
 
-const CreateDeviceDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateDeviceDialog = ({ open, onOpenChange, onSubmit, mode = "create", initialValues = null }: Props) => {
     const [name, setName] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (open) {
-            setName("");
+            setName(initialValues?.name ?? "");
         }
-    }, [open]);
+    }, [open, initialValues]);
 
     const handleConfirm = async () => {
         if(name === "") {
@@ -40,7 +45,7 @@ const CreateDeviceDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit({ name });
             onOpenChange(false);
-            toast.success("Dispositivo creato con successo");
+            toast.success(mode === "edit" ? "Dispositivo aggiornato con successo" : "Dispositivo creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -52,8 +57,12 @@ const CreateDeviceDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo dispositivo"
-            description="Inserisci i dati del dispositivo e conferma per salvare."
+            title={mode === "edit" ? "Modifica dispositivo" : "Nuovo dispositivo"}
+            description={
+                mode === "edit"
+                    ? "Aggiorna i dati del dispositivo e conferma per salvare."
+                    : "Inserisci i dati del dispositivo e conferma per salvare."
+            }
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}

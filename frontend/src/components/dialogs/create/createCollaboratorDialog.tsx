@@ -2,16 +2,27 @@ import CustomDialog from "@/components/dialogs/customDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api";
+import type { CollaboratorDto } from "@/types/dtos";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+type CollaboratorDialogMode = "create" | "edit";
 
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
+    mode?: CollaboratorDialogMode;
+    initialValues?: CollaboratorDto | null;
 };
 
-const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateCollaboratorDialog = ({
+    open,
+    onOpenChange,
+    onSubmit,
+    mode = "create",
+    initialValues = null,
+}: Props) => {
     const [formValues, setFormValues] = useState({
         firstName: "",
         lastName: "",
@@ -22,12 +33,12 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     useEffect(() => {
         if (open) {
             setFormValues({
-                firstName: "",
-                lastName: "",
-                phoneNumber: "",
+                firstName: initialValues?.firstName ?? "",
+                lastName: initialValues?.lastName ?? "",
+                phoneNumber: initialValues?.phoneNumber ?? "",
             });
         }
-    }, [open]);
+    }, [open, initialValues]);
 
     const handleConfirm = async () => {
         if(formValues.firstName === "") {
@@ -48,7 +59,7 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit(formValues);
             onOpenChange(false);
-            toast.success("Collaboratore creato con successo");
+            toast.success(mode === "edit" ? "Collaboratore aggiornato con successo" : "Collaboratore creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -60,8 +71,12 @@ const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Nuovo collaboratore"
-            description="Inserisci i dati del collaboratore e conferma per salvare."
+            title={mode === "edit" ? "Modifica collaboratore" : "Nuovo collaboratore"}
+            description={
+                mode === "edit"
+                    ? "Aggiorna i dati del collaboratore e conferma per salvare."
+                    : "Inserisci i dati del collaboratore e conferma per salvare."
+            }
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
             cancelLabel="Annulla"
             onCancel={() => onOpenChange(false)}

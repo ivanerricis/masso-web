@@ -2,7 +2,7 @@ import CreateEntityButton from "@/components/create-entity-button";
 import CreateCollaboratorDialog from "@/components/dialogs/create/createCollaboratorDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
-import { createCollaborator, deleteCollaborator, getApiErrorMessage } from "@/lib/api";
+import { createCollaborator, deleteCollaborator, getApiErrorMessage, updateCollaborator } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { CollaboratorDto } from "@/types/dtos";
 import { toast } from "sonner";
@@ -16,8 +16,10 @@ import { useCollaboratorsRows } from "./hooks/useCollaboratorsRows";
 const CollaboratorsPage = () => {
     const navigate = useNavigate();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [collaboratorToEdit, setCollaboratorToEdit] = useState<CollaboratorDto | null>(null);
     const [collaboratorToDelete, setCollaboratorToDelete] = useState<CollaboratorDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const { collaboratorRows, visibleCollaboratorRows, isLoading, loadCollaborators } = useCollaboratorsRows({ searchText });
@@ -35,6 +37,32 @@ const CollaboratorsPage = () => {
     const handleOpenDeleteDialog = (collaborator: CollaboratorDto) => {
         setCollaboratorToDelete(collaborator);
         setIsDeleteDialogOpen(true);
+    };
+
+    const handleOpenEditDialog = (id: number) => {
+        const collaborator = collaboratorRows.find((item) => item.id === id);
+
+        if (!collaborator) {
+            toast.error("Collaboratore non trovato");
+            return;
+        }
+
+        setCollaboratorToEdit(collaborator);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditCollaborator = async (values: Record<string, string | boolean>) => {
+        if (!collaboratorToEdit) {
+            return;
+        }
+
+        await updateCollaborator(collaboratorToEdit.id, {
+            firstName: String(values.firstName).trim(),
+            lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
+            phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+        });
+
+        await loadCollaborators();
     };
 
     const handleOpenCollaborator = (id: number) => {
@@ -78,6 +106,19 @@ const CollaboratorsPage = () => {
                 onSubmit={handleCreateCollaborator}
             />
 
+            <CreateCollaboratorDialog
+                open={isEditDialogOpen}
+                onOpenChange={(open) => {
+                    setIsEditDialogOpen(open);
+                    if (!open) {
+                        setCollaboratorToEdit(null);
+                    }
+                }}
+                mode="edit"
+                initialValues={collaboratorToEdit}
+                onSubmit={handleEditCollaborator}
+            />
+
             <ConfirmDeleteDialog
                 open={isDeleteDialogOpen}
                 onOpenChange={(open) => {
@@ -105,7 +146,7 @@ const CollaboratorsPage = () => {
                     columns={collaboratorColumns}
                     rows={visibleCollaboratorRows}
                     onOpenCollaborator={handleOpenCollaborator}
-                    onEditCollaborator={() => toast.info("Modifica non ancora disponibile")}
+                    onEditCollaborator={handleOpenEditDialog}
                     onDeleteCollaborator={handleOpenDeleteDialog}
                 />
             )}

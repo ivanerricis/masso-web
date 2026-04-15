@@ -1,29 +1,29 @@
 const escapeHtml = (value: string) =>
-    value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 
 const yesNo = (value: boolean) => (value ? "Si" : "No");
 
 export type ReportPrintData = {
-    id: number;
-    labName: string;
-    labEmail: string;
-    labAddress: string;
-    labPhone: string;
-    labLogoUrl: string;
-    customerName: string;
-    customerPhone: string;
-    deviceName: string;
-    issueDescription: string;
-    note: string;
-    password: string;
-    dataBackup: boolean;
-    charger: boolean;
-    createdAtLabel: string;
+  id: number;
+  labName: string;
+  labEmail: string;
+  labAddress: string;
+  labPhone: string;
+  labLogoUrl: string;
+  customerName: string;
+  customerPhone: string;
+  deviceName: string;
+  issueDescription: string;
+  note: string;
+  password: string;
+  dataBackup: boolean;
+  charger: boolean;
+  createdAtLabel: string;
 };
 
 export const buildReportPrintHtml = (report: ReportPrintData) => `
@@ -33,7 +33,13 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rapporto #${report.id}</title>
+
     <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
       * { box-sizing: border-box; }
 
       :root {
@@ -44,41 +50,41 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
         --text-muted: #475569;
       }
 
-      body {
+      html, body {
         margin: 0;
+        padding: 0;
+        width: 210mm;
+        height: 297mm;
         font-family: "Helvetica Neue", Arial, sans-serif;
         color: var(--text-strong);
-        background: white;
-        font-size: 15px;
+        font-size: 12pt;
       }
 
       .sheet {
-        width: 100%;
-        min-height: 100vh;
-        padding: 4px;
+        width: 210mm;
+        height: 297mm;
+        padding: 3mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
       }
 
       .copy {
-        border: 1px solid var(--primary-border);
-        border-radius: 8px;
-        padding: 10px;
-        background: #ffffff;
-        page-break-inside: avoid;
+        padding: 3mm 2.5mm;
       }
 
       .copy + .copy {
-        margin-top: 8px;
-        border-top: 2px dashed #94a3b8;
+        margin-top: 1.5mm;
+        padding-top: 2.5mm;
+        border-top: 0.3mm dashed black;
       }
 
       .header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        border-bottom: 1px solid var(--primary-border);
-        padding-bottom: 6px;
-        margin-bottom: 8px;
-        gap: 12px;
+        border-bottom: 0.3mm solid var(--primary-border);
+        padding-bottom: 2mm;
+        margin-bottom: 2.5mm;
       }
 
       .header.single {
@@ -87,22 +93,12 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
 
       .brand {
         display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0;
+        gap: 3mm;
       }
 
       .brand-logo {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        border: 1px solid var(--primary-border);
-        background: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex: 0 0 auto;
-        overflow: hidden;
+        width: 11mm;
+        height: 11mm;
       }
 
       .brand-logo img {
@@ -113,141 +109,146 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
 
       .brand-name {
         margin: 0;
-        font-size: 1em;
-        font-weight: 800;
+        font-size: 12pt;
+        font-weight: 700;
       }
 
       .brand-info {
-        margin: 2px 0 0;
-        font-size: 0.75em;
-        line-height: 1.35;
+        margin: 1mm 0 0;
+        font-size: 9pt;
         color: var(--text-muted);
+        line-height: 1.4;
       }
 
       .meta {
-        color: var(--text-muted);
-        font-size: 0.9em;
-        font-weight: 600;
+        font-size: 10pt;
         text-align: right;
       }
 
       .report-meta-title {
-        margin: 0;
-        font-size: 1em;
-        text-transform: uppercase;
+        font-size: 12pt;
         color: var(--primary);
+        margin: 0;
         font-weight: 700;
       }
 
+      .report-meta-date {
+        font-weight: 600;
+      }
+
       .section {
-        margin-top: 18px;
+        margin-top: 4mm;
       }
 
       .section-title {
-        margin: 0 0 6px;
-        font-size: 0.8em;
+        font-size: 9pt;
         color: var(--primary);
+        margin-bottom: 1.5mm;
         text-transform: uppercase;
+        font-weight: 700;
       }
 
       .grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px 10px;
+        grid-template-columns: 1fr 1fr;
+        gap: 3mm;
       }
 
       .row {
         display: flex;
         flex-direction: column;
-        gap: 3px;
+        gap: 1.5mm;
         background: var(--primary-soft);
-        border: 1px solid var(--primary-border);
-        border-left: 5px solid var(--primary);
-        border-radius: 8px;
-        padding: 7px 10px;
-        min-height: 46px;
+        border: 0.3mm solid var(--primary-border);
+        border-left: 1mm solid var(--primary);
+        border-radius: 2mm;
+        padding: 2.5mm;
       }
 
       .label {
-        font-size: 0.75em;
-        color: var(--primary);
+        font-size: 8pt;
         font-weight: 700;
+        color: var(--primary);
         text-transform: uppercase;
+        line-height: 1.1;
       }
 
       .value {
-        font-size: 0.9em;
+        font-size: 10pt;
         font-weight: 600;
+        line-height: 1.3;
         word-break: break-word;
       }
 
       .handwritten-box {
-        margin-top: 10px;
-        padding: 8px;
+        margin-top: 4mm;
       }
 
-      .work-layout {
+      .work-container {
         display: flex;
-        gap: 8px;
+        gap: 4mm;
       }
 
-      .work-space {
+      .work-left {
         flex: 1;
-        border: 1px solid var(--primary-border);
-        min-height: 84px;
-      }
-
-      .work-line {
-        height: 28px;
-        border-bottom: 1px solid #93c5fd;
-      }
-
-      .work-square {
-        width: 84px;
-        border: 1px solid var(--primary-border);
       }
 
       .work-caption {
-        margin: 6px 0 0;
-        font-size: 0.75em;
+        font-size: 9pt;
+        margin-bottom: 1.5mm;
         font-weight: 700;
         color: var(--primary);
         text-transform: uppercase;
       }
 
-      .cut-label {
-        margin: 14px 0;
-        border-bottom: 1px dashed black;
+      .work-layout {
+        display: flex;
+        gap: 2mm;
       }
 
-      .price-row {
+      .work-square {
+        width: 20mm;
+        height: 20mm;
+        border: 0.3mm solid var(--primary-border);
+      }
+
+      .work-space {
+        flex: 1;
+        border: 0.3mm solid var(--primary-border);
+      }
+
+      .work-line {
+        height: 6mm;
+        border-bottom: 0.2mm solid #93c5fd;
+      }
+
+      .price-container {
+        width: 20mm;
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
         align-items: center;
+        justify-content: center;
       }
 
       .price-label {
-        font-size: 0.8em;
+        font-size: 9pt;
+        margin-bottom: 1.5mm;
         font-weight: 700;
         color: var(--primary);
         text-transform: uppercase;
       }
 
       .price-box {
-        flex: 1;
-        height: 28px;
-        border: 1px solid var(--primary-border);
-        border-radius: 8px;
-      }
-
-      @media print {
-        .sheet { border: none; }
+        width: 20mm;
+        height: 20mm;
+        border: 0.3mm solid var(--primary-border);
       }
     </style>
   </head>
 
   <body>
     <main class="sheet">
+
       <section class="copy">
         <header class="header">
           <div class="brand">
@@ -265,7 +266,7 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
           </div>
           <div class="meta">
             <p class="report-meta-title">Rapporto #${report.id}</p>
-            <div>Data: ${escapeHtml(report.createdAtLabel)}</div>
+            <div class="report-meta-date">Data: ${escapeHtml(report.createdAtLabel)}</div>
           </div>
         </header>
 
@@ -295,14 +296,12 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
           </div>
         </section>
       </section>
-
-      <div class="cut-label"></div>
 
       <section class="copy">
         <header class="header single">
           <div class="meta">
             <p class="report-meta-title">Rapporto #${report.id}</p>
-            <div>Data: ${escapeHtml(report.createdAtLabel)}</div>
+            <div class="report-meta-date">Data: ${escapeHtml(report.createdAtLabel)}</div>
           </div>
         </header>
 
@@ -333,24 +332,28 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
         </section>
 
         <section class="handwritten-box">
-          <p class="work-caption">Lavoro eseguito</p>
-          <div class="work-layout">
-            <div class="work-square"></div>
-            <div class="work-space">
-              <div class="work-line"></div>
-              <div class="work-line"></div>
-              <div class="work-line"></div>
+          <div class="work-container">
+            <div class="work-left">
+              <p class="work-caption">Lavoro eseguito</p>
+              <div class="work-layout">
+                <div class="work-square"></div>
+                <div class="work-space">
+                  <div class="work-line"></div>
+                  <div class="work-line"></div>
+                  <div class="work-line"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="price-container">
+              <p class="price-label">Importo</p>
+              <div class="price-box"></div>
             </div>
           </div>
         </section>
 
-        <section class="handwritten-box">
-          <div class="price-row">
-            <p class="price-label">Prezzo</p>
-            <div class="price-box"></div>
-          </div>
-        </section>
       </section>
+
     </main>
   </body>
 </html>

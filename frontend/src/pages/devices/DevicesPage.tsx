@@ -2,7 +2,7 @@ import CreateEntityButton from "@/components/create-entity-button";
 import CreateDeviceDialog from "@/components/dialogs/create/createDeviceDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
-import { createDevice, deleteDevice, getApiErrorMessage } from "@/lib/api";
+import { createDevice, deleteDevice, getApiErrorMessage, updateDevice } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { DeviceDto } from "@/types/dtos";
 import { toast } from "sonner";
@@ -14,8 +14,10 @@ import { useDevicesRows } from "./hooks/useDevicesRows";
 
 const DevicesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [deviceToEdit, setDeviceToEdit] = useState<DeviceDto | null>(null);
     const [deviceToDelete, setDeviceToDelete] = useState<DeviceDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const { deviceRows, visibleDeviceRows, isLoading, loadDevices } = useDevicesRows({ searchText });
@@ -31,6 +33,30 @@ const DevicesPage = () => {
     const handleOpenDeleteDialog = (device: DeviceDto) => {
         setDeviceToDelete(device);
         setIsDeleteDialogOpen(true);
+    };
+
+    const handleOpenEditDialog = (id: number) => {
+        const device = deviceRows.find((item) => item.id === id);
+
+        if (!device) {
+            toast.error("Dispositivo non trovato");
+            return;
+        }
+
+        setDeviceToEdit(device);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditDevice = async (values: Record<string, string | boolean>) => {
+        if (!deviceToEdit) {
+            return;
+        }
+
+        await updateDevice(deviceToEdit.id, {
+            name: String(values.name).trim(),
+        });
+
+        await loadDevices();
     };
 
     const handleDeleteDevice = async () => {
@@ -70,6 +96,19 @@ const DevicesPage = () => {
                 onSubmit={handleCreateDevice}
             />
 
+            <CreateDeviceDialog
+                open={isEditDialogOpen}
+                onOpenChange={(open) => {
+                    setIsEditDialogOpen(open);
+                    if (!open) {
+                        setDeviceToEdit(null);
+                    }
+                }}
+                mode="edit"
+                initialValues={deviceToEdit}
+                onSubmit={handleEditDevice}
+            />
+
             <ConfirmDeleteDialog
                 open={isDeleteDialogOpen}
                 onOpenChange={(open) => {
@@ -96,7 +135,7 @@ const DevicesPage = () => {
                 <DevicesTable
                     columns={deviceColumns}
                     rows={visibleDeviceRows}
-                    onEditDevice={() => toast.info("Modifica non ancora disponibile")}
+                    onEditDevice={handleOpenEditDialog}
                     onDeleteDevice={handleOpenDeleteDialog}
                 />
             )}

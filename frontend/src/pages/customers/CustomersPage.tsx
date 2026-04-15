@@ -2,7 +2,7 @@ import CreateEntityButton from "@/components/create-entity-button";
 import CreateCustomerDialog from "@/components/dialogs/create/createCustomerDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
-import { createCustomer, deleteCustomer, getApiErrorMessage } from "@/lib/api";
+import { createCustomer, deleteCustomer, getApiErrorMessage, updateCustomer } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { CustomerDto } from "@/types/dtos";
 import { toast } from "sonner";
@@ -16,8 +16,10 @@ import { useCustomersRows } from "./hooks/useCustomersRows";
 const CustomersPage = () => {
     const navigate = useNavigate();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [customerToEdit, setCustomerToEdit] = useState<CustomerDto | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<CustomerDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const { customerRows, visibleCustomerRows, isLoading, loadCustomers } = useCustomersRows({ searchText });
@@ -37,6 +39,34 @@ const CustomersPage = () => {
     const handleOpenDeleteDialog = (customer: CustomerDto) => {
         setCustomerToDelete(customer);
         setIsDeleteDialogOpen(true);
+    };
+
+    const handleOpenEditDialog = (id: number) => {
+        const customer = customerRows.find((item) => item.id === id);
+
+        if (!customer) {
+            toast.error("Cliente non trovato");
+            return;
+        }
+
+        setCustomerToEdit(customer);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditCustomer = async (values: Record<string, string | boolean>) => {
+        if (!customerToEdit) {
+            return;
+        }
+
+        await updateCustomer(customerToEdit.id, {
+            firstName: String(values.firstName).trim(),
+            lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
+            phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+            email: String(values.email).trim() === "" ? null : String(values.email).trim(),
+            vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
+        });
+
+        await loadCustomers();
     };
 
     const handleOpenCustomer = (id: number) => {
@@ -80,6 +110,19 @@ const CustomersPage = () => {
                 onSubmit={handleCreateCustomer}
             />
 
+            <CreateCustomerDialog
+                open={isEditDialogOpen}
+                onOpenChange={(open) => {
+                    setIsEditDialogOpen(open);
+                    if (!open) {
+                        setCustomerToEdit(null);
+                    }
+                }}
+                mode="edit"
+                initialValues={customerToEdit}
+                onSubmit={handleEditCustomer}
+            />
+
             <ConfirmDeleteDialog
                 open={isDeleteDialogOpen}
                 onOpenChange={(open) => {
@@ -107,7 +150,7 @@ const CustomersPage = () => {
                     columns={customerColumns}
                     rows={visibleCustomerRows}
                     onOpenCustomer={handleOpenCustomer}
-                    onEditCustomer={() => toast.info("Modifica non ancora disponibile")}
+                    onEditCustomer={handleOpenEditDialog}
                     onDeleteCustomer={handleOpenDeleteDialog}
                 />
             )}

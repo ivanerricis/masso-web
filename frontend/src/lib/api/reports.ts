@@ -37,6 +37,9 @@ export type ReportCreateInput = {
 
 export const listReports = async () => (await api.get<ReportEntityDto[]>("/reports")).data;
 
+export const getReport = async (id: number) =>
+    (await api.get<ReportEntityDto>(`/reports/${id}`)).data;
+
 export const createReport = async (payload: ReportCreateInput) =>
     (await api.post<ReportEntityDto>("/reports", payload)).data;
 

@@ -119,12 +119,6 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
         const pdfBuffer = await page.pdf({
             format: "A4",
             printBackground: true,
-            margin: {
-                top: "0mm",
-                right: "0mm",
-                bottom: "0mm",
-                left: "0mm",
-            },
         });
 
         res.setHeader("Content-Type", "application/pdf");
