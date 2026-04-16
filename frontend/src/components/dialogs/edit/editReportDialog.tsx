@@ -433,7 +433,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                                 setFormValues((prev) => ({ ...prev, charger: checked === true }))
                                             }
                                         />
-                                        <Label htmlFor="charger" className="cursor-pointer text-lg">Alimentatore presente</Label>
+                                        <Label htmlFor="charger" className="cursor-pointer text-lg w-full">Alimentatore presente</Label>
                                     </div>
 
                                     <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
@@ -445,7 +445,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                                 setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))
                                             }
                                         />
-                                        <Label htmlFor="dataBackup" className="cursor-pointer text-lg">Backup dati</Label>
+                                        <Label htmlFor="dataBackup" className="cursor-pointer text-lg w-full">Backup dati</Label>
                                     </div>
 
                                     <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
@@ -457,7 +457,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                                 setFormValues((prev) => ({ ...prev, closed: checked === true }))
                                             }
                                         />
-                                        <Label htmlFor="closed" className="cursor-pointer text-lg">Report chiuso</Label>
+                                        <Label htmlFor="closed" className="cursor-pointer text-lg w-full">Report chiuso</Label>
                                     </div>
 
                                     <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
@@ -469,7 +469,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                                 setFormValues((prev) => ({ ...prev, toInvoice: checked === true }))
                                             }
                                         />
-                                        <Label htmlFor="toInvoice" className="cursor-pointer text-lg">Da fatturare</Label>
+                                        <Label htmlFor="toInvoice" className="cursor-pointer text-lg w-full">Da fatturare</Label>
                                     </div>
                                 </div>
                             </section>
