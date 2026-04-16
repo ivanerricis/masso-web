@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import PaymentMethodSelector from "@/components/payment-method-selector";
 import {
     getApiErrorMessage,
     getReport,
@@ -13,7 +14,7 @@ import {
     listReportTechnicians,
     listTechnicians,
 } from "@/lib/api";
-import type { CollaboratorDto, CustomerDto, DeviceDto, IssueDto, TechnicianDto } from "@/types/dtos";
+import type { CollaboratorDto, CustomerDto, DeviceDto, IssueDto, PaymentMethod, TechnicianDto } from "@/types/dtos";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +40,7 @@ export type EditReportSubmitValues = {
     serviceDescription: string | null;
     note: string | null;
     password: string | null;
+    paymentMethod: PaymentMethod;
     dataBackup: boolean;
     charger: boolean;
     closed: boolean;
@@ -68,6 +70,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
         serviceDescription: "",
         note: "",
         password: "",
+        paymentMethod: "non_paid" as PaymentMethod,
         internalPrice: "0",
         dataBackup: false,
         charger: false,
@@ -114,6 +117,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                     serviceDescription: report.serviceDescription ?? "",
                     note: report.note ?? "",
                     password: report.password ?? "",
+                    paymentMethod: report.paymentMethod,
                     internalPrice: String(report.price),
                     dataBackup: report.dataBackup,
                     charger: report.charger,
@@ -170,6 +174,11 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
             return;
         }
 
+        if (formValues.paymentMethod !== "non_paid" && internalPrice <= 0) {
+            toast.error("Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             await onSubmit({
@@ -185,6 +194,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                 serviceDescription: formValues.serviceDescription.trim() || null,
                 note: formValues.note.trim() || null,
                 password: formValues.password.trim() || null,
+                paymentMethod: formValues.paymentMethod,
                 dataBackup: formValues.dataBackup,
                 charger: formValues.charger,
                 closed: formValues.closed,
@@ -413,66 +423,89 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                             }
                                         />
                                     </div>
+
                                 </div>
                             </section>
 
-                            <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-                                <div className="space-y-1">
+                            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+                                <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+                                    <div className="space-y-1">
+                                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Stato
+                                        </h3>
+                                    </div>
+
+                                    <div className="grid gap-3 lg:grid-cols-2">
+                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                            <Checkbox
+                                                id="charger"
+                                                className="size-5"
+                                                checked={formValues.charger}
+                                                onCheckedChange={(checked) =>
+                                                    setFormValues((prev) => ({ ...prev, charger: checked === true }))
+                                                }
+                                            />
+                                            <Label htmlFor="charger" className="cursor-pointer text-lg w-full">Alimentatore presente</Label>
+                                        </div>
+
+                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                            <Checkbox
+                                                id="dataBackup"
+                                                className="size-5"
+                                                checked={formValues.dataBackup}
+                                                onCheckedChange={(checked) =>
+                                                    setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))
+                                                }
+                                            />
+                                            <Label htmlFor="dataBackup" className="cursor-pointer text-lg w-full">Backup dati</Label>
+                                        </div>
+
+                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                            <Checkbox
+                                                id="closed"
+                                                className="size-5"
+                                                checked={formValues.closed}
+                                                onCheckedChange={(checked) =>
+                                                    setFormValues((prev) => ({ ...prev, closed: checked === true }))
+                                                }
+                                            />
+                                            <Label htmlFor="closed" className="cursor-pointer text-lg w-full">Report chiuso</Label>
+                                        </div>
+
+                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                            <Checkbox
+                                                id="toInvoice"
+                                                className="size-5"
+                                                checked={formValues.toInvoice}
+                                                onCheckedChange={(checked) =>
+                                                    setFormValues((prev) => ({ ...prev, toInvoice: checked === true }))
+                                                }
+                                            />
+                                            <Label htmlFor="toInvoice" className="cursor-pointer text-lg w-full">Da fatturare</Label>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+
                                     <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                        Stato
+                                        Pagamento
                                     </h3>
-                                </div>
 
-                                <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
-                                    <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                        <Checkbox
-                                            id="charger"
-                                            className="size-5"
-                                            checked={formValues.charger}
-                                            onCheckedChange={(checked) =>
-                                                setFormValues((prev) => ({ ...prev, charger: checked === true }))
-                                            }
-                                        />
-                                        <Label htmlFor="charger" className="cursor-pointer text-lg w-full">Alimentatore presente</Label>
-                                    </div>
 
-                                    <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                        <Checkbox
-                                            id="dataBackup"
-                                            className="size-5"
-                                            checked={formValues.dataBackup}
-                                            onCheckedChange={(checked) =>
-                                                setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))
-                                            }
-                                        />
-                                        <Label htmlFor="dataBackup" className="cursor-pointer text-lg w-full">Backup dati</Label>
-                                    </div>
-
-                                    <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                        <Checkbox
-                                            id="closed"
-                                            className="size-5"
-                                            checked={formValues.closed}
-                                            onCheckedChange={(checked) =>
-                                                setFormValues((prev) => ({ ...prev, closed: checked === true }))
-                                            }
-                                        />
-                                        <Label htmlFor="closed" className="cursor-pointer text-lg w-full">Report chiuso</Label>
-                                    </div>
-
-                                    <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                        <Checkbox
-                                            id="toInvoice"
-                                            className="size-5"
-                                            checked={formValues.toInvoice}
-                                            onCheckedChange={(checked) =>
-                                                setFormValues((prev) => ({ ...prev, toInvoice: checked === true }))
-                                            }
-                                        />
-                                        <Label htmlFor="toInvoice" className="cursor-pointer text-lg w-full">Da fatturare</Label>
-                                    </div>
-                                </div>
-                            </section>
+                                    <PaymentMethodSelector
+                                        value={formValues.paymentMethod}
+                                        onValueChange={(paymentMethod) =>
+                                            setFormValues((prev) => ({
+                                                ...prev,
+                                                paymentMethod,
+                                                internalPrice: paymentMethod === "non_paid" ? "0" : prev.internalPrice,
+                                            }))
+                                        }
+                                        className="grid-cols-1"
+                                    />
+                                </section>
+                            </div>
                         </div>
                     )}
                 </div>

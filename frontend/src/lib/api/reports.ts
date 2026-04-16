@@ -1,4 +1,5 @@
 import { api } from "./client";
+import type { PaymentMethod } from "@/types/dtos";
 
 export type ReportEntityDto = {
     id: number;
@@ -11,6 +12,7 @@ export type ReportEntityDto = {
     closed: boolean;
     toInvoice: boolean;
     price: number;
+    paymentMethod: PaymentMethod;
     deviceId: number;
     issueId: number;
     collaboratorId: number | null;
@@ -32,6 +34,7 @@ export type ReportCreateInput = {
     charger?: boolean;
     closed?: boolean;
     toInvoice?: boolean;
+    paymentMethod?: PaymentMethod;
     price?: number;
 };
 

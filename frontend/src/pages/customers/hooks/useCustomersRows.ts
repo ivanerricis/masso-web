@@ -37,7 +37,6 @@ export const useCustomersRows = ({ searchText }: UseCustomersRowsParams) => {
                 customer.phoneNumber ?? "",
                 customer.phoneNumberSecondary ?? "",
                 customer.email ?? "",
-                customer.vatNumber ?? "",
             ]
                 .join(" ")
                 .toLowerCase()

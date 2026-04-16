@@ -138,7 +138,7 @@ body {
   font-size: 11pt;
   margin-bottom: 1mm;
   color: var(--blue);
-  border-bottom: 1px solid var(--blue);
+  // border-bottom: 1px solid var(--blue);
 }
 
 .table {

@@ -8,7 +8,6 @@ export type CustomerCreateInput = {
     phoneNumber?: string | null;
     phoneNumberSecondary?: string | null;
     email?: string | null;
-    vatNumber?: string | null;
 };
 
 export type CustomerUpdateInput = Partial<CustomerCreateInput>;

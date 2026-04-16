@@ -1,0 +1,1 @@
+ALTER TABLE "report" ADD COLUMN "payment_method" varchar(20) NOT NULL DEFAULT 'non_paid';

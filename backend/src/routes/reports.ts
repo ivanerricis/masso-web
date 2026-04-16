@@ -19,12 +19,15 @@ import { buildReportPrintHtml } from "../templates/reportPrintTemplate";
 import { validate } from "./validation";
 
 const reportsRouter = Router();
+const reportPaymentMethods = ["non_paid", "cash", "card"] as const;
+type ReportPaymentMethod = (typeof reportPaymentMethods)[number];
+const paidPaymentMethods = new Set<ReportPaymentMethod>(["cash", "card"]);
 
 const reportIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
-const reportCreateBodySchema = z
+const reportBodySchema = z
     .object({
         deviceId: z.coerce.number().int().positive(),
         issueId: z.coerce.number().int().positive(),
@@ -38,11 +41,25 @@ const reportCreateBodySchema = z
         charger: z.boolean().optional(),
         closed: z.boolean().optional(),
         toInvoice: z.boolean().optional(),
+        paymentMethod: z.enum(reportPaymentMethods).optional(),
         price: z.coerce.number().int().min(0).optional(),
     })
     .strict();
 
-const reportUpdateBodySchema = reportCreateBodySchema.partial().refine((value) => Object.keys(value).length > 0, {
+const reportCreateBodySchema = reportBodySchema.refine(
+    (value) => {
+        const paymentMethod = value.paymentMethod ?? "non_paid";
+        const price = value.price ?? 0;
+
+        return !paidPaymentMethods.has(paymentMethod) || price > 0;
+    },
+    {
+        message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0",
+        path: ["price"],
+    }
+);
+
+const reportUpdateBodySchema = reportBodySchema.partial().refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required",
 });
 
@@ -151,7 +168,19 @@ reportsRouter.get("/:id", validate({ params: reportIdParamsSchema }), async (req
 });
 
 reportsRouter.post("/", validate({ body: reportCreateBodySchema }), async (req, res) => {
-    const createdReport = await createReport(req.body);
+    const paymentMethod = (req.body.paymentMethod ?? "non_paid") as ReportPaymentMethod;
+    const price = req.body.price ?? 0;
+
+    if (paidPaymentMethods.has(paymentMethod) && price <= 0) {
+        res.status(400).json({ message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0" });
+        return;
+    }
+
+    const createdReport = await createReport({
+        ...req.body,
+        paymentMethod,
+        price,
+    });
 
     res.status(201).json(createdReport[0]);
 });
@@ -161,6 +190,21 @@ reportsRouter.put(
     validate({ params: reportIdParamsSchema, body: reportUpdateBodySchema }),
     async (req, res) => {
         const { id } = req.params as unknown as { id: number };
+        const existingReport = await getReportById(id);
+
+        if (existingReport.length === 0) {
+            res.status(404).json({ message: "Report not found" });
+            return;
+        }
+
+        const nextPaymentMethod = (req.body.paymentMethod ?? existingReport[0].paymentMethod) as ReportPaymentMethod;
+        const nextPrice = req.body.price ?? existingReport[0].price;
+
+        if (paidPaymentMethods.has(nextPaymentMethod) && nextPrice <= 0) {
+            res.status(400).json({ message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0" });
+            return;
+        }
+
         const updatedReport = await updateReportById(id, req.body);
 
         if (updatedReport.length === 0) {

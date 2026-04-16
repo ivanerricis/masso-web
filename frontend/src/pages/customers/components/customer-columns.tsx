@@ -41,11 +41,6 @@ export const customerColumns: CustomerColumn[] = [
         render: (row) => row.email ?? "-",
     },
     {
-        key: "vatNumber",
-        header: "Partita IVA",
-        render: (row) => row.vatNumber ?? "-",
-    },
-    {
         key: "createdAt",
         header: "Creato il",
         render: (row) => formatDate(row.createdAt),

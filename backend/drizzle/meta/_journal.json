@@ -43,6 +43,20 @@
       "when": 1776250000000,
       "tag": "0005_customer_second_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776336000000,
+      "tag": "0006_drop_customer_vat_number",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776339600000,
+      "tag": "0007_add_report_payment_method",
+      "breakpoints": true
     }
   ]
 }

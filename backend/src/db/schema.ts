@@ -21,6 +21,7 @@ export const reportTable = pgTable("report", {
     charger: boolean("charger").notNull().default(false),
     closed: boolean("closed").notNull().default(false),
     toInvoice: boolean("to_invoice").notNull().default(false),
+    paymentMethod: varchar("payment_method", { length: 20 }).notNull().default("non_paid"),
     price: integer("price").notNull().default(0),
     ...timestamps,
     deviceId: integer("device_id").notNull().references(() => deviceTable.id),
@@ -34,7 +35,6 @@ export const customerTable = pgTable("customer", {
     ...userFields,
     phoneNumberSecondary: varchar("phone_number_secondary", { length: 20 }),
     email: varchar("email", { length: 255 }),
-    vatNumber: varchar("vat_number", { length: 20 }).unique(),
     ...timestamps
 })
 

@@ -23,7 +23,6 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
         phoneNumber: "",
         phoneNumberSecondary: "",
         email: "",
-        vatNumber: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,7 +34,6 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                 phoneNumber: initialValues?.phoneNumber ?? "",
                 phoneNumberSecondary: initialValues?.phoneNumberSecondary ?? "",
                 email: initialValues?.email ?? "",
-                vatNumber: initialValues?.vatNumber ?? "",
             });
         }
     }, [open, initialValues]);
@@ -141,16 +139,6 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                             placeholder="mario.rossi@email.com"
                             value={formValues.email}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, email: event.target.value }))}
-                        />
-                    </div>
-                    <div className="grid">
-                        <Label htmlFor="vatNumber" className="text-lg">Partita IVA (opzionale)</Label>
-                        <Input
-                            className="text-lg!"
-                            id="vatNumber"
-                            placeholder="IT12345678901"
-                            value={formValues.vatNumber}
-                            onChange={(event) => setFormValues((prev) => ({ ...prev, vatNumber: event.target.value }))}
                         />
                     </div>
                 </div>

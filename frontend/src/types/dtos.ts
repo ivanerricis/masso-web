@@ -1,3 +1,5 @@
+export type PaymentMethod = "non_paid" | "cash" | "card";
+
 export type ReportDto = {
     id: number;
     customer: string;
@@ -5,6 +7,7 @@ export type ReportDto = {
     device: string;
     issue: string;
     password: string | null;
+    paymentMethod: PaymentMethod;
     charger: boolean;
     technician: string;
     internalPrice: number;
@@ -23,7 +26,6 @@ export type CustomerDto = {
     phoneNumber: string | null;
     phoneNumberSecondary: string | null;
     email: string | null;
-    vatNumber: string | null;
     createdAt: string;
     updatedAt: string | null;
 };

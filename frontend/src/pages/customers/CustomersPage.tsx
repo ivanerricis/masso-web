@@ -32,7 +32,6 @@ const CustomersPage = () => {
             phoneNumberSecondary:
                 String(values.phoneNumberSecondary).trim() === "" ? null : String(values.phoneNumberSecondary).trim(),
             email: String(values.email).trim() === "" ? null : String(values.email).trim(),
-            vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
         });
 
         await loadCustomers();
@@ -67,7 +66,6 @@ const CustomersPage = () => {
             phoneNumberSecondary:
                 String(values.phoneNumberSecondary).trim() === "" ? null : String(values.phoneNumberSecondary).trim(),
             email: String(values.email).trim() === "" ? null : String(values.email).trim(),
-            vatNumber: String(values.vatNumber).trim() === "" ? null : String(values.vatNumber).trim(),
         });
 
         await loadCustomers();

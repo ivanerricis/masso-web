@@ -114,10 +114,10 @@ const ReportsPage = () => {
                 issueId: selectedIssue.id,
                 customerId: selectedCustomer.id,
                 note: String(values.notes).trim() === "" ? null : String(values.notes).trim(),
-                    password: String(values.password).trim() === "" ? null : String(values.password).trim(),
+                password: String(values.password).trim() === "" ? null : String(values.password).trim(),
                 issueDescription,
                 dataBackup: Boolean(values.dataBackup),
-                    charger: Boolean(values.charger),
+                charger: Boolean(values.charger),
             });
 
             await loadReports();
@@ -159,6 +159,7 @@ const ReportsPage = () => {
             charger: values.charger,
             closed: values.closed,
             toInvoice: values.toInvoice,
+            paymentMethod: values.paymentMethod,
             price: values.internalPrice,
         });
 
