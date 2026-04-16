@@ -36,10 +36,10 @@ frontend/vite.config.ts.timestamp-*
 *.tsbuildinfo
 
 # Drizzle
-drizzle/meta/_journal.json
-drizzle/meta/*.tmp
-backend/drizzle/meta/_journal.json
-backend/drizzle/meta/*.tmp
+# drizzle/meta/_journal.json
+# drizzle/meta/*.tmp
+# backend/drizzle/meta/_journal.json
+# backend/drizzle/meta/*.tmp
 
 # Databases / local dev data
 *.db
