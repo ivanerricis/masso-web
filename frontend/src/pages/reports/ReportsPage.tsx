@@ -21,12 +21,20 @@ import { useEffect, useState } from "react";
 import type { ReportDto } from "@/types/dtos";
 import { toast } from "sonner";
 import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { reportColumns } from "./components/report-columns";
 import ReportsFilters from "./components/reports-filters";
 import ReportsTable from "./components/reports-table";
 import type { ReportVisibilityFilter } from "./components/types";
 import { useReportsRows } from "./hooks/useReportsRows";
+
+const parseVisibilityFilter = (value: string | null): ReportVisibilityFilter => {
+    if (value === "all" || value === "open" || value === "closed") {
+        return value;
+    }
+
+    return "open";
+};
 
 const formatCustomerOption = (
     firstName: string,
@@ -40,13 +48,16 @@ const formatCustomerOption = (
 
 const ReportsPage = () => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [reportIdToEdit, setReportIdToEdit] = useState<number | null>(null);
     const [reportToDelete, setReportToDelete] = useState<ReportDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>("open");
+    const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>(() =>
+        parseVisibilityFilter(searchParams.get("visibility"))
+    );
     const [searchText, setSearchText] = useState("");
     const { reportRows, visibleReportRows, isLoading, loadReports } = useReportsRows({
         searchText,
@@ -140,6 +151,11 @@ const ReportsPage = () => {
         navigate(`/reports/${id}`);
     };
 
+    const handleVisibilityFilterChange = (value: ReportVisibilityFilter) => {
+        setVisibilityFilter(value);
+        setSearchParams(value === "open" ? {} : { visibility: value }, { replace: true });
+    };
+
     const handleOpenEditDialog = (id: number) => {
         setReportIdToEdit(id);
         setIsEditDialogOpen(true);
@@ -218,6 +234,10 @@ const ReportsPage = () => {
         void loadReports();
     }, []);
 
+    useEffect(() => {
+        setVisibilityFilter(parseVisibilityFilter(searchParams.get("visibility")));
+    }, [searchParams]);
+
     return (
         <div className="flex flex-col gap-4 w-full h-full">
             <>
@@ -267,7 +287,7 @@ const ReportsPage = () => {
                     searchText={searchText}
                     onSearchTextChange={setSearchText}
                     visibilityFilter={visibilityFilter}
-                    onVisibilityFilterChange={setVisibilityFilter}
+                    onVisibilityFilterChange={handleVisibilityFilterChange}
                 />
 
                 {isLoading && reportRows.length === 0 ? (

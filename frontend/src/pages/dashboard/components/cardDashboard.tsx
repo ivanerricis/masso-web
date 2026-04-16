@@ -7,11 +7,32 @@ type Props = Readonly<{
     icon: LucideIcon
     number: string
     iconColor?: string
+    onClick?: () => void
 }>
 
-const CardDashboard = ({ text, icon: Icon, number, iconColor }: Props) => {
+const CardDashboard = ({ text, icon: Icon, number, iconColor, onClick }: Props) => {
+    const isInteractive = onClick != null;
+
     return (
-        <div className="flex flex-col w-58 rounded-lg border bg-card p-6 gap-2 shadow">
+        <div
+            className={cn(
+                "flex flex-col w-58 rounded-lg border bg-card p-6 gap-2 shadow",
+                isInteractive && "cursor-pointer *:cursor-pointer *:*:cursor-pointer hover:bg-accent/35"
+            )}
+            onClick={onClick}
+            role={isInteractive ? "button" : undefined}
+            tabIndex={isInteractive ? 0 : undefined}
+            onKeyDown={
+                isInteractive
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            onClick();
+                        }
+                    }
+                    : undefined
+            }
+        >
             <div className="flex items-center justify-between">
                 <Label className="text-lg">{text}</Label>
                 <Icon className={cn(`size-6 text-muted-foreground`, iconColor)} />

@@ -53,6 +53,7 @@ export const useReportsRows = ({ searchText, visibilityFilter }: UseReportsRowsP
                     device: device?.name ?? "-",
                     issue: issue?.description ?? "-",
                     password: report.password,
+                    paymentMethod: report.paymentMethod,
                     charger: report.charger,
                     dataBackup: report.dataBackup,
                     technician: "-",

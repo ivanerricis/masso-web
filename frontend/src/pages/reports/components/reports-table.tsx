@@ -44,7 +44,11 @@ const ReportsTable = ({
                     rows.map((row) => (
                         <TableRow
                             key={row.id}
-                            className={row.closed ? "bg-green-500/15 hover:bg-green-500/20" : "bg-red-500/15 hover:bg-red-500/20"}
+                            className={
+                                row.closed
+                                    ? "bg-green-500/30 hover:bg-green-500/40 dark:bg-green-500/15 dark:hover:bg-green-500/20"
+                                    : "bg-red-500/30 hover:bg-red-500/40 dark:bg-red-500/15 dark:hover:bg-red-500/20"
+                            }
                         >
                             {columns.map((column) => (
                                 <TableCell key={`${row.id}-${column.key}`} className={column.className}>

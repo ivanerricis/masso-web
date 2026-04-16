@@ -18,8 +18,10 @@ import {
 import { formatEuro } from "@/lib/utils";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
+    const navigate = useNavigate();
     const [dialogCreateReportOpen, setDialogCreateReportOpen] = useState(false);
     const [openReports, setOpenReports] = useState(0);
     const [closedReports, setClosedReports] = useState(0);
@@ -147,6 +149,10 @@ const DashboardPage = () => {
         void loadDashboardMetrics();
     }, []);
 
+    const goToReportsPage = (visibilityFilter: "open" | "closed") => {
+        navigate(`/reports?visibility=${visibilityFilter}`);
+    };
+
     return (
         <div className="flex flex-col gap-4">
             <PageHeader
@@ -175,12 +181,14 @@ const DashboardPage = () => {
                             icon={CircleDashed}
                             number={String(openReports)}
                             iconColor="text-destructive"
+                            onClick={() => goToReportsPage("open")}
                         />
                         <CardDashboard
                             text="Rapportini chiusi"
                             icon={CircleCheck}
                             number={String(closedReports)}
                             iconColor="text-green-400"
+                            onClick={() => goToReportsPage("closed")}
                         />
                         <CardDashboard
                             text="Incassi totali"
