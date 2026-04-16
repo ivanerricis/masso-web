@@ -33,7 +33,7 @@ services:
     volumes:
       - ./backend:/app
       - backend_node_modules:/app/node_modules
-    command: sh -c "npm run db:migrate && npm run dev"
+    command: sh -c "npx drizzle-kit migrate --config ./drizzle.config.ts && npm run dev"
     ports:
       - "3000:3000"
     depends_on:

@@ -30,7 +30,7 @@ services:
       LAB_LOGO_URL: ${LAB_LOGO_URL}
     ports:
       - "3000:3000"
-    command: sh -c "npm run db:migrate && npm run start"
+    command: sh -c "npx drizzle-kit migrate --config ./drizzle.config.ts && npm run start"
     depends_on:
       db:
         condition: service_healthy
