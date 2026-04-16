@@ -31,7 +31,7 @@ services:
     ports:
       - "3000:3000"
     command: >-
-      sh -c 'echo "DATABASE_URL=$$DATABASE_URL"; npx drizzle-kit migrate --config ./drizzle.config.ts; ec=$$?; echo "Drizzle exit code: $$ec"; if [ $$ec -ne 0 ]; then echo "Migration failed!"; exit 1; fi; npm run start'
+      sh -c 'echo "DATABASE_URL=$$DATABASE_URL"; node migrate.js; if [ $$? -ne 0 ]; then exit 1; fi; npm run start'
     depends_on:
       db:
         condition: service_healthy
