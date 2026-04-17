@@ -7,12 +7,12 @@ export const MainLayout = () => {
     return (
         <SidebarProvider defaultOpen>
             <MainSidebar />
-            <SidebarInset>
+            <SidebarInset className="h-svh overflow-hidden">
                 <header className="flex h-13 items-center justify-between border-b px-2">
                     <SidebarTrigger />
                     <ModeToggle />
                 </header>
-                <main className="flex-1 overflow-auto p-3">
+                <main className="flex flex-1 w-full min-h-0 overflow-hidden p-3">
                     <Outlet />
                 </main>
             </SidebarInset>

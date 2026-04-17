@@ -14,9 +14,10 @@ import type { ReportVisibilityFilter } from "../components/types";
 type UseReportsRowsParams = {
     searchText: string;
     visibilityFilter: ReportVisibilityFilter;
+    selectedDate?: Date;
 };
 
-export const useReportsRows = ({ searchText, visibilityFilter }: UseReportsRowsParams) => {
+export const useReportsRows = ({ searchText, visibilityFilter, selectedDate }: UseReportsRowsParams) => {
     const [reportRows, setReportRows] = useState<ReportDto[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -63,6 +64,7 @@ export const useReportsRows = ({ searchText, visibilityFilter }: UseReportsRowsP
                     closed: report.closed,
                     toInvoice: report.toInvoice,
                     createdAt: report.created_at,
+                    updatedAt: report.updated_at,
                 };
             });
 
@@ -102,17 +104,30 @@ export const useReportsRows = ({ searchText, visibilityFilter }: UseReportsRowsP
                 return false;
             }
 
-            if (visibilityFilter === "open") {
-                return !report.closed;
+            if (visibilityFilter === "open" && report.closed) {
+                return false;
             }
 
-            if (visibilityFilter === "closed") {
-                return report.closed;
+            if (visibilityFilter === "closed" && !report.closed) {
+                return false;
+            }
+
+            if (selectedDate) {
+                const reportDate = new Date(report.createdAt);
+
+                if (
+                    Number.isNaN(reportDate.getTime()) ||
+                    reportDate.getFullYear() !== selectedDate.getFullYear() ||
+                    reportDate.getMonth() !== selectedDate.getMonth() ||
+                    reportDate.getDate() !== selectedDate.getDate()
+                ) {
+                    return false;
+                }
             }
 
             return true;
         });
-    }, [reportRows, searchText, visibilityFilter]);
+    }, [reportRows, searchText, visibilityFilter, selectedDate]);
 
     return {
         reportRows,

@@ -51,7 +51,10 @@ const ReportsTable = ({
                             }
                         >
                             {columns.map((column) => (
-                                <TableCell key={`${row.id}-${column.key}`} className={column.className}>
+                                <TableCell
+                                    key={`${row.id}-${column.key}`}
+                                    className={column.key === "actions" ? "bg-background" : column.className}
+                                >
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
                                             <OpenEntityButton

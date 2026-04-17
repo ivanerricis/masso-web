@@ -17,6 +17,7 @@ export type ReportDto = {
     toInvoice: boolean;
     dataBackup: boolean;
     createdAt: string;
+    updatedAt: string | null;
 };
 
 export type CustomerDto = {

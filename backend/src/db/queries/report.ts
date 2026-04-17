@@ -13,7 +13,10 @@ export const createReport = (data: NewReport) =>
 
 export const updateReportById = (id: number, data: UpdateReport) =>
     db.update(reportTable)
-        .set(data)
+        .set({
+            ...data,
+            updated_at: new Date(),
+        })
         .where(eq(reportTable.id, id))
         .returning();
 

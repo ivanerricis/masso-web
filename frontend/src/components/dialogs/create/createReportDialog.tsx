@@ -9,7 +9,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import InputWithAdd from "@/components/inputWithAdd";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
 
@@ -35,8 +36,8 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         deviceType: "",
         issueDescription: "",
         password: "",
-        charger: false,
-        dataBackup: false,
+        charger: "unset",
+        dataBackup: "unset",
         notes: "",
     });
     const [isCreateCustomerDialogOpen, setIsCreateCustomerDialogOpen] = useState(false);
@@ -46,6 +47,11 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     const [deviceOptions, setDeviceOptions] = useState<string[]>([]);
     const [issueOptions, setIssueOptions] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState({
+        issueDescription: false,
+        charger: false,
+        dataBackup: false,
+    });
 
     useEffect(() => {
         if (open) {
@@ -54,9 +60,14 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 deviceType: "",
                 issueDescription: "",
                 password: "",
+                charger: "unset",
+                dataBackup: "unset",
+                notes: "",
+            });
+            setFieldErrors({
+                issueDescription: false,
                 charger: false,
                 dataBackup: false,
-                notes: "",
             });
 
             const loadOptions = async () => {
@@ -93,8 +104,26 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             return;
         }
 
-        if (formValues.issueDescription.trim() === "") {
+        const nextFieldErrors = {
+            issueDescription: formValues.issueDescription.trim() === "",
+            charger: formValues.charger === "unset",
+            dataBackup: formValues.dataBackup === "unset",
+        };
+
+        setFieldErrors(nextFieldErrors);
+
+        if (nextFieldErrors.issueDescription) {
             toast.error("La descrizione difetto e obbligatoria");
+            return;
+        }
+
+        if (nextFieldErrors.charger) {
+            toast.error("Seleziona se l'alimentatore è presente");
+            return;
+        }
+
+        if (nextFieldErrors.dataBackup) {
+            toast.error("Seleziona se deve essere effettuato il backup dati");
             return;
         }
 
@@ -105,7 +134,11 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
 
         try {
             setIsSubmitting(true);
-            await onSubmit(formValues);
+            await onSubmit({
+                ...formValues,
+                charger: formValues.charger === "yes",
+                dataBackup: formValues.dataBackup === "yes",
+            });
             onOpenChange(false);
             toast.success("Rapporto creato con successo");
         } catch (error) {
@@ -201,14 +234,19 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                         <InputWithAdd
                                             id="issueDescription"
                                             placeholder="Descrivi il difetto"
-                                            inputClassName="rounded-r-none"
+                                            inputClassName={`rounded-r-none ${fieldErrors.issueDescription ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
                                             value={formValues.issueDescription}
                                             options={issueOptions}
                                             onCreate={async (value: string) => {
                                                 await createIssue({ description: value });
                                                 setIssueOptions((prev) => Array.from(new Set([...prev, value])));
                                             }}
-                                            onChange={(value: string) => setFormValues((prev) => ({ ...prev, issueDescription: value }))}
+                                            onChange={(value: string) => {
+                                                setFormValues((prev) => ({ ...prev, issueDescription: value }));
+                                                if (fieldErrors.issueDescription) {
+                                                    setFieldErrors((prev) => ({ ...prev, issueDescription: false }));
+                                                }
+                                            }}
                                             required
                                         />
                                         <Button
@@ -238,12 +276,13 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
 
                                 <div className="grid lg:col-span-2 xl:col-span-3">
                                     <Label htmlFor="notes" className="text-lg">Note</Label>
-                                    <Input
+                                    <Textarea
                                         className="text-lg!"
                                         id="notes"
                                         placeholder="Note"
+                                        rows={4}
                                         value={formValues.notes}
-                                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                                        onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
                                             setFormValues((prev) => ({ ...prev, notes: event.target.value }))
                                         }
                                     />
@@ -256,32 +295,58 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Stato</h3>
 
                             <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-2">
-                                <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                    <Checkbox
-                                        id="charger"
-                                        className="size-5"
-                                        checked={formValues.charger}
-                                        onCheckedChange={(checked) =>
-                                            setFormValues((prev) => ({ ...prev, charger: checked === true }))
-                                        }
-                                    />
-                                    <Label htmlFor="charger" className="cursor-pointer text-lg w-full">
+                                <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                    <Label htmlFor="charger" className="text-lg w-full">
                                         Alimentatore presente
                                     </Label>
+                                    <Select
+                                        value={formValues.charger}
+                                        onValueChange={(value) => {
+                                            setFormValues((prev) => ({ ...prev, charger: value }));
+                                            if (fieldErrors.charger && value !== "unset") {
+                                                setFieldErrors((prev) => ({ ...prev, charger: false }));
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger
+                                            id="charger"
+                                            className={`w-full ${fieldErrors.charger ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+                                        >
+                                            <SelectValue placeholder="Seleziona" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="unset">Seleziona</SelectItem>
+                                            <SelectItem value="yes">Si</SelectItem>
+                                            <SelectItem value="no">No</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
-                                <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
-                                    <Checkbox
-                                        id="dataBackup"
-                                        className="size-5"
-                                        checked={formValues.dataBackup}
-                                        onCheckedChange={(checked) =>
-                                            setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))
-                                        }
-                                    />
-                                    <Label htmlFor="dataBackup" className="cursor-pointer text-lg w-full">
+                                <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                    <Label htmlFor="dataBackup" className="text-lg w-full">
                                         Backup dati
                                     </Label>
+                                    <Select
+                                        value={formValues.dataBackup}
+                                        onValueChange={(value) => {
+                                            setFormValues((prev) => ({ ...prev, dataBackup: value }));
+                                            if (fieldErrors.dataBackup && value !== "unset") {
+                                                setFieldErrors((prev) => ({ ...prev, dataBackup: false }));
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger
+                                            id="dataBackup"
+                                            className={`w-full ${fieldErrors.dataBackup ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+                                        >
+                                            <SelectValue placeholder="Seleziona" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="unset">Seleziona</SelectItem>
+                                            <SelectItem value="yes">Si</SelectItem>
+                                            <SelectItem value="no">No</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </section>

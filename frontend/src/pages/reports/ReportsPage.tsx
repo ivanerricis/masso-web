@@ -59,9 +59,11 @@ const ReportsPage = () => {
         parseVisibilityFilter(searchParams.get("visibility"))
     );
     const [searchText, setSearchText] = useState("");
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const { reportRows, visibleReportRows, isLoading, loadReports } = useReportsRows({
         searchText,
         visibilityFilter,
+        selectedDate,
     });
 
     const handleCreateReport = async (values: Record<string, string | boolean>) => {
@@ -288,6 +290,8 @@ const ReportsPage = () => {
                     onSearchTextChange={setSearchText}
                     visibilityFilter={visibilityFilter}
                     onVisibilityFilterChange={handleVisibilityFilterChange}
+                    selectedDate={selectedDate}
+                    onSelectedDateChange={setSelectedDate}
                 />
 
                 {isLoading && reportRows.length === 0 ? (

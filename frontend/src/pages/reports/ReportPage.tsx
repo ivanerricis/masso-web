@@ -1,6 +1,10 @@
 import LoadingPage from "@/components/loadingPage";
+import EditReportDialog, { type EditReportSubmitValues } from "@/components/dialogs/edit/editReportDialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+    createReportTechnician,
+    deleteReportTechnician,
     getApiErrorMessage,
     getReport,
     getReportPrintUrl,
@@ -11,12 +15,15 @@ import {
     listReportTechnicians,
     listTechnicians,
     type ReportEntityDto,
+    updateReport,
+    updateReportTechnician,
 } from "@/lib/api";
 import { formatDateTime, formatEuro } from "@/lib/utils";
-import { ArrowLeft, Printer } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Pencil, Printer } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
 
 type ReportPageDetails = {
     report: ReportEntityDto;
@@ -31,12 +38,37 @@ type ReportPageDetails = {
 
 const yesNo = (value: boolean) => (value ? "Si" : "No");
 
+const paymentMethodLabel = (value: ReportEntityDto["paymentMethod"]) => {
+    if (value === "cash") {
+        return "Contanti";
+    }
+
+    if (value === "card") {
+        return "Carta";
+    }
+
+    return "Non pagato";
+};
+
+const statusBadgeClass = (value: boolean) =>
+    value
+        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+        : "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300";
+
+const DetailItem = ({ label, value }: { label: string; value: string }) => (
+    <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="mt-1 text-sm font-medium wrap-break-word">{value}</p>
+    </div>
+);
+
 const ReportPage = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const reportId = Number(id);
     const [isLoading, setIsLoading] = useState(true);
     const [details, setDetails] = useState<ReportPageDetails | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const hasValidReportId = useMemo(
         () => Number.isInteger(reportId) && reportId > 0,
@@ -58,6 +90,94 @@ const ReportPage = () => {
         }
     };
 
+    const loadDetails = useCallback(async () => {
+        const [report, customers, devices, issues, collaborators, reportTechnicians, technicians] = await Promise.all([
+            getReport(reportId),
+            listCustomers(),
+            listDevices(),
+            listIssues(),
+            listCollaborators(),
+            listReportTechnicians(),
+            listTechnicians(),
+        ]);
+
+        const customer = customers.find((item) => item.id === report.customerId);
+        const device = devices.find((item) => item.id === report.deviceId);
+        const issue = issues.find((item) => item.id === report.issueId);
+        const collaborator = collaborators.find((item) => item.id === report.collaboratorId);
+
+        const technicianById = new Map(technicians.map((technician) => [technician.id, technician]));
+        const reportTechnicianRows = reportTechnicians.filter((item) => item.reportId === report.id);
+
+        const technicianDetails = reportTechnicianRows.map((item) => {
+            const technician = technicianById.get(item.technicianId);
+            return {
+                id: item.technicianId,
+                name: technician
+                    ? `${technician.firstName} ${technician.lastName ?? ""}`.trim()
+                    : `Tecnico #${item.technicianId}`,
+                price: item.price,
+            };
+        });
+
+        const techniciansTotal = technicianDetails.reduce((total, item) => total + item.price, 0);
+
+        setDetails({
+            report,
+            customerName: customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "Cliente sconosciuto",
+            customerPhone: customer?.phoneNumber ?? customer?.phoneNumberSecondary ?? null,
+            deviceName: device?.name ?? "Dispositivo sconosciuto",
+            issueName: issue?.description ?? "Difetto sconosciuto",
+            collaboratorName: collaborator
+                ? `${collaborator.firstName} ${collaborator.lastName ?? ""}`.trim()
+                : "-",
+            technicians: technicianDetails,
+            techniciansTotal,
+        });
+    }, [reportId]);
+
+    const handleEditReport = async (values: EditReportSubmitValues) => {
+        await updateReport(values.reportId, {
+            customerId: values.customerId,
+            deviceId: values.deviceId,
+            issueId: values.issueId,
+            collaboratorId: values.collaboratorId,
+            issueDescription: values.issueDescription,
+            serviceDescription: values.serviceDescription,
+            note: values.note,
+            password: values.password,
+            dataBackup: values.dataBackup,
+            charger: values.charger,
+            closed: values.closed,
+            toInvoice: values.toInvoice,
+            paymentMethod: values.paymentMethod,
+            price: values.internalPrice,
+        });
+
+        if (values.technicianId != null) {
+            if (values.existingTechnicianId == null) {
+                await createReportTechnician({
+                    reportId: values.reportId,
+                    technicianId: values.technicianId,
+                    price: values.technicianPrice,
+                });
+            } else if (values.existingTechnicianId === values.technicianId) {
+                await updateReportTechnician(values.reportId, values.technicianId, values.technicianPrice);
+            } else {
+                await deleteReportTechnician(values.reportId, values.existingTechnicianId);
+                await createReportTechnician({
+                    reportId: values.reportId,
+                    technicianId: values.technicianId,
+                    price: values.technicianPrice,
+                });
+            }
+        } else if (values.existingTechnicianId != null) {
+            await deleteReportTechnician(values.reportId, values.existingTechnicianId);
+        }
+
+        await loadDetails();
+    };
+
     useEffect(() => {
         if (!hasValidReportId) {
             toast.error("Report non valido");
@@ -68,49 +188,7 @@ const ReportPage = () => {
         const loadData = async () => {
             try {
                 setIsLoading(true);
-                const [report, customers, devices, issues, collaborators, reportTechnicians, technicians] = await Promise.all([
-                    getReport(reportId),
-                    listCustomers(),
-                    listDevices(),
-                    listIssues(),
-                    listCollaborators(),
-                    listReportTechnicians(),
-                    listTechnicians(),
-                ]);
-
-                const customer = customers.find((item) => item.id === report.customerId);
-                const device = devices.find((item) => item.id === report.deviceId);
-                const issue = issues.find((item) => item.id === report.issueId);
-                const collaborator = collaborators.find((item) => item.id === report.collaboratorId);
-
-                const technicianById = new Map(technicians.map((technician) => [technician.id, technician]));
-                const reportTechnicianRows = reportTechnicians.filter((item) => item.reportId === report.id);
-
-                const technicianDetails = reportTechnicianRows.map((item) => {
-                    const technician = technicianById.get(item.technicianId);
-                    return {
-                        id: item.technicianId,
-                        name: technician
-                            ? `${technician.firstName} ${technician.lastName ?? ""}`.trim()
-                            : `Tecnico #${item.technicianId}`,
-                        price: item.price,
-                    };
-                });
-
-                const techniciansTotal = technicianDetails.reduce((total, item) => total + item.price, 0);
-
-                setDetails({
-                    report,
-                    customerName: customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "Cliente sconosciuto",
-                    customerPhone: customer?.phoneNumber ?? customer?.phoneNumberSecondary ?? null,
-                    deviceName: device?.name ?? "Dispositivo sconosciuto",
-                    issueName: issue?.description ?? "Difetto sconosciuto",
-                    collaboratorName: collaborator
-                        ? `${collaborator.firstName} ${collaborator.lastName ?? ""}`.trim()
-                        : "-",
-                    technicians: technicianDetails,
-                    techniciansTotal,
-                });
+                await loadDetails();
             } catch (error) {
                 toast.error(getApiErrorMessage(error, "Impossibile caricare il report"));
                 navigate("/reports");
@@ -120,7 +198,7 @@ const ReportPage = () => {
         };
 
         void loadData();
-    }, [hasValidReportId, navigate, reportId]);
+    }, [hasValidReportId, navigate, loadDetails]);
 
     if (isLoading) {
         return <LoadingPage />;
@@ -137,91 +215,166 @@ const ReportPage = () => {
     const totalPrice = details.report.price + details.techniciansTotal;
 
     return (
-        <div className="flex flex-col w-full h-full gap-4">
-            <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                    <Button size={"icon-lg"} variant={"ghost"} onClick={handleBack}>
-                        <ArrowLeft className="size-6" />
-                    </Button>
-                    <h1 className="text-2xl font-bold">Rapporto #{details.report.id}</h1>
-                </div>
+        <div className="flex w-full flex-col gap-4 overflow-auto p-2">
+            <div className="border-primary/30">
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="flex min-w-0 items-start gap-3">
+                            <Button size={"icon-lg"} variant={"ghost"} onClick={handleBack} className="shrink-0">
+                                <ArrowLeft className="size-6" />
+                            </Button>
 
-                <Button size={"lg"} onClick={handlePrintReport}>
-                    <Printer className="size-5" />
-                    Stampa
-                </Button>
-            </div>
-
-            <div className="grid gap-4 xl:grid-cols-2">
-                <section className="rounded-md border border-primary p-4">
-                    <h2 className="text-lg font-semibold">Anagrafica</h2>
-                    <div className="mt-3 grid gap-2 text-base sm:grid-cols-2">
-                        <p><span className="font-semibold">Cliente:</span> {details.customerName}</p>
-                        <p><span className="font-semibold">Telefono:</span> {details.customerPhone ?? "-"}</p>
-                        <p><span className="font-semibold">Collaboratore:</span> {details.collaboratorName}</p>
-                        <p><span className="font-semibold">Dispositivo:</span> {details.deviceName}</p>
-                        <p><span className="font-semibold">Difetto:</span> {details.issueName}</p>
-                    </div>
-                </section>
-
-                <section className="rounded-md border border-primary p-4">
-                    <h2 className="text-lg font-semibold">Stato</h2>
-                    <div className="mt-3 grid gap-2 text-base sm:grid-cols-2">
-                        <p><span className="font-semibold">Chiuso:</span> {yesNo(details.report.closed)}</p>
-                        <p><span className="font-semibold">Da fatturare:</span> {yesNo(details.report.toInvoice)}</p>
-                        <p><span className="font-semibold">Backup dati:</span> {yesNo(details.report.dataBackup)}</p>
-                        <p><span className="font-semibold">Alimentatore:</span> {yesNo(details.report.charger)}</p>
-                    </div>
-                </section>
-
-                <section className="rounded-md border border-primary p-4">
-                    <h2 className="text-lg font-semibold">Dettagli Intervento</h2>
-                    <div className="mt-3 grid gap-2 text-base sm:grid-cols-2">
-                        <p><span className="font-semibold">Descrizione problema:</span> {details.report.issueDescription ?? "-"}</p>
-                        <p><span className="font-semibold">Descrizione servizio:</span> {details.report.serviceDescription ?? "-"}</p>
-                        <p><span className="font-semibold">Password:</span> {details.report.password ?? "-"}</p>
-                        <p><span className="font-semibold">Note:</span> {details.report.note ?? "-"}</p>
-                    </div>
-                </section>
-
-                <section className="rounded-md border border-primary p-4">
-                    <h2 className="text-lg font-semibold">Prezzi</h2>
-                    <div className="mt-3 space-y-2 text-base">
-                        <p><span className="font-semibold">Prezzo interno:</span> {formatEuro(details.report.price)}</p>
-                        <p><span className="font-semibold">Prezzo tecnici:</span> {formatEuro(details.techniciansTotal)}</p>
-                        <p><span className="font-semibold">Prezzo totale:</span> {formatEuro(totalPrice)}</p>
-                    </div>
-                </section>
-            </div>
-
-            <div className="grid gap-4 xl:grid-cols-2">
-                <section className="rounded-md border border-primary p-4">
-                    <h2 className="text-lg font-semibold">Tecnici Associati</h2>
-                    {details.technicians.length === 0 ? (
-                        <p className="mt-3 text-muted-foreground">Nessun tecnico associato a questo report.</p>
-                    ) : (
-                        <div className="mt-3 space-y-2">
-                            {details.technicians.map((technician) => (
-                                <div key={technician.id} className="flex items-center justify-between rounded-md border p-3">
-                                    <span>{technician.name}</span>
-                                    <span className="font-semibold">{formatEuro(technician.price)}</span>
-                                </div>
-                            ))}
+                            <div className="min-w-0">
+                                <h1 className="text-xl font-bold tracking-tight sm:text-2xl wrap-break-word">
+                                    Rapporto #{details.report.id} - {details.customerName}
+                                </h1>
+                            </div>
                         </div>
-                    )}
-                </section>
 
-                <section className="rounded-md border border-primary p-4">
-                    <h2 className="text-lg font-semibold">Date</h2>
-                    <div className="mt-3 space-y-2 text-base">
-                        <p><span className="font-semibold">Creato il:</span> {formatDateTime(details.report.created_at)}</p>
-                        <p>
-                            <span className="font-semibold">Ultimo aggiornamento:</span>{" "}
-                            {details.report.updated_at ? formatDateTime(details.report.updated_at) : "-"}
-                        </p>
+                        <div className="flex shrink-0 items-center gap-2 self-end lg:self-auto">
+                            <Button variant="outline" size={"lg"} onClick={() => setIsEditDialogOpen(true)}>
+                                <Pencil className="size-5" />
+                                <Label className="hidden lg:inline text-lg">Modifica</Label>
+                            </Button>
+
+                            <Button size={"lg"} onClick={handlePrintReport}>
+                                <Printer className="size-5" />
+                                <Label className="hidden lg:inline text-lg">Stampa</Label>
+                            </Button>
+                        </div>
                     </div>
-                </section>
+
+                    <div className="flex flex-wrap gap-2 text-sm">
+                        <span className="rounded-full border border-border/70 bg-background px-3 py-2">
+                            Creato: {formatDateTime(details.report.created_at)}
+                        </span>
+                        <span className="rounded-full border border-border/70 bg-background px-3 py-2">
+                            Aggiornato: {details.report.updated_at ? formatDateTime(details.report.updated_at) : "-"}
+                        </span>
+                        <span className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.report.closed)}`}>
+                            {details.report.closed ? "Chiuso" : "Aperto"}
+                        </span>
+                        <span className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.report.toInvoice)}`}>
+                            {details.report.toInvoice ? "Da fatturare" : "Non fatturare"}
+                        </span>
+                    </div>
+                </div>
             </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <Card className="border-primary/20 h-fit! gap-2!">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-primary">Prezzo interno</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold">{formatEuro(details.report.price)}</p>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-primary/20 h-fit! gap-2!">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-primary">Prezzo tecnici</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold">{formatEuro(details.techniciansTotal)}</p>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-primary/20 h-fit! gap-2!">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-primary">Totale</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold">{formatEuro(totalPrice)}</p>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-primary/20 h-fit! gap-2!">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-primary">Pagamento</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold">{paymentMethodLabel(details.report.paymentMethod)}</p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-2">
+                <Card className="gap-1">
+                    <CardHeader>
+                        <CardTitle className="text-primary">Anagrafica</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-2 sm:grid-cols-2">
+                        <DetailItem label="Cliente" value={details.customerName} />
+                        <DetailItem label="Telefono" value={details.customerPhone ?? "-"} />
+                        <DetailItem label="Collaboratore" value={details.collaboratorName} />
+                        <DetailItem label="Dispositivo" value={details.deviceName} />
+                        <DetailItem label="Difetto catalogo" value={details.issueName} />
+                        <DetailItem label="Metodo pagamento" value={paymentMethodLabel(details.report.paymentMethod)} />
+                    </CardContent>
+                </Card>
+
+                <Card className="gap-1">
+                    <CardHeader>
+                        <CardTitle className="text-primary">Stato e gestione</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-2 sm:grid-cols-2">
+                        <DetailItem label="Chiuso" value={yesNo(details.report.closed)} />
+                        <DetailItem label="Da fatturare" value={yesNo(details.report.toInvoice)} />
+                        <DetailItem label="Backup dati" value={yesNo(details.report.dataBackup)} />
+                        <DetailItem label="Alimentatore" value={yesNo(details.report.charger)} />
+                        <DetailItem label="Creato il" value={formatDateTime(details.report.created_at)} />
+                        <DetailItem
+                            label="Ultimo aggiornamento"
+                            value={details.report.updated_at ? formatDateTime(details.report.updated_at) : "-"}
+                        />
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-2">
+                <Card className="gap-1">
+                    <CardHeader>
+                        <CardTitle className="text-primary">Dettagli intervento</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-2">
+                        <DetailItem label="Descrizione problema" value={details.report.issueDescription ?? "-"} />
+                        <DetailItem label="Descrizione servizio" value={details.report.serviceDescription ?? "-"} />
+                        <DetailItem label="Password" value={details.report.password ?? "-"} />
+                        <DetailItem label="Note" value={details.report.note ?? "-"} />
+                    </CardContent>
+                </Card>
+
+                <Card className="gap-1">
+                    <CardHeader>
+                        <CardTitle className="text-primary">Tecnici associati</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {details.technicians.length === 0 ? (
+                            <p className="text-muted-foreground">Nessun tecnico associato a questo report.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {details.technicians.map((technician) => (
+                                    <div
+                                        key={technician.id}
+                                        className="flex items-center justify-between rounded-md border border-border/70 bg-muted/20 px-3 py-2"
+                                    >
+                                        <span className="text-sm">{technician.name}</span>
+                                        <span className="text-sm font-semibold">{formatEuro(technician.price)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <EditReportDialog
+                open={isEditDialogOpen}
+                reportId={details.report.id}
+                onOpenChange={setIsEditDialogOpen}
+                onSubmit={handleEditReport}
+            />
         </div>
     );
 };

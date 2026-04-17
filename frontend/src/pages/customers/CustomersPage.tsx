@@ -99,7 +99,7 @@ const CustomersPage = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 w-full">
             <PageHeader
                 title="Clienti"
                 description="Gestisci i clienti del laboratorio."

@@ -95,7 +95,7 @@ const TechniciansPage = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 w-full">
             <PageHeader
                 title="Tecnici"
                 description="Gestisci i tecnici del laboratorio."

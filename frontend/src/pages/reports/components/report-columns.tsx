@@ -76,6 +76,11 @@ export const reportColumns: ReportColumn[] = [
         render: (row) => formatDateTime(row.createdAt),
     },
     {
+        key: "updatedAt",
+        header: "Aggiornato il",
+        render: (row) => formatDateTime(row.updatedAt),
+    },
+    {
         key: "actions",
         header: "Azioni",
         className: "text-right",

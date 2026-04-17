@@ -83,7 +83,7 @@ const IssuesPage = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 w-full">
             <PageHeader
                 title="Difetti"
                 description="Gestisci i difetti del laboratorio."

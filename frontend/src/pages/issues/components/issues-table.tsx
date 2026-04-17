@@ -23,7 +23,7 @@ const IssuesTable = ({ columns, rows, onEditIssue, onDeleteIssue }: IssuesTableP
                     ))}
                 </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="overflow-y-auto">
                 {rows.length === 0 ? (
                     <TableRow>
                         <TableCell colSpan={columns.length} className="py-6 text-center text-muted-foreground">

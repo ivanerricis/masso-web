@@ -93,7 +93,7 @@ const CollaboratorsPage = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 w-full">
             <PageHeader
                 title="Collaboratori"
                 description="Gestisci i collaboratori del laboratorio."

@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+import AppErrorBoundary from "@/components/app-error-boundary"
 import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import { TooltipProvider } from "./components/ui/tooltip"
@@ -19,33 +20,37 @@ const DevicesPage = lazy(() => import("@/pages/devices/DevicesPage"))
 const DevicePage = lazy(() => import("./pages/devices/DevicePage"))
 const IssuesPage = lazy(() => import("@/pages/issues/IssuesPage"))
 const IssuePage = lazy(() => import("./pages/issues/IssuePage"))
+const UnhandledErrorPage = lazy(() => import("@/pages/UnhandledErrorPage"))
 
 export function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <TooltipProvider>
         <BrowserRouter>
-          <Suspense fallback={<LoadingPage />}>
-            <Routes>
-              <Route path="/" element={<MainLayout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="reports" element={<ReportsPage />} />
-                <Route path="reports/:id" element={<ReportPage />} />
-                <Route path="clients" element={<CustomersPage />} />
-                <Route path="clients/:id" element={<CustomerPage />} />
-                <Route path="collaborators" element={<CollaboratorsPage />} />
-                <Route path="collaborators/:id" element={<CollaboratorPage />} />
-                <Route path="technicians" element={<TechnicianPage />} />
-                <Route path="technicians/:id" element={<SingleTechnicianPage />} />
-                <Route path="devices" element={<DevicesPage />} />
-                <Route path="devices/:id" element={<DevicePage />} />
-                <Route path="issues" element={<IssuesPage />} />
-                <Route path="issues/:id" element={<IssuePage />} />
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Route>
-            </Routes>
-          </Suspense>
+          <AppErrorBoundary>
+            <Suspense fallback={<LoadingPage />}>
+              <Routes>
+                <Route path="/" element={<MainLayout />}>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                  <Route path="reports/:id" element={<ReportPage />} />
+                  <Route path="clients" element={<CustomersPage />} />
+                  <Route path="clients/:id" element={<CustomerPage />} />
+                  <Route path="collaborators" element={<CollaboratorsPage />} />
+                  <Route path="collaborators/:id" element={<CollaboratorPage />} />
+                  <Route path="technicians" element={<TechnicianPage />} />
+                  <Route path="technicians/:id" element={<SingleTechnicianPage />} />
+                  <Route path="devices" element={<DevicesPage />} />
+                  <Route path="devices/:id" element={<DevicePage />} />
+                  <Route path="issues" element={<IssuesPage />} />
+                  <Route path="issues/:id" element={<IssuePage />} />
+                  <Route path="error" element={<UnhandledErrorPage />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </AppErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
       <Toaster
