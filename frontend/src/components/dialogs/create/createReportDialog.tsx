@@ -27,7 +27,7 @@ const formatCustomerOption = (
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit?: (values: Record<string, string | boolean>) => Promise<void> | void;
+    onSubmit?: (values: Record<string, string | boolean | number | null>) => Promise<void> | void;
 };
 
 const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
@@ -46,6 +46,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     const [customerOptions, setCustomerOptions] = useState<string[]>([]);
     const [deviceOptions, setDeviceOptions] = useState<string[]>([]);
     const [issueOptions, setIssueOptions] = useState<string[]>([]);
+    const [customerIdByOption, setCustomerIdByOption] = useState<Record<string, number>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({
         issueDescription: false,
@@ -69,6 +70,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 charger: false,
                 dataBackup: false,
             });
+            setCustomerIdByOption({});
 
             const loadOptions = async () => {
                 try {
@@ -78,15 +80,19 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         listIssues(),
                     ]);
 
-                    setCustomerOptions(
-                        customers.map((customer) =>
-                            formatCustomerOption(
-                                customer.firstName,
-                                customer.lastName,
-                                customer.phoneNumber,
-                                customer.phoneNumberSecondary
-                            )
-                        )
+                    const options = customers.map((customer) => ({
+                        id: customer.id,
+                        label: formatCustomerOption(
+                            customer.firstName,
+                            customer.lastName,
+                            customer.phoneNumber,
+                            customer.phoneNumberSecondary
+                        ),
+                    }));
+
+                    setCustomerOptions(options.map((item) => item.label));
+                    setCustomerIdByOption(
+                        Object.fromEntries(options.map((item) => [item.label, item.id]))
                     );
                     setDeviceOptions(devices.map((device) => device.name));
                     setIssueOptions(issues.map((issue) => issue.description));
@@ -117,6 +123,11 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             return;
         }
 
+        if (formValues.customer.trim() === "") {
+            toast.error("Seleziona un cliente");
+            return;
+        }
+
         if (nextFieldErrors.charger) {
             toast.error("Seleziona se l'alimentatore è presente");
             return;
@@ -136,6 +147,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setIsSubmitting(true);
             await onSubmit({
                 ...formValues,
+                customerId: customerIdByOption[formValues.customer] ?? null,
                 charger: formValues.charger === "yes",
                 dataBackup: formValues.dataBackup === "yes",
             });
@@ -178,7 +190,9 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             inputClassName="rounded-r-none"
                                             value={formValues.customer}
                                             options={customerOptions}
-                                            onChange={(value: string) => setFormValues((prev) => ({ ...prev, customer: value }))}
+                                            onChange={(value: string) => {
+                                                setFormValues((prev) => ({ ...prev, customer: value }));
+                                            }}
                                             required
                                         />
                                         <Button
@@ -374,6 +388,10 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         createdCustomer.phoneNumberSecondary
                     );
                     setCustomerOptions((prev) => Array.from(new Set([...prev, customerOption])));
+                    setCustomerIdByOption((prev) => ({
+                        ...prev,
+                        [customerOption]: createdCustomer.id,
+                    }));
                     setFormValues((prev) => ({ ...prev, customer: customerOption }));
                 }}
             />

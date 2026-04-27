@@ -30,7 +30,7 @@ const TechnicianPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [technicianName, setTechnicianName] = useState("Tecnico");
     const [reportCards, setReportCards] = useState<TechnicianReportCard[]>([]);
-    const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>("all");
+    const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>("open");
 
     const hasValidTechnicianId = useMemo(
         () => Number.isInteger(technicianId) && technicianId > 0,

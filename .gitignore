@@ -45,6 +45,8 @@ frontend/vite.config.ts.timestamp-*
 *.db
 *.sqlite
 *.sqlite3
+backend/data/
+backend/backups/
 
 # OS / editor
 .DS_Store

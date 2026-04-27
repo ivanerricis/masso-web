@@ -372,6 +372,7 @@ const ReportPage = () => {
             <EditReportDialog
                 open={isEditDialogOpen}
                 reportId={details.report.id}
+                customerName={details.customerName}
                 onOpenChange={setIsEditDialogOpen}
                 onSubmit={handleEditReport}
             />

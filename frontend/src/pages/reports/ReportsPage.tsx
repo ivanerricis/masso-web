@@ -46,6 +46,56 @@ const formatCustomerOption = (
     return `${fullName} - ${phoneNumber?.trim() || phoneNumberSecondary?.trim() || "N/D"}`;
 };
 
+const normalizeCustomerText = (value: string) =>
+    value
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+
+const getCustomerFullName = (firstName: string, lastName: string | null) =>
+    `${firstName} ${lastName ?? ""}`.trim();
+
+const resolveSelectedCustomer = (customers: Awaited<ReturnType<typeof listCustomers>>, rawValue: string) => {
+    const normalizedRawValue = normalizeCustomerText(rawValue);
+    const rawNameOnly = normalizeCustomerText(rawValue.split(" - ")[0] ?? rawValue);
+
+    const exactMatches = customers.filter(
+        (customer) =>
+            normalizeCustomerText(
+                formatCustomerOption(
+                    customer.firstName,
+                    customer.lastName,
+                    customer.phoneNumber,
+                    customer.phoneNumberSecondary
+                )
+            ) === normalizedRawValue
+    );
+
+    if (exactMatches.length === 1) {
+        return exactMatches[0];
+    }
+
+    if (exactMatches.length > 1) {
+        throw new Error("Il cliente selezionato non è univoco. Seleziona il nominativo completo.");
+    }
+
+    const nameMatches = customers.filter(
+        (customer) => normalizeCustomerText(getCustomerFullName(customer.firstName, customer.lastName)) === rawNameOnly
+    );
+
+    if (nameMatches.length === 1) {
+        return nameMatches[0];
+    }
+
+    if (nameMatches.length > 1) {
+        throw new Error("Esistono più clienti con lo stesso nome. Seleziona quello completo con il telefono.");
+    }
+
+    return null;
+};
+
 const ReportsPage = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -53,6 +103,7 @@ const ReportsPage = () => {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [reportIdToEdit, setReportIdToEdit] = useState<number | null>(null);
+    const [reportCustomerNameToEdit, setReportCustomerNameToEdit] = useState("");
     const [reportToDelete, setReportToDelete] = useState<ReportDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>(() =>
@@ -66,7 +117,7 @@ const ReportsPage = () => {
         selectedDate,
     });
 
-    const handleCreateReport = async (values: Record<string, string | boolean>) => {
+    const handleCreateReport = async (values: Record<string, string | boolean | number | null>) => {
         try {
             const [customers, devices, issues] = await Promise.all([
                 listCustomers(),
@@ -74,16 +125,10 @@ const ReportsPage = () => {
                 listIssues(),
             ]);
 
-            const selectedCustomer = customers.find(
-                (customer) =>
-                    formatCustomerOption(
-                        customer.firstName,
-                        customer.lastName,
-                        customer.phoneNumber,
-                        customer.phoneNumberSecondary
-                    ) ===
-                    String(values.customer)
-            );
+            const selectedCustomerFromId = typeof values.customerId === "number"
+                ? customers.find((customer) => customer.id === values.customerId)
+                : null;
+            const selectedCustomer = selectedCustomerFromId ?? resolveSelectedCustomer(customers, String(values.customer));
 
             const selectedDevice = devices.find(
                 (device) => device.name.toLowerCase() === String(values.deviceType).trim().toLowerCase()
@@ -159,7 +204,9 @@ const ReportsPage = () => {
     };
 
     const handleOpenEditDialog = (id: number) => {
+        const report = reportRows.find((row) => row.id === id);
         setReportIdToEdit(id);
+        setReportCustomerNameToEdit(report?.customer ?? "");
         setIsEditDialogOpen(true);
     };
 
@@ -258,10 +305,12 @@ const ReportsPage = () => {
                 <EditReportDialog
                     open={isEditDialogOpen}
                     reportId={reportIdToEdit}
+                    customerName={reportCustomerNameToEdit}
                     onOpenChange={(open) => {
                         setIsEditDialogOpen(open);
                         if (!open) {
                             setReportIdToEdit(null);
+                            setReportCustomerNameToEdit("");
                         }
                     }}
                     onSubmit={handleEditReport}

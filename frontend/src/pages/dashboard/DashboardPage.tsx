@@ -63,22 +63,35 @@ const DashboardPage = () => {
         }
     };
 
-    const formatCustomerOption = (firstName: string, lastName: string | null, phoneNumber: string | null) => {
+    const formatCustomerOption = (
+        firstName: string,
+        lastName: string | null,
+        phoneNumber: string | null,
+        phoneNumberSecondary: string | null
+    ) => {
         const fullName = `${firstName} ${lastName ?? ""}`.trim();
-        return `${fullName} - ${phoneNumber?.trim() || "N/D"}`;
+        return `${fullName} - ${phoneNumber?.trim() || phoneNumberSecondary?.trim() || "N/D"}`;
     };
 
-    const handleCreateReport = async (values: Record<string, string | boolean>) => {
+    const handleCreateReport = async (values: Record<string, string | boolean | number | null>) => {
         const [customers, devices, issues] = await Promise.all([
             listCustomers(),
             listDevices(),
             listIssues(),
         ]);
 
-        const selectedCustomer = customers.find(
+        const selectedCustomerFromId = typeof values.customerId === "number"
+            ? customers.find((customer) => customer.id === values.customerId)
+            : null;
+
+        const selectedCustomer = selectedCustomerFromId ?? customers.find(
             (customer) =>
-                formatCustomerOption(customer.firstName, customer.lastName, customer.phoneNumber) ===
-                String(values.customer)
+                formatCustomerOption(
+                    customer.firstName,
+                    customer.lastName,
+                    customer.phoneNumber,
+                    customer.phoneNumberSecondary
+                ) === String(values.customer)
         );
 
         const selectedDevice = devices.find(

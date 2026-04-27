@@ -9,12 +9,17 @@ import techniciansRouter from "./routes/technicians";
 import devicesRouter from "./routes/devices";
 import issuesRouter from "./routes/issues";
 import reportTechniciansRouter from "./routes/reportTechnicians";
+import { userActionLogger } from "./middleware/userActionLogger";
+import settingsRouter from "./routes/settings";
+import { startBackupScheduler } from "./services/backupManager";
 
 const app = express();
 
+app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json());
 app.use("/assets", express.static(path.join(process.cwd(), "public")));
+app.use(userActionLogger);
 
 app.use("/api/reports", reportsRouter);
 app.use("/api/customers", customersRouter);
@@ -23,6 +28,7 @@ app.use("/api/technicians", techniciansRouter);
 app.use("/api/devices", devicesRouter);
 app.use("/api/issues", issuesRouter);
 app.use("/api/report-technicians", reportTechniciansRouter);
+app.use("/api/settings", settingsRouter);
 
 app.get("/api/health", (_, res) => {
     res.json({ status: "ok" });
@@ -60,24 +66,33 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
     const { code, detail, message } = findPgError(error);
 
     if (code === "23505") {
-        res.status(409).json({ message: detail ?? "Valore duplicato" });
+        const apiErrorMessage = detail ?? "Valore duplicato";
+        res.locals.apiErrorMessage = apiErrorMessage;
+        res.status(409).json({ message: apiErrorMessage });
         return;
     }
 
     if (code === "23503") {
-        res.status(400).json({ message: detail ?? "Riferimento non valido" });
+        const apiErrorMessage = detail ?? "Riferimento non valido";
+        res.locals.apiErrorMessage = apiErrorMessage;
+        res.status(400).json({ message: apiErrorMessage });
         return;
     }
 
     if (code === "23502") {
-        res.status(400).json({ message: detail ?? "Campo obbligatorio mancante" });
+        const apiErrorMessage = detail ?? "Campo obbligatorio mancante";
+        res.locals.apiErrorMessage = apiErrorMessage;
+        res.status(400).json({ message: apiErrorMessage });
         return;
     }
 
     console.error(error);
-    res.status(500).json({ message: detail ?? message ?? "Internal server error" });
+    const apiErrorMessage = detail ?? message ?? "Internal server error";
+    res.locals.apiErrorMessage = apiErrorMessage;
+    res.status(500).json({ message: apiErrorMessage });
 });
 
 app.listen(3000, "0.0.0.0", () => {
+    startBackupScheduler();
     console.log("Server running on port 3000");
 });

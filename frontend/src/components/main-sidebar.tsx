@@ -1,21 +1,25 @@
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import BackupSettingsDialog from "@/components/dialogs/settings/backupSettingsDialog";
 import {
     BookUser,
     Bug,
     ClipboardList,
     Laptop,
     LayoutDashboard,
+    Settings,
     Users,
     Wrench,
     type LucideIcon,
 } from "lucide-react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 type SidebarItem = {
@@ -46,6 +50,7 @@ const MainSidebar = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const logoUrl = import.meta.env.VITE_LOGO_URL ?? "http://localhost:3000/assets/logo.jpg";
+    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
     return (
         <Sidebar collapsible="icon">
@@ -98,6 +103,27 @@ const MainSidebar = () => {
                     })}
                 </SidebarMenu>
             </SidebarContent>
+
+            <SidebarFooter className="border-t border-sidebar-border p-2">
+                <SidebarMenu className="gap-1">
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            tooltip="Impostazioni"
+                            size="lg"
+                            onClick={() => setIsSettingsDialogOpen(true)}
+                            className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:p-0"
+                        >
+                            <Settings className="size-7 shrink-0" />
+                            <span className="group-data-[collapsible=icon]:hidden">Impostazioni</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
+
+            <BackupSettingsDialog
+                open={isSettingsDialogOpen}
+                onOpenChange={setIsSettingsDialogOpen}
+            />
         </Sidebar>
     );
 };

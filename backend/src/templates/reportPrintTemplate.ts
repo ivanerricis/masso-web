@@ -286,6 +286,11 @@ body {
     <div class="payment-row">
 
       <div class="price-container">
+        <div class="section-title">Avvisato</div>
+        <div class="price-box"></div>
+      </div>
+
+      <div class="price-container">
         <div class="section-title">Importo</div>
         <div class="price-box"></div>
       </div>

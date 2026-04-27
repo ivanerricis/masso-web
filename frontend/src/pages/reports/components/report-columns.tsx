@@ -51,16 +51,6 @@ export const reportColumns: ReportColumn[] = [
         render: (row) => (row.charger ? "Si" : "No"),
     },
     {
-        key: "internalPrice",
-        header: "Prezzo interno",
-        render: (row) => formatEuro(row.internalPrice),
-    },
-    {
-        key: "technicianPrice",
-        header: "Prezzo tecnico",
-        render: (row) => formatEuro(row.technicianPrice),
-    },
-    {
         key: "totalPrice",
         header: "Prezzo totale",
         render: (row) => formatEuro(row.totalPrice),
@@ -74,11 +64,6 @@ export const reportColumns: ReportColumn[] = [
         key: "createdAt",
         header: "Creato il",
         render: (row) => formatDateTime(row.createdAt),
-    },
-    {
-        key: "updatedAt",
-        header: "Aggiornato il",
-        render: (row) => formatDateTime(row.updatedAt),
     },
     {
         key: "actions",

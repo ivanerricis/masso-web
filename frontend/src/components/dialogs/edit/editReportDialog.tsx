@@ -8,13 +8,12 @@ import {
     getApiErrorMessage,
     getReport,
     listCollaborators,
-    listCustomers,
     listDevices,
     listIssues,
     listReportTechnicians,
     listTechnicians,
 } from "@/lib/api";
-import type { CollaboratorDto, CustomerDto, DeviceDto, IssueDto, PaymentMethod, TechnicianDto } from "@/types/dtos";
+import type { CollaboratorDto, DeviceDto, IssueDto, PaymentMethod, TechnicianDto } from "@/types/dtos";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -23,6 +22,7 @@ const formatPersonName = (firstName: string, lastName: string | null) => `${firs
 type EditReportDialogProps = {
     open: boolean;
     reportId: number | null;
+    customerName: string;
     onOpenChange: (open: boolean) => void;
     onSubmit: (values: EditReportSubmitValues) => Promise<void>;
 };
@@ -48,11 +48,10 @@ export type EditReportSubmitValues = {
     internalPrice: number;
 };
 
-const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReportDialogProps) => {
+const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit }: EditReportDialogProps) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadedReportId, setLoadedReportId] = useState<number | null>(null);
-    const [customers, setCustomers] = useState<CustomerDto[]>([]);
     const [devices, setDevices] = useState<DeviceDto[]>([]);
     const [issues, setIssues] = useState<IssueDto[]>([]);
     const [collaborators, setCollaborators] = useState<CollaboratorDto[]>([]);
@@ -88,9 +87,8 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
         const loadData = async () => {
             setIsLoading(true);
             try {
-                const [report, customersData, devicesData, issuesData, collaboratorsData, techniciansData, reportTechnicians] = await Promise.all([
+                const [report, devicesData, issuesData, collaboratorsData, techniciansData, reportTechnicians] = await Promise.all([
                     getReport(reportId),
-                    listCustomers(),
                     listDevices(),
                     listIssues(),
                     listCollaborators(),
@@ -100,7 +98,6 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
 
                 const reportTechnician = reportTechnicians.find((item) => item.reportId === report.id) ?? null;
 
-                setCustomers(customersData);
                 setDevices(devicesData);
                 setIssues(issuesData);
                 setCollaborators(collaboratorsData);
@@ -242,18 +239,16 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                     <div className="grid gap-2">
                                         <Label htmlFor="customerId" className="text-lg">Cliente</Label>
                                         <Select
+                                            disabled
                                             value={formValues.customerId}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, customerId: value }))}
                                         >
                                             <SelectTrigger id="customerId" className="w-full">
-                                                <SelectValue placeholder="Seleziona cliente" />
+                                                <SelectValue placeholder={customerName} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {customers.map((customer) => (
-                                                    <SelectItem key={customer.id} value={String(customer.id)}>
-                                                        {formatPersonName(customer.firstName, customer.lastName)}
-                                                    </SelectItem>
-                                                ))}
+                                                <SelectItem value={formValues.customerId}>
+                                                    {customerName}
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -436,7 +431,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                     </div>
 
                                     <div className="grid gap-3 lg:grid-cols-2">
-                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
                                             <Checkbox
                                                 id="charger"
                                                 className="size-5"
@@ -448,7 +443,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                             <Label htmlFor="charger" className="cursor-pointer text-lg w-full">Alimentatore presente</Label>
                                         </div>
 
-                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
                                             <Checkbox
                                                 id="dataBackup"
                                                 className="size-5"
@@ -460,7 +455,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                             <Label htmlFor="dataBackup" className="cursor-pointer text-lg w-full">Backup dati</Label>
                                         </div>
 
-                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
                                             <Checkbox
                                                 id="closed"
                                                 className="size-5"
@@ -472,7 +467,7 @@ const EditReportDialog = ({ open, reportId, onOpenChange, onSubmit }: EditReport
                                             <Label htmlFor="closed" className="cursor-pointer text-lg w-full">Report chiuso</Label>
                                         </div>
 
-                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
                                             <Checkbox
                                                 id="toInvoice"
                                                 className="size-5"

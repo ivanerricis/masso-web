@@ -45,7 +45,7 @@ const PaymentMethodSelector = ({ value, onValueChange, className, orientation = 
                         data-state={isSelected ? "checked" : "unchecked"}
                         onClick={() => onValueChange(option.value)}
                         className={cn(
-                            "flex items-center justify-start gap-3 rounded-xl border px-4 py-3 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                            "flex items-center justify-start gap-3 rounded-xl border-2 px-4 py-3 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                             isSelected
                                 ? "border-primary bg-primary/10 shadow-sm"
                                 : "border-border bg-background hover:border-primary/40 hover:bg-muted/60"
