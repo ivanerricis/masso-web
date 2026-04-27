@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import PaymentMethodSelector from "@/components/payment-method-selector";
 import {
     getApiErrorMessage,
@@ -236,7 +237,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                 </div>
 
                                 <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-                                    <div className="grid gap-2">
+                                    <div className="grid gap-1">
                                         <Label htmlFor="customerId" className="text-lg">Cliente</Label>
                                         <Select
                                             disabled
@@ -253,7 +254,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                         </Select>
                                     </div>
 
-                                    <div className="grid gap-2">
+                                    <div className="grid gap-1">
                                         <Label htmlFor="deviceId" className="text-lg">Dispositivo</Label>
                                         <Select
                                             value={formValues.deviceId}
@@ -272,7 +273,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                         </Select>
                                     </div>
 
-                                    <div className="grid gap-2">
+                                    <div className="grid gap-1">
                                         <Label htmlFor="issueId" className="text-lg">Difetto catalogo</Label>
                                         <Select
                                             value={formValues.issueId}
@@ -291,7 +292,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                         </Select>
                                     </div>
 
-                                    <div className="grid gap-2">
+                                    <div className="grid gap-1">
                                         <Label htmlFor="collaboratorId" className="text-lg">Collaboratore</Label>
                                         <Select
                                             value={formValues.collaboratorId}
@@ -320,105 +321,110 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                     </h3>
                                 </div>
 
-                                <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="issueDescription" className="text-lg">Descrizione difetto</Label>
-                                        <Input
-                                            id="issueDescription"
-                                            className="text-lg!"
-                                            placeholder="Descrivi il difetto"
-                                            value={formValues.issueDescription}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, issueDescription: event.target.value }))
-                                            }
-                                        />
+                                <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+                                    {/* Campi principali */}
+                                    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3 content-start">
+                                        <div className="grid gap-1">
+                                            <Label htmlFor="issueDescription" className="text-lg">Descrizione difetto</Label>
+                                            <Input
+                                                id="issueDescription"
+                                                className="text-lg!"
+                                                placeholder="Descrivi il difetto"
+                                                value={formValues.issueDescription}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, issueDescription: event.target.value }))
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-1">
+                                            <Label htmlFor="serviceDescription" className="text-lg">Descrizione servizio</Label>
+                                            <Input
+                                                id="serviceDescription"
+                                                className="text-lg!"
+                                                placeholder="Descrivi l'intervento"
+                                                value={formValues.serviceDescription}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, serviceDescription: event.target.value }))
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-1">
+                                            <Label htmlFor="password" className="text-lg">Password sblocco</Label>
+                                            <Input
+                                                id="password"
+                                                className="text-lg!"
+                                                placeholder="Password dispositivo"
+                                                value={formValues.password}
+                                                onChange={(event) => setFormValues((prev) => ({ ...prev, password: event.target.value }))}
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-1">
+                                            <Label htmlFor="technicianId" className="text-lg">Tecnico esterno</Label>
+                                            <Select
+                                                value={formValues.technicianId}
+                                                onValueChange={(value) => setFormValues((prev) => ({ ...prev, technicianId: value }))}
+                                            >
+                                                <SelectTrigger id="technicianId" className="w-full">
+                                                    <SelectValue placeholder="Nessun tecnico" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">Nessuno</SelectItem>
+                                                    {technicians.map((technician) => (
+                                                        <SelectItem key={technician.id} value={String(technician.id)}>
+                                                            {formatPersonName(technician.firstName, technician.lastName)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="grid gap-1">
+                                            <Label htmlFor="technicianPrice" className="text-lg">Prezzo lavoro tecnico</Label>
+                                            <Input
+                                                id="technicianPrice"
+                                                className="text-lg!"
+                                                type="number"
+                                                min={0}
+                                                step={1}
+                                                value={formValues.technicianPrice}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, technicianPrice: event.target.value }))
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-1">
+                                            <Label htmlFor="internalPrice" className="text-lg">Prezzo interno</Label>
+                                            <Input
+                                                id="internalPrice"
+                                                className="text-lg!"
+                                                type="number"
+                                                min={0}
+                                                step={1}
+                                                value={formValues.internalPrice}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, internalPrice: event.target.value }))
+                                                }
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="serviceDescription" className="text-lg">Descrizione servizio</Label>
-                                        <Input
-                                            id="serviceDescription"
-                                            className="text-lg!"
-                                            placeholder="Descrivi l'intervento"
-                                            value={formValues.serviceDescription}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, serviceDescription: event.target.value }))
-                                            }
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="password" className="text-lg">Password sblocco</Label>
-                                        <Input
-                                            id="password"
-                                            className="text-lg!"
-                                            placeholder="Password dispositivo"
-                                            value={formValues.password}
-                                            onChange={(event) => setFormValues((prev) => ({ ...prev, password: event.target.value }))}
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
+                                    {/* Note — colonna destra, occupa tutta l'altezza */}
+                                    <div className="grid gap-1 grid-rows-[auto_1fr]">
                                         <Label htmlFor="note" className="text-lg">Note</Label>
-                                        <Input
+                                        <Textarea
                                             id="note"
-                                            className="text-lg!"
+                                            className="text-lg! h-31 resize-none"
                                             placeholder="Note"
                                             value={formValues.note}
-                                            onChange={(event) => setFormValues((prev) => ({ ...prev, note: event.target.value }))}
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="technicianId" className="text-lg">Tecnico esterno</Label>
-                                        <Select
-                                            value={formValues.technicianId}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, technicianId: value }))}
-                                        >
-                                            <SelectTrigger id="technicianId" className="w-full">
-                                                <SelectValue placeholder="Nessun tecnico" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">Nessuno</SelectItem>
-                                                {technicians.map((technician) => (
-                                                    <SelectItem key={technician.id} value={String(technician.id)}>
-                                                        {formatPersonName(technician.firstName, technician.lastName)}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="technicianPrice" className="text-lg">Prezzo lavoro tecnico</Label>
-                                        <Input
-                                            id="technicianPrice"
-                                            className="text-lg!"
-                                            type="number"
-                                            min={0}
-                                            step={1}
-                                            value={formValues.technicianPrice}
                                             onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, technicianPrice: event.target.value }))
+                                                setFormValues((prev) => ({ ...prev, note: event.target.value }))
                                             }
                                         />
                                     </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="internalPrice" className="text-lg">Prezzo interno</Label>
-                                        <Input
-                                            id="internalPrice"
-                                            className="text-lg!"
-                                            type="number"
-                                            min={0}
-                                            step={1}
-                                            value={formValues.internalPrice}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, internalPrice: event.target.value }))
-                                            }
-                                        />
-                                    </div>
-
                                 </div>
                             </section>
 
@@ -482,11 +488,9 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                 </section>
 
                                 <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-
                                     <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                         Pagamento
                                     </h3>
-
 
                                     <PaymentMethodSelector
                                         value={formValues.paymentMethod}

@@ -106,42 +106,48 @@ const CustomersPage = () => {
                 action={<CreateEntityButton label="Crea nuovo cliente" onClick={() => setIsCreateDialogOpen(true)} />}
             />
 
-            <CreateCustomerDialog
-                open={isCreateDialogOpen}
-                onOpenChange={setIsCreateDialogOpen}
-                onSubmit={handleCreateCustomer}
-            />
+            {isCreateDialogOpen && (
+                <CreateCustomerDialog
+                    open={isCreateDialogOpen}
+                    onOpenChange={setIsCreateDialogOpen}
+                    onSubmit={handleCreateCustomer}
+                />
+            )}
 
-            <CreateCustomerDialog
-                open={isEditDialogOpen}
-                onOpenChange={(open) => {
-                    setIsEditDialogOpen(open);
-                    if (!open) {
-                        setCustomerToEdit(null);
-                    }
-                }}
-                mode="edit"
-                initialValues={customerToEdit}
-                onSubmit={handleEditCustomer}
-            />
+            {isEditDialogOpen && (
+                <CreateCustomerDialog
+                    open={isEditDialogOpen}
+                    onOpenChange={(open) => {
+                        setIsEditDialogOpen(open);
+                        if (!open) {
+                            setCustomerToEdit(null);
+                        }
+                    }}
+                    mode="edit"
+                    initialValues={customerToEdit}
+                    onSubmit={handleEditCustomer}
+                />
+            )}
 
-            <ConfirmDeleteDialog
-                open={isDeleteDialogOpen}
-                onOpenChange={(open) => {
-                    setIsDeleteDialogOpen(open);
-                    if (!open) {
-                        setCustomerToDelete(null);
+            {isDeleteDialogOpen && (
+                <ConfirmDeleteDialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={(open) => {
+                        setIsDeleteDialogOpen(open);
+                        if (!open) {
+                            setCustomerToDelete(null);
+                        }
+                    }}
+                    title="Elimina cliente"
+                    description={
+                        customerToDelete
+                            ? `Sei sicuro di voler eliminare il cliente ${customerToDelete.firstName} ${customerToDelete.lastName ?? ""}?`
+                            : "Sei sicuro di voler eliminare questo cliente?"
                     }
-                }}
-                title="Elimina cliente"
-                description={
-                    customerToDelete
-                        ? `Sei sicuro di voler eliminare il cliente ${customerToDelete.firstName} ${customerToDelete.lastName ?? ""}?`
-                        : "Sei sicuro di voler eliminare questo cliente?"
-                }
-                isDeleting={isDeleting}
-                onConfirm={handleDeleteCustomer}
-            />
+                    isDeleting={isDeleting}
+                    onConfirm={handleDeleteCustomer}
+                />
+            )}
 
             <CustomersFilters searchText={searchText} onSearchTextChange={setSearchText} />
 

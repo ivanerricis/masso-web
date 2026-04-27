@@ -309,7 +309,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Stato</h3>
 
                             <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-2">
-                                <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                <div className="grid gap-2 rounded-md">
                                     <Label htmlFor="charger" className="text-lg w-full">
                                         Alimentatore presente
                                     </Label>
@@ -336,7 +336,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                     </Select>
                                 </div>
 
-                                <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/30 px-3 py-2">
+                                <div className="grid gap-2 rounded-md">
                                     <Label htmlFor="dataBackup" className="text-lg w-full">
                                         Backup dati
                                     </Label>
