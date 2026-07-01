@@ -20,7 +20,6 @@ export const reportTable = pgTable("report", {
     dataBackup: boolean("data_backup").notNull().default(false),
     charger: boolean("charger").notNull().default(false),
     closed: boolean("closed").notNull().default(false),
-    toInvoice: boolean("to_invoice").notNull().default(false),
     paymentMethod: varchar("payment_method", { length: 20 }).notNull().default("non_paid"),
     price: integer("price").notNull().default(0),
     ...timestamps,

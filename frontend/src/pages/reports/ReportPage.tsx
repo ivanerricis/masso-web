@@ -149,7 +149,6 @@ const ReportPage = () => {
             dataBackup: values.dataBackup,
             charger: values.charger,
             closed: values.closed,
-            toInvoice: values.toInvoice,
             paymentMethod: values.paymentMethod,
             price: values.internalPrice,
         });
@@ -254,9 +253,6 @@ const ReportPage = () => {
                         <span className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.report.closed)}`}>
                             {details.report.closed ? "Chiuso" : "Aperto"}
                         </span>
-                        <span className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.report.toInvoice)}`}>
-                            {details.report.toInvoice ? "Da fatturare" : "Non fatturare"}
-                        </span>
                     </div>
                 </div>
             </div>
@@ -320,7 +316,6 @@ const ReportPage = () => {
                     </CardHeader>
                     <CardContent className="grid gap-2 sm:grid-cols-2">
                         <DetailItem label="Chiuso" value={yesNo(details.report.closed)} />
-                        <DetailItem label="Da fatturare" value={yesNo(details.report.toInvoice)} />
                         <DetailItem label="Backup dati" value={yesNo(details.report.dataBackup)} />
                         <DetailItem label="Alimentatore" value={yesNo(details.report.charger)} />
                         <DetailItem label="Creato il" value={formatDateTime(details.report.created_at)} />

@@ -313,13 +313,6 @@
           "notNull": true,
           "default": false
         },
-        "to_invoice": {
-          "name": "to_invoice",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "price": {
           "name": "price",
           "type": "integer",

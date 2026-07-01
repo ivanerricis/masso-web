@@ -40,7 +40,6 @@ const reportBodySchema = z
         dataBackup: z.boolean().optional(),
         charger: z.boolean().optional(),
         closed: z.boolean().optional(),
-        toInvoice: z.boolean().optional(),
         paymentMethod: z.enum(reportPaymentMethods).optional(),
         price: z.coerce.number().int().min(0).optional(),
     })
@@ -140,7 +139,7 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
 
     try {
         const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle0" });
+        await page.setContent(html, { waitUntil: "load" });
 
         const pdfBuffer = await page.pdf({
             format: "A4",

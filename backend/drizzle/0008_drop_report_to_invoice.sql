@@ -1,0 +1,1 @@
+ALTER TABLE "report" DROP COLUMN IF EXISTS "to_invoice";

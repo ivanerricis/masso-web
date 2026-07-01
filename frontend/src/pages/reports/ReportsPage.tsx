@@ -223,7 +223,6 @@ const ReportsPage = () => {
             dataBackup: values.dataBackup,
             charger: values.charger,
             closed: values.closed,
-            toInvoice: values.toInvoice,
             paymentMethod: values.paymentMethod,
             price: values.internalPrice,
         });

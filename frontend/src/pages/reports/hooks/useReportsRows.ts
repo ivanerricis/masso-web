@@ -62,7 +62,6 @@ export const useReportsRows = ({ searchText, visibilityFilter, selectedDate }: U
                     technicianPrice: techniciansPrice,
                     totalPrice: report.price + techniciansPrice,
                     closed: report.closed,
-                    toInvoice: report.toInvoice,
                     createdAt: report.created_at,
                     updatedAt: report.updated_at,
                 };
@@ -92,7 +91,6 @@ export const useReportsRows = ({ searchText, visibilityFilter, selectedDate }: U
                         report.technicianPrice,
                         report.totalPrice,
                         report.closed ? "chiuso" : "aperto",
-                        report.toInvoice ? "da fatturare" : "non fatturare",
                         report.dataBackup ? "backup dati" : "",
                         report.charger ? "alimentatore" : "",
                   ]

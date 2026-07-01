@@ -271,7 +271,7 @@ export const updateBackupSettings = async (
 export const runBackupNow = async (origin: "manual" | "auto") => {
     const state = await loadState();
 
-    if (!state.dumpEnabled) {
+    if (origin === "auto" && !state.dumpEnabled) {
         throw new BackupManagerError("Il dump database non e abilitato nelle impostazioni", 400);
     }
 

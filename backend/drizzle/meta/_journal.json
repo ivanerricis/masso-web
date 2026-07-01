@@ -57,6 +57,13 @@
       "when": 1776339600000,
       "tag": "0007_add_report_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776339700000,
+      "tag": "0008_drop_report_to_invoice",
+      "breakpoints": true
     }
   ]
 }

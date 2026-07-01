@@ -45,7 +45,6 @@ export type EditReportSubmitValues = {
     dataBackup: boolean;
     charger: boolean;
     closed: boolean;
-    toInvoice: boolean;
     internalPrice: number;
 };
 
@@ -75,7 +74,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
         dataBackup: false,
         charger: false,
         closed: false,
-        toInvoice: false,
     });
 
     useEffect(() => {
@@ -120,7 +118,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                     dataBackup: report.dataBackup,
                     charger: report.charger,
                     closed: report.closed,
-                    toInvoice: report.toInvoice,
                 });
                 setLoadedReportId(report.id);
             } catch (error) {
@@ -196,7 +193,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                 dataBackup: formValues.dataBackup,
                 charger: formValues.charger,
                 closed: formValues.closed,
-                toInvoice: formValues.toInvoice,
                 internalPrice,
             });
 
@@ -471,18 +467,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                                 }
                                             />
                                             <Label htmlFor="closed" className="cursor-pointer text-lg w-full">Report chiuso</Label>
-                                        </div>
-
-                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
-                                            <Checkbox
-                                                id="toInvoice"
-                                                className="size-5"
-                                                checked={formValues.toInvoice}
-                                                onCheckedChange={(checked) =>
-                                                    setFormValues((prev) => ({ ...prev, toInvoice: checked === true }))
-                                                }
-                                            />
-                                            <Label htmlFor="toInvoice" className="cursor-pointer text-lg w-full">Da fatturare</Label>
                                         </div>
                                     </div>
                                 </section>

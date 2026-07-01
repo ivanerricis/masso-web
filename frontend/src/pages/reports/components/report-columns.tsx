@@ -56,11 +56,6 @@ export const reportColumns: ReportColumn[] = [
         render: (row) => formatEuro(row.totalPrice),
     },
     {
-        key: "toInvoice",
-        header: "Da fatturare",
-        render: (row) => (row.toInvoice ? "Si" : "No"),
-    },
-    {
         key: "createdAt",
         header: "Creato il",
         render: (row) => formatDateTime(row.createdAt),

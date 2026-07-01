@@ -245,7 +245,7 @@ const BackupSettingsDialog = ({ open, onOpenChange }: BackupSettingsDialogProps)
                                         type="button"
                                         variant="outline"
                                         size="lg"
-                                        disabled={!formValues.dumpEnabled || isRunningBackup || isSaving}
+                                        disabled={isRunningBackup || isSaving}
                                         onClick={() => void handleRunBackup()}
                                     >
                                         {isRunningBackup ? "Dump in corso..." : "Esegui dump adesso"}

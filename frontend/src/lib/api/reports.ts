@@ -10,7 +10,6 @@ export type ReportEntityDto = {
     dataBackup: boolean;
     charger: boolean;
     closed: boolean;
-    toInvoice: boolean;
     price: number;
     paymentMethod: PaymentMethod;
     deviceId: number;
@@ -33,7 +32,6 @@ export type ReportCreateInput = {
     dataBackup?: boolean;
     charger?: boolean;
     closed?: boolean;
-    toInvoice?: boolean;
     paymentMethod?: PaymentMethod;
     price?: number;
 };

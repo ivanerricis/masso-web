@@ -14,7 +14,6 @@ export type ReportDto = {
     technicianPrice: number;
     totalPrice: number;
     closed: boolean;
-    toInvoice: boolean;
     dataBackup: boolean;
     createdAt: string;
     updatedAt: string | null;
