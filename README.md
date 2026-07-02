@@ -84,6 +84,24 @@ Oppure, per la modalita dev:
 docker compose -f docker-compose.dev.yml down
 ```
 
+## Restore database
+
+Per ripristinare un dump SQL nel database Postgres usa lo script dedicato:
+
+```powershell
+scripts\restore-db.ps1 -DumpPath "C:\path\to\db-dump-YYYYMMDD-HHMMSS.sql"
+```
+
+Se non passi `-DumpPath`, lo script prova a usare l'ultimo `.sql` trovato nella directory backup configurata in `.env` tramite `BACKUP_HOST_DIR`, oppure in `backups/` se la variabile non è presente.
+
+Opzione distruttiva:
+
+```powershell
+scripts\restore-db.ps1 -DumpPath "C:\path\to\db-dump.sql" -ResetDatabase
+```
+
+Con `-ResetDatabase` lo script svuota prima lo schema `public` nel database target.
+
 ## Struttura configurazioni Docker
 
 - `docker-compose.yml`: configurazione shared/server
