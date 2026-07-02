@@ -50,6 +50,11 @@ techniciansRouter.get("/", validate({ query: technicianListQuerySchema }), async
         return;
     }
 
+    if (Array.isArray(technicians)) {
+        res.json(technicians);
+        return;
+    }
+
     const { items, totalItems } = technicians;
 
     res.json({

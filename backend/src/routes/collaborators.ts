@@ -49,6 +49,11 @@ collaboratorsRouter.get("/", validate({ query: collaboratorListQuerySchema }), a
         return;
     }
 
+    if (Array.isArray(collaborators)) {
+        res.json(collaborators);
+        return;
+    }
+
     const { items, totalItems } = collaborators;
 
     res.json({

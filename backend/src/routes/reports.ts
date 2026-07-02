@@ -91,6 +91,11 @@ reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, r
         return;
     }
 
+    if (Array.isArray(reports)) {
+        res.json(reports);
+        return;
+    }
+
     const { items, totalItems } = reports;
 
     res.json({

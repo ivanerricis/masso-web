@@ -69,6 +69,11 @@ customersRouter.get("/", validate({ query: customerListQuerySchema }), async (re
         return;
     }
 
+    if (Array.isArray(customers)) {
+        res.json(customers);
+        return;
+    }
+
     const { items, totalItems } = customers;
 
     res.json({

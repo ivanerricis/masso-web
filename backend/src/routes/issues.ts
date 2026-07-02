@@ -47,6 +47,11 @@ issuesRouter.get("/", validate({ query: issueListQuerySchema }), async (req, res
         return;
     }
 
+    if (Array.isArray(issues)) {
+        res.json(issues);
+        return;
+    }
+
     const { items, totalItems } = issues;
 
     res.json({

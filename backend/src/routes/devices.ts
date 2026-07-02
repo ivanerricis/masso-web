@@ -47,6 +47,11 @@ devicesRouter.get("/", validate({ query: deviceListQuerySchema }), async (req, r
         return;
     }
 
+    if (Array.isArray(devices)) {
+        res.json(devices);
+        return;
+    }
+
     const { items, totalItems } = devices;
 
     res.json({
