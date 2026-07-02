@@ -1,5 +1,6 @@
 param(
-    [switch]$OpenAfterSave
+    [switch]$OpenAfterSave,
+    [switch]$ConfigureFirewall
 )
 
 $ErrorActionPreference = 'Stop'
@@ -56,6 +57,35 @@ function Prompt-Value {
     return $input
 }
 
+function Ensure-FirewallRule {
+    param(
+        [string]$DisplayName,
+        [int]$Port
+    )
+
+    $existingRule = Get-NetFirewallRule -DisplayName $DisplayName -ErrorAction SilentlyContinue
+
+    if ($null -ne $existingRule) {
+        Write-Host "Regola firewall già presente: $DisplayName" -ForegroundColor DarkGray
+        return
+    }
+
+    New-NetFirewallRule -DisplayName $DisplayName -Direction Inbound -Protocol TCP -LocalPort $Port -Action Allow | Out-Null
+    Write-Host "Regola firewall creata: $DisplayName ($Port)" -ForegroundColor Green
+}
+
+function Get-PrimaryIpv4Address {
+    $candidates = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.IPAddress -notlike '127.*' -and
+            $_.IPAddress -notlike '169.254.*' -and
+            $_.IPAddress -ne '0.0.0.0'
+        } |
+        Sort-Object InterfaceMetric, InterfaceIndex
+
+    return $candidates | Select-Object -First 1
+}
+
 $currentValues = Read-EnvFile -Path $envPath
 
 Write-Host ''
@@ -96,4 +126,18 @@ Write-Host ".env aggiornato: $envPath" -ForegroundColor Green
 
 if ($OpenAfterSave) {
     Start-Process notepad.exe $envPath
+}
+
+if ($ConfigureFirewall) {
+    Write-Host ''
+    Write-Host 'Configurazione firewall Windows Server...' -ForegroundColor Cyan
+
+    try {
+        Ensure-FirewallRule -DisplayName 'Masso Web HTTP 80' -Port 80
+        Ensure-FirewallRule -DisplayName 'Masso Web HTTP 5173' -Port 5173
+        Ensure-FirewallRule -DisplayName 'Masso Web API 3000' -Port 3000
+    } catch {
+        Write-Host 'Impossibile configurare il firewall. Avvia PowerShell come Amministratore e riprova.' -ForegroundColor Yellow
+        Write-Host $_.Exception.Message -ForegroundColor Yellow
+    }
 }

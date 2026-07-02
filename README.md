@@ -27,7 +27,7 @@ cp .env.example .env
 Per modificare il file in modo interattivo da Windows puoi usare:
 
 ```powershell
-\.\scripts\edit-env.ps1
+.\scripts\edit-env.ps1 -ConfigureFirewall
 ```
 
 Oppure:
@@ -35,6 +35,8 @@ Oppure:
 ```cmd
 scripts\edit-env.cmd
 ```
+
+Se vuoi applicare anche le regole firewall del server Windows, avvia PowerShell come amministratore e usa `-ConfigureFirewall`.
 
 ## Modalita 1: Sviluppo locale (hot reload)
 
@@ -61,9 +63,17 @@ Usa il compose principale:
 docker compose up --build -d
 ```
 
+In alternativa puoi usare lo script dedicato:
+
+```powershell
+.\scripts\start-server.ps1
+```
+
 Servizi disponibili:
 - frontend (nginx): http://<IP_SERVER>
 - backend (accessibile anche direttamente): http://<IP_SERVER>:3000/api
+
+Lo script di avvio stampa automaticamente gli indirizzi IP locali della macchina con gli URL di collegamento.
 
 Comportamento rete:
 - il frontend usa path relativi (`/api`, `/assets`)
