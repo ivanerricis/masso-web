@@ -3,6 +3,7 @@ import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
 import EditReportDialog, { type EditReportSubmitValues } from "@/components/dialogs/edit/editReportDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
+import TablePagination from "@/components/table-pagination";
 import {
     createReportTechnician,
     createIssue,
@@ -18,7 +19,7 @@ import {
     updateReportTechnician,
 } from "@/lib/api";
 import { useEffect, useState } from "react";
-import type { ReportDto } from "@/types/dtos";
+import type { CustomerDto, ReportDto } from "@/types/dtos";
 import { toast } from "sonner";
 import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -27,6 +28,7 @@ import ReportsFilters from "./components/reports-filters";
 import ReportsTable from "./components/reports-table";
 import type { ReportVisibilityFilter } from "./components/types";
 import { useReportsRows } from "./hooks/useReportsRows";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const parseVisibilityFilter = (value: string | null): ReportVisibilityFilter => {
     if (value === "all" || value === "open" || value === "closed") {
@@ -57,7 +59,7 @@ const normalizeCustomerText = (value: string) =>
 const getCustomerFullName = (firstName: string, lastName: string | null) =>
     `${firstName} ${lastName ?? ""}`.trim();
 
-const resolveSelectedCustomer = (customers: Awaited<ReturnType<typeof listCustomers>>, rawValue: string) => {
+const resolveSelectedCustomer = (customers: CustomerDto[], rawValue: string) => {
     const normalizedRawValue = normalizeCustomerText(rawValue);
     const rawNameOnly = normalizeCustomerText(rawValue.split(" - ")[0] ?? rawValue);
 
@@ -111,10 +113,16 @@ const ReportsPage = () => {
     );
     const [searchText, setSearchText] = useState("");
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-    const { reportRows, visibleReportRows, isLoading, loadReports } = useReportsRows({
+    const pageSize = 10;
+    const { currentPage, setCurrentPage } = useTablePagination({
+        resetDependencies: [searchText, visibilityFilter, selectedDate],
+    });
+    const { reportRows, totalItems, totalPages, isLoading, loadReports } = useReportsRows({
         searchText,
         visibilityFilter,
         selectedDate,
+        currentPage,
+        pageSize,
     });
 
     const handleCreateReport = async (values: Record<string, string | boolean | number | null>) => {
@@ -278,10 +286,6 @@ const ReportsPage = () => {
     };
 
     useEffect(() => {
-        void loadReports();
-    }, []);
-
-    useEffect(() => {
         setVisibilityFilter(parseVisibilityFilter(searchParams.get("visibility")));
     }, [searchParams]);
 
@@ -344,14 +348,23 @@ const ReportsPage = () => {
                 {isLoading && reportRows.length === 0 ? (
                     <TableLoadingSkeleton columns={reportColumns.length} />
                 ) : (
-                    <ReportsTable
-                        columns={reportColumns}
-                        rows={visibleReportRows}
-                        onOpenReport={handleOpenReport}
-                        onEditReport={handleOpenEditDialog}
-                        onPrintReport={handlePrintReport}
-                        onDeleteReport={handleOpenDeleteDialog}
-                    />
+                    <div className="flex flex-col gap-4">
+                        <ReportsTable
+                            columns={reportColumns}
+                            rows={reportRows}
+                            onOpenReport={handleOpenReport}
+                            onEditReport={handleOpenEditDialog}
+                            onPrintReport={handlePrintReport}
+                            onDeleteReport={handleOpenDeleteDialog}
+                        />
+                        <TablePagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            pageSize={pageSize}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
                 )}
             </>
         </div>

@@ -5,6 +5,7 @@ import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import { TooltipProvider } from "./components/ui/tooltip"
 import LoadingPage from "./components/loadingPage"
+import UnhandledErrorPage from "@/pages/UnhandledErrorPage"
 
 const MainLayout = lazy(() => import("@/pages/MainLayout").then((module) => ({ default: module.MainLayout })))
 const DashboardPage = lazy(() => import("@/pages/dashboard/DashboardPage"))
@@ -20,8 +21,6 @@ const DevicesPage = lazy(() => import("@/pages/devices/DevicesPage"))
 const DevicePage = lazy(() => import("./pages/devices/DevicePage"))
 const IssuesPage = lazy(() => import("@/pages/issues/IssuesPage"))
 const IssuePage = lazy(() => import("./pages/issues/IssuePage"))
-const UnhandledErrorPage = lazy(() => import("@/pages/UnhandledErrorPage"))
-
 export function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">

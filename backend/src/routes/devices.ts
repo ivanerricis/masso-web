@@ -15,6 +15,12 @@ const deviceIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+const deviceListQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    search: z.string().trim().max(255).optional(),
+});
+
 const deviceCreateBodySchema = z
     .object({
         name: z.string().trim().min(1).max(255),
@@ -27,10 +33,22 @@ const deviceUpdateBodySchema = deviceCreateBodySchema
         message: "At least one field is required",
     });
 
-devicesRouter.get("/", async (_, res) => {
-    const devices = await listDevices();
+devicesRouter.get("/", validate({ query: deviceListQuerySchema }), async (req, res) => {
+    const { page, pageSize, search } = req.query as unknown as {
+        page: number;
+        pageSize: number;
+        search?: string;
+    };
 
-    res.json(devices);
+    const { items, totalItems } = await listDevices({ page, pageSize, search });
+
+    res.json({
+        items,
+        totalItems,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    });
 });
 
 devicesRouter.get("/:id", validate({ params: deviceIdParamsSchema }), async (req, res) => {

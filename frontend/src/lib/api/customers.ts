@@ -1,6 +1,7 @@
 import type { CustomerDto } from "@/types/dtos";
 import { api, mapEntityTimestamps } from "./client";
 import type { EntityWithRawTimestamps } from "./client";
+import type { PaginatedResponse } from "./client";
 
 export type CustomerCreateInput = {
     firstName: string;
@@ -12,10 +13,32 @@ export type CustomerCreateInput = {
 
 export type CustomerUpdateInput = Partial<CustomerCreateInput>;
 
-export const listCustomers = async () => {
-    const response = await api.get<EntityWithRawTimestamps<CustomerDto>[]>("/customers");
-    return response.data.map((customer) => mapEntityTimestamps(customer));
+export type ListCustomersParams = {
+    page?: number;
+    pageSize?: number;
+    search?: string;
 };
+
+export function listCustomers(): Promise<CustomerDto[]>;
+export function listCustomers(params: ListCustomersParams): Promise<PaginatedResponse<CustomerDto>>;
+export async function listCustomers(params?: ListCustomersParams) {
+    const resolvedPage = params?.page ?? 1;
+    const resolvedPageSize = params?.pageSize ?? 1000;
+    const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<CustomerDto>>>("/customers", {
+        params: { page: resolvedPage, pageSize: resolvedPageSize, search: params?.search?.trim() || undefined },
+    });
+
+    const items = response.data.items.map((customer) => mapEntityTimestamps(customer));
+
+    if (!params) {
+        return items;
+    }
+
+    return {
+        ...response.data,
+        items,
+    };
+}
 
 export const createCustomer = async (payload: CustomerCreateInput) =>
     mapEntityTimestamps((await api.post<EntityWithRawTimestamps<CustomerDto>>("/customers", payload)).data);

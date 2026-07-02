@@ -1,17 +1,19 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateCollaboratorDialog from "@/components/dialogs/create/createCollaboratorDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
+import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
+import TablePagination from "@/components/table-pagination";
 import { createCollaborator, deleteCollaborator, getApiErrorMessage, updateCollaborator } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { CollaboratorDto } from "@/types/dtos";
 import { toast } from "sonner";
-import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { collaboratorColumns } from "./components/collaborator-columns";
 import CollaboratorsFilters from "./components/collaborators-filters";
 import CollaboratorsTable from "./components/collaborators-table";
 import { useCollaboratorsRows } from "./hooks/useCollaboratorsRows";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const CollaboratorsPage = () => {
     const navigate = useNavigate();
@@ -22,7 +24,13 @@ const CollaboratorsPage = () => {
     const [collaboratorToEdit, setCollaboratorToEdit] = useState<CollaboratorDto | null>(null);
     const [collaboratorToDelete, setCollaboratorToDelete] = useState<CollaboratorDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const { collaboratorRows, visibleCollaboratorRows, isLoading, loadCollaborators } = useCollaboratorsRows({ searchText });
+    const pageSize = 10;
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const { collaboratorRows, totalItems, totalPages, isLoading, loadCollaborators } = useCollaboratorsRows({
+        searchText,
+        currentPage,
+        pageSize,
+    });
 
     const handleCreateCollaborator = async (values: Record<string, string | boolean>) => {
         await createCollaborator({
@@ -140,15 +148,24 @@ const CollaboratorsPage = () => {
             <CollaboratorsFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
             {isLoading && collaboratorRows.length === 0 ? (
-                <TableLoadingSkeleton columns={collaboratorColumns.length} />
+                <LoadingPage />
             ) : (
-                <CollaboratorsTable
-                    columns={collaboratorColumns}
-                    rows={visibleCollaboratorRows}
-                    onOpenCollaborator={handleOpenCollaborator}
-                    onEditCollaborator={handleOpenEditDialog}
-                    onDeleteCollaborator={handleOpenDeleteDialog}
-                />
+                <div className="flex flex-col gap-4">
+                    <CollaboratorsTable
+                        columns={collaboratorColumns}
+                        rows={collaboratorRows}
+                        onOpenCollaborator={handleOpenCollaborator}
+                        onEditCollaborator={handleOpenEditDialog}
+                        onDeleteCollaborator={handleOpenDeleteDialog}
+                    />
+                    <TablePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
             )}
         </div>
     );

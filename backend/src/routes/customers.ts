@@ -15,6 +15,12 @@ const customerIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+const customerListQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    search: z.string().trim().max(255).optional(),
+});
+
 const customerBodySchemaBase = z.object({
     email: z.string().trim().email().max(255).nullable().optional(),
     firstName: z.string().trim().min(1).max(255),
@@ -49,10 +55,22 @@ const customerUpdateBodySchema = customerBodySchemaBase
         message: "At least one field is required",
     });
 
-customersRouter.get("/", async (_, res) => {
-    const customers = await listCustomers();
+customersRouter.get("/", validate({ query: customerListQuerySchema }), async (req, res) => {
+    const { page, pageSize, search } = req.query as unknown as {
+        page: number;
+        pageSize: number;
+        search?: string;
+    };
 
-    res.json(customers);
+    const { items, totalItems } = await listCustomers({ page, pageSize, search });
+
+    res.json({
+        items,
+        totalItems,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    });
 });
 
 customersRouter.get("/:id", validate({ params: customerIdParamsSchema }), async (req, res) => {

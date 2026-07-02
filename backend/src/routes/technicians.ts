@@ -15,6 +15,12 @@ const technicianIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+const technicianListQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    search: z.string().trim().max(255).optional(),
+});
+
 const technicianCreateBodySchema = z
     .object({
         firstName: z.string().trim().min(1).max(255),
@@ -30,10 +36,22 @@ const technicianUpdateBodySchema = technicianCreateBodySchema
         message: "At least one field is required",
     });
 
-techniciansRouter.get("/", async (_, res) => {
-    const technicians = await listTechnicians();
+techniciansRouter.get("/", validate({ query: technicianListQuerySchema }), async (req, res) => {
+    const { page, pageSize, search } = req.query as unknown as {
+        page: number;
+        pageSize: number;
+        search?: string;
+    };
 
-    res.json(technicians);
+    const { items, totalItems } = await listTechnicians({ page, pageSize, search });
+
+    res.json({
+        items,
+        totalItems,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    });
 });
 
 techniciansRouter.get("/:id", validate({ params: technicianIdParamsSchema }), async (req, res) => {

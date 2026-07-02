@@ -1,16 +1,18 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateIssueDialog from "@/components/dialogs/create/createIssueDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
+import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
+import TablePagination from "@/components/table-pagination";
 import { createIssue, deleteIssue, getApiErrorMessage, updateIssue } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { IssueDto } from "@/types/dtos";
 import { toast } from "sonner";
-import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { issueColumns } from "./components/issue-columns";
 import IssuesFilters from "./components/issues-filters";
 import IssuesTable from "./components/issues-table";
 import { useIssuesRows } from "./hooks/useIssuesRows";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const IssuesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -20,7 +22,13 @@ const IssuesPage = () => {
     const [issueToEdit, setIssueToEdit] = useState<IssueDto | null>(null);
     const [issueToDelete, setIssueToDelete] = useState<IssueDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const { issueRows, visibleIssueRows, isLoading, loadIssues } = useIssuesRows({ searchText });
+    const pageSize = 10;
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const { issueRows, totalItems, totalPages, isLoading, loadIssues } = useIssuesRows({
+        searchText,
+        currentPage,
+        pageSize,
+    });
 
     const handleCreateIssue = async (values: Record<string, string | boolean>) => {
         await createIssue({
@@ -80,7 +88,7 @@ const IssuesPage = () => {
 
     useEffect(() => {
         void loadIssues();
-    }, []);
+    }, [loadIssues]);
 
     return (
         <div className="flex flex-col gap-4 w-full">
@@ -129,14 +137,23 @@ const IssuesPage = () => {
             <IssuesFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
             {isLoading && issueRows.length === 0 ? (
-                <TableLoadingSkeleton columns={issueColumns.length} />
+                <LoadingPage />
             ) : (
-                <IssuesTable
-                    columns={issueColumns}
-                    rows={visibleIssueRows}
-                    onEditIssue={handleOpenEditDialog}
-                    onDeleteIssue={handleOpenDeleteDialog}
-                />
+                <div className="flex flex-col gap-4">
+                    <IssuesTable
+                        columns={issueColumns}
+                        rows={issueRows}
+                        onEditIssue={handleOpenEditDialog}
+                        onDeleteIssue={handleOpenDeleteDialog}
+                    />
+                    <TablePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
             )}
         </div>
     );

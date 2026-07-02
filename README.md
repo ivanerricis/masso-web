@@ -24,6 +24,18 @@ cp .env.example .env
 
 2. Aggiorna i valori in `.env` secondo il tuo ambiente.
 
+Per modificare il file in modo interattivo da Windows puoi usare:
+
+```powershell
+\.\scripts\edit-env.ps1
+```
+
+Oppure:
+
+```cmd
+scripts\edit-env.cmd
+```
+
 ## Modalita 1: Sviluppo locale (hot reload)
 
 Usa il compose dedicato allo sviluppo:

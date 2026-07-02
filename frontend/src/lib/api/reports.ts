@@ -1,5 +1,7 @@
 import { api } from "./client";
 import type { PaymentMethod } from "@/types/dtos";
+import type { PaginatedResponse } from "./client";
+import type { ReportDto } from "@/types/dtos";
 
 export type ReportEntityDto = {
     id: number;
@@ -36,7 +38,35 @@ export type ReportCreateInput = {
     price?: number;
 };
 
-export const listReports = async () => (await api.get<ReportEntityDto[]>("/reports")).data;
+export type ListReportsParams = {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    visibility?: "all" | "open" | "closed";
+    date?: string;
+};
+
+export function listReports(): Promise<ReportDto[]>;
+export function listReports(params: ListReportsParams): Promise<PaginatedResponse<ReportDto>>;
+export async function listReports(params?: ListReportsParams) {
+    const resolvedPage = params?.page ?? 1;
+    const resolvedPageSize = params?.pageSize ?? 1000;
+    const response = await api.get<PaginatedResponse<ReportDto>>("/reports", {
+        params: {
+            page: resolvedPage,
+            pageSize: resolvedPageSize,
+            search: params?.search?.trim() || undefined,
+            visibility: params?.visibility,
+            date: params?.date,
+        },
+    });
+
+    if (!params) {
+        return response.data.items;
+    }
+
+    return response.data;
+}
 
 export const getReport = async (id: number) =>
     (await api.get<ReportEntityDto>(`/reports/${id}`)).data;

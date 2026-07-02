@@ -1,6 +1,7 @@
 import type { CollaboratorDto } from "@/types/dtos";
 import { api, mapEntityTimestamps } from "./client";
 import type { EntityWithRawTimestamps } from "./client";
+import type { PaginatedResponse } from "./client";
 
 export type CollaboratorCreateInput = {
     firstName: string;
@@ -10,10 +11,32 @@ export type CollaboratorCreateInput = {
 
 export type CollaboratorUpdateInput = Partial<CollaboratorCreateInput>;
 
-export const listCollaborators = async () => {
-    const response = await api.get<EntityWithRawTimestamps<CollaboratorDto>[]>("/collaborators");
-    return response.data.map((collaborator) => mapEntityTimestamps(collaborator));
+export type ListCollaboratorsParams = {
+    page?: number;
+    pageSize?: number;
+    search?: string;
 };
+
+export function listCollaborators(): Promise<CollaboratorDto[]>;
+export function listCollaborators(params: ListCollaboratorsParams): Promise<PaginatedResponse<CollaboratorDto>>;
+export async function listCollaborators(params?: ListCollaboratorsParams) {
+    const resolvedPage = params?.page ?? 1;
+    const resolvedPageSize = params?.pageSize ?? 1000;
+    const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<CollaboratorDto>>>("/collaborators", {
+        params: { page: resolvedPage, pageSize: resolvedPageSize, search: params?.search?.trim() || undefined },
+    });
+
+    const items = response.data.items.map((collaborator) => mapEntityTimestamps(collaborator));
+
+    if (!params) {
+        return items;
+    }
+
+    return {
+        ...response.data,
+        items,
+    };
+}
 
 export const createCollaborator = async (payload: CollaboratorCreateInput) =>
     mapEntityTimestamps((await api.post<EntityWithRawTimestamps<CollaboratorDto>>("/collaborators", payload)).data);

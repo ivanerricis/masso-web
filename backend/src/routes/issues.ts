@@ -15,6 +15,12 @@ const issueIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+const issueListQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    search: z.string().trim().max(255).optional(),
+});
+
 const issueCreateBodySchema = z
     .object({
         description: z.string().trim().min(1).max(255),
@@ -27,10 +33,22 @@ const issueUpdateBodySchema = issueCreateBodySchema
         message: "At least one field is required",
     });
 
-issuesRouter.get("/", async (_, res) => {
-    const issues = await listIssues();
+issuesRouter.get("/", validate({ query: issueListQuerySchema }), async (req, res) => {
+    const { page, pageSize, search } = req.query as unknown as {
+        page: number;
+        pageSize: number;
+        search?: string;
+    };
 
-    res.json(issues);
+    const { items, totalItems } = await listIssues({ page, pageSize, search });
+
+    res.json({
+        items,
+        totalItems,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    });
 });
 
 issuesRouter.get("/:id", validate({ params: issueIdParamsSchema }), async (req, res) => {

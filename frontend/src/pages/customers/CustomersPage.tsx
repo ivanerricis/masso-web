@@ -1,17 +1,19 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateCustomerDialog from "@/components/dialogs/create/createCustomerDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
+import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
+import TablePagination from "@/components/table-pagination";
 import { createCustomer, deleteCustomer, getApiErrorMessage, updateCustomer } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { CustomerDto } from "@/types/dtos";
 import { toast } from "sonner";
-import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { customerColumns } from "./components/customer-columns";
 import CustomersFilters from "./components/customers-filters";
 import CustomersTable from "./components/customers-table";
 import { useCustomersRows } from "./hooks/useCustomersRows";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const CustomersPage = () => {
     const navigate = useNavigate();
@@ -22,7 +24,13 @@ const CustomersPage = () => {
     const [customerToEdit, setCustomerToEdit] = useState<CustomerDto | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<CustomerDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const { customerRows, visibleCustomerRows, isLoading, loadCustomers } = useCustomersRows({ searchText });
+    const pageSize = 10;
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const { customerRows, totalItems, totalPages, isLoading, loadCustomers } = useCustomersRows({
+        searchText,
+        currentPage,
+        pageSize,
+    });
 
     const handleCreateCustomer = async (values: Record<string, string | boolean>) => {
         await createCustomer({
@@ -152,15 +160,24 @@ const CustomersPage = () => {
             <CustomersFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
             {isLoading && customerRows.length === 0 ? (
-                <TableLoadingSkeleton columns={customerColumns.length} />
+                <LoadingPage />
             ) : (
-                <CustomersTable
-                    columns={customerColumns}
-                    rows={visibleCustomerRows}
-                    onOpenCustomer={handleOpenCustomer}
-                    onEditCustomer={handleOpenEditDialog}
-                    onDeleteCustomer={handleOpenDeleteDialog}
-                />
+                <div className="flex flex-col gap-4">
+                    <CustomersTable
+                        columns={customerColumns}
+                        rows={customerRows}
+                        onOpenCustomer={handleOpenCustomer}
+                        onEditCustomer={handleOpenEditDialog}
+                        onDeleteCustomer={handleOpenDeleteDialog}
+                    />
+                    <TablePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
             )}
         </div>
     );

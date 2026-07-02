@@ -16,6 +16,19 @@ type ValidationErrorResponse = {
     };
 };
 
+const setValidatedRequestProperty = <T extends keyof Pick<Request, "params" | "query" | "body">>(
+    req: Request,
+    key: T,
+    value: Request[T]
+) => {
+    Object.defineProperty(req, key, {
+        value,
+        configurable: true,
+        enumerable: true,
+        writable: true,
+    });
+};
+
 export const validate = ({ params, query, body }: ValidationSchemas): RequestHandler => {
     return (req: Request, res: Response<ValidationErrorResponse>, next: NextFunction) => {
         const errors: ValidationErrorResponse["errors"] = {};
@@ -25,7 +38,7 @@ export const validate = ({ params, query, body }: ValidationSchemas): RequestHan
             if (!parsedParams.success) {
                 errors.params = parsedParams.error.flatten();
             } else {
-                (req as any).params = parsedParams.data;
+                setValidatedRequestProperty(req, "params", parsedParams.data as Request["params"]);
             }
         }
 
@@ -34,7 +47,7 @@ export const validate = ({ params, query, body }: ValidationSchemas): RequestHan
             if (!parsedQuery.success) {
                 errors.query = parsedQuery.error.flatten();
             } else {
-                (req as any).query = parsedQuery.data;
+                setValidatedRequestProperty(req, "query", parsedQuery.data as Request["query"]);
             }
         }
 
@@ -43,7 +56,7 @@ export const validate = ({ params, query, body }: ValidationSchemas): RequestHan
             if (!parsedBody.success) {
                 errors.body = parsedBody.error.flatten();
             } else {
-                (req as any).body = parsedBody.data;
+                setValidatedRequestProperty(req, "body", parsedBody.data as Request["body"]);
             }
         }
 

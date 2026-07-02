@@ -1,16 +1,18 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateDeviceDialog from "@/components/dialogs/create/createDeviceDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
+import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
+import TablePagination from "@/components/table-pagination";
 import { createDevice, deleteDevice, getApiErrorMessage, updateDevice } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { DeviceDto } from "@/types/dtos";
 import { toast } from "sonner";
-import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { deviceColumns } from "./components/device-columns";
 import DevicesFilters from "./components/devices-filters";
 import DevicesTable from "./components/devices-table";
 import { useDevicesRows } from "./hooks/useDevicesRows";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const DevicesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -20,7 +22,13 @@ const DevicesPage = () => {
     const [deviceToEdit, setDeviceToEdit] = useState<DeviceDto | null>(null);
     const [deviceToDelete, setDeviceToDelete] = useState<DeviceDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const { deviceRows, visibleDeviceRows, isLoading, loadDevices } = useDevicesRows({ searchText });
+    const pageSize = 10;
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const { deviceRows, totalItems, totalPages, isLoading, loadDevices } = useDevicesRows({
+        searchText,
+        currentPage,
+        pageSize,
+    });
 
     const handleCreateDevice = async (values: Record<string, string | boolean>) => {
         await createDevice({
@@ -80,7 +88,7 @@ const DevicesPage = () => {
 
     useEffect(() => {
         void loadDevices();
-    }, []);
+    }, [loadDevices]);
 
     return (
         <div className="flex flex-col gap-4 w-full">
@@ -130,14 +138,23 @@ const DevicesPage = () => {
             <DevicesFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
             {isLoading && deviceRows.length === 0 ? (
-                <TableLoadingSkeleton columns={deviceColumns.length} />
+                <LoadingPage />
             ) : (
-                <DevicesTable
-                    columns={deviceColumns}
-                    rows={visibleDeviceRows}
-                    onEditDevice={handleOpenEditDialog}
-                    onDeleteDevice={handleOpenDeleteDialog}
-                />
+                <div className="flex flex-col gap-4">
+                    <DevicesTable
+                        columns={deviceColumns}
+                        rows={deviceRows}
+                        onEditDevice={handleOpenEditDialog}
+                        onDeleteDevice={handleOpenDeleteDialog}
+                    />
+                    <TablePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
             )}
         </div>
     );

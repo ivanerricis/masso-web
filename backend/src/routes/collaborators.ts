@@ -15,6 +15,12 @@ const collaboratorIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+const collaboratorListQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    search: z.string().trim().max(255).optional(),
+});
+
 const collaboratorCreateBodySchema = z
     .object({
         firstName: z.string().trim().min(1).max(255),
@@ -29,10 +35,22 @@ const collaboratorUpdateBodySchema = collaboratorCreateBodySchema
         message: "At least one field is required",
     });
 
-collaboratorsRouter.get("/", async (_, res) => {
-    const collaborators = await listCollaborators();
+collaboratorsRouter.get("/", validate({ query: collaboratorListQuerySchema }), async (req, res) => {
+    const { page, pageSize, search } = req.query as unknown as {
+        page: number;
+        pageSize: number;
+        search?: string;
+    };
 
-    res.json(collaborators);
+    const { items, totalItems } = await listCollaborators({ page, pageSize, search });
+
+    res.json({
+        items,
+        totalItems,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    });
 });
 
 collaboratorsRouter.get("/:id", validate({ params: collaboratorIdParamsSchema }), async (req, res) => {

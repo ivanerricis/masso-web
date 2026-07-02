@@ -1,50 +1,42 @@
 import { getApiErrorMessage, listCollaborators } from "@/lib/api";
 import type { CollaboratorDto } from "@/types/dtos";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type UseCollaboratorsRowsParams = {
     searchText: string;
+    currentPage: number;
+    pageSize: number;
 };
 
-export const useCollaboratorsRows = ({ searchText }: UseCollaboratorsRowsParams) => {
+export const useCollaboratorsRows = ({ searchText, currentPage, pageSize }: UseCollaboratorsRowsParams) => {
     const [collaboratorRows, setCollaboratorRows] = useState<CollaboratorDto[]>([]);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
 
     const loadCollaborators = useCallback(async () => {
         setIsLoading(true);
         try {
-            const collaborators = await listCollaborators();
-            setCollaboratorRows(collaborators);
+            const response = await listCollaborators({ page: currentPage, pageSize, search: searchText });
+            setCollaboratorRows(response.items);
+            setTotalItems(response.totalItems);
+            setTotalPages(response.totalPages);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare i collaboratori"));
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentPage, pageSize, searchText]);
 
-    const visibleCollaboratorRows = useMemo(() => {
-        return collaboratorRows.filter((collaborator) => {
-            const query = searchText.trim().toLowerCase();
-            if (!query) {
-                return true;
-            }
-
-            return [
-                String(collaborator.id),
-                collaborator.firstName,
-                collaborator.lastName ?? "",
-                collaborator.phoneNumber ?? "",
-            ]
-                .join(" ")
-                .toLowerCase()
-                .includes(query);
-        });
-    }, [collaboratorRows, searchText]);
+    useEffect(() => {
+        void loadCollaborators();
+    }, [loadCollaborators]);
 
     return {
         collaboratorRows,
-        visibleCollaboratorRows,
+        totalItems,
+        totalPages,
         isLoading,
         loadCollaborators,
     };

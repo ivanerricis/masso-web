@@ -53,6 +53,8 @@ const normalizeOutputDir = (value: string) => {
     return trimmed === "" ? defaultOutputDir : trimmed;
 };
 
+const getConfiguredOutputDir = () => defaultOutputDir;
+
 const toAbsoluteOutputDir = (outputDir: string) => {
     if (path.isAbsolute(outputDir)) {
         return outputDir;
@@ -120,7 +122,7 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
         autoEnabled: Boolean(input.autoEnabled ?? defaultState.autoEnabled),
         frequencyDays,
         runAt,
-        outputDir: normalizeOutputDir(typeof input.outputDir === "string" ? input.outputDir : defaultState.outputDir),
+        outputDir: getConfiguredOutputDir(),
         nextRunAt: typeof input.nextRunAt === "string" ? input.nextRunAt : null,
         lastRunAt: typeof input.lastRunAt === "string" ? input.lastRunAt : null,
         lastRunStatus:
@@ -260,7 +262,7 @@ export const updateBackupSettings = async (
     current.autoEnabled = input.autoEnabled;
     current.frequencyDays = input.frequencyDays;
     current.runAt = input.runAt;
-    current.outputDir = normalizeOutputDir(input.outputDir);
+    current.outputDir = getConfiguredOutputDir();
 
     setNextRunIfNeeded(current, new Date());
     await persistState(current);
@@ -283,7 +285,7 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
     const now = new Date();
 
     try {
-        const outputPath = buildDumpFilePath(state.outputDir, now);
+        const outputPath = buildDumpFilePath(getConfiguredOutputDir(), now);
         await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
         await runPgDump(outputPath);
 

@@ -2,6 +2,7 @@ import CreateEntityButton from "@/components/create-entity-button";
 import CreateTechnicianDialog from "@/components/dialogs/create/createTechnicianDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
+import TablePagination from "@/components/table-pagination";
 import { createTechnician, deleteTechnician, getApiErrorMessage, updateTechnician } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { TechnicianDto } from "@/types/dtos";
@@ -12,6 +13,7 @@ import { technicianColumns } from "./components/technician-columns";
 import TechniciansFilters from "./components/technicians-filters";
 import TechniciansTable from "./components/technicians-table";
 import { useTechniciansRows } from "./hooks/useTechniciansRows";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const TechniciansPage = () => {
     const navigate = useNavigate();
@@ -22,7 +24,13 @@ const TechniciansPage = () => {
     const [technicianToEdit, setTechnicianToEdit] = useState<TechnicianDto | null>(null);
     const [technicianToDelete, setTechnicianToDelete] = useState<TechnicianDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const { technicianRows, visibleTechnicianRows, isLoading, loadTechnicians } = useTechniciansRows({ searchText });
+    const pageSize = 10;
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const { technicianRows, totalItems, totalPages, isLoading, loadTechnicians } = useTechniciansRows({
+        searchText,
+        currentPage,
+        pageSize,
+    });
 
     const handleCreateTechnician = async (values: Record<string, string | boolean>) => {
         await createTechnician({
@@ -92,7 +100,7 @@ const TechniciansPage = () => {
 
     useEffect(() => {
         void loadTechnicians();
-    }, []);
+    }, [loadTechnicians]);
 
     return (
         <div className="flex flex-col gap-4 w-full">
@@ -144,13 +152,22 @@ const TechniciansPage = () => {
             {isLoading && technicianRows.length === 0 ? (
                 <TableLoadingSkeleton columns={technicianColumns.length} />
             ) : (
-                <TechniciansTable
-                    columns={technicianColumns}
-                    rows={visibleTechnicianRows}
-                    onOpenTechnician={handleOpenTechnician}
-                    onEditTechnician={handleOpenEditDialog}
-                    onDeleteTechnician={handleOpenDeleteDialog}
-                />
+                <div className="flex flex-col gap-4">
+                    <TechniciansTable
+                        columns={technicianColumns}
+                        rows={technicianRows}
+                        onOpenTechnician={handleOpenTechnician}
+                        onEditTechnician={handleOpenEditDialog}
+                        onDeleteTechnician={handleOpenDeleteDialog}
+                    />
+                    <TablePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
             )}
         </div>
     );

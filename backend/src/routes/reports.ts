@@ -26,6 +26,14 @@ const reportIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+const reportListQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    search: z.string().trim().max(255).optional(),
+    visibility: z.enum(["all", "open", "closed"]).default("open"),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
 const reportBodySchema = z
     .object({
         deviceId: z.coerce.number().int().positive(),
@@ -61,10 +69,24 @@ const reportUpdateBodySchema = reportBodySchema.partial().refine((value) => Obje
     message: "At least one field is required",
 });
 
-reportsRouter.get("/", async (_, res) => {
-    const reports = await listReports();
+reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, res) => {
+    const { page, pageSize, search, visibility, date } = req.query as unknown as {
+        page: number;
+        pageSize: number;
+        search?: string;
+        visibility: "all" | "open" | "closed";
+        date?: string;
+    };
 
-    res.json(reports);
+    const { items, totalItems } = await listReports({ page, pageSize, search, visibility, date });
+
+    res.json({
+        items,
+        totalItems,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    });
 });
 
 reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), async (req, res) => {

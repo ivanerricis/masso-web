@@ -1,9 +1,40 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { collaboratorTable } from "../schema";
 import type { NewCollaborator, UpdateCollaborator } from "../types";
 
-export const listCollaborators = () => db.select().from(collaboratorTable).orderBy(desc(collaboratorTable.created_at));
+type ListCollaboratorsParams = {
+    page: number;
+    pageSize: number;
+    search?: string;
+};
+
+export const listCollaborators = async ({ page, pageSize, search }: ListCollaboratorsParams) => {
+    const trimmedSearch = search?.trim();
+    const searchPattern = `%${trimmedSearch ?? ""}%`;
+    const searchConditions = trimmedSearch
+        ? [
+              sql`${collaboratorTable.id}::text ILIKE ${searchPattern}`,
+              sql`${collaboratorTable.firstName}::text ILIKE ${searchPattern}`,
+              sql`${collaboratorTable.lastName}::text ILIKE ${searchPattern}`,
+              sql`${collaboratorTable.phoneNumber}::text ILIKE ${searchPattern}`,
+              sql`${collaboratorTable.created_at}::text ILIKE ${searchPattern}`,
+              sql`${collaboratorTable.updated_at}::text ILIKE ${searchPattern}`,
+          ]
+        : [];
+    const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
+    const offset = (page - 1) * pageSize;
+
+    const [items, totalCountRows] = await Promise.all([
+        db.select().from(collaboratorTable).where(whereClause).orderBy(desc(collaboratorTable.created_at)).limit(pageSize).offset(offset),
+        db.select({ total: sql<number>`count(*)` }).from(collaboratorTable).where(whereClause),
+    ]);
+
+    return {
+        items,
+        totalItems: Number(totalCountRows[0]?.total ?? 0),
+    };
+};
 
 export const getCollaboratorById = (id: number) =>
     db.select().from(collaboratorTable).where(eq(collaboratorTable.id, id));

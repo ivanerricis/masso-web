@@ -1,45 +1,42 @@
 import { getApiErrorMessage, listIssues } from "@/lib/api";
 import type { IssueDto } from "@/types/dtos";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type UseIssuesRowsParams = {
     searchText: string;
+    currentPage: number;
+    pageSize: number;
 };
 
-export const useIssuesRows = ({ searchText }: UseIssuesRowsParams) => {
+export const useIssuesRows = ({ searchText, currentPage, pageSize }: UseIssuesRowsParams) => {
     const [issueRows, setIssueRows] = useState<IssueDto[]>([]);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
 
     const loadIssues = useCallback(async () => {
         setIsLoading(true);
         try {
-            const issues = await listIssues();
-            setIssueRows(issues);
+            const response = await listIssues({ page: currentPage, pageSize, search: searchText });
+            setIssueRows(response.items);
+            setTotalItems(response.totalItems);
+            setTotalPages(response.totalPages);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare i difetti"));
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentPage, pageSize, searchText]);
 
-    const visibleIssueRows = useMemo(() => {
-        return issueRows.filter((issue) => {
-            const query = searchText.trim().toLowerCase();
-            if (!query) {
-                return true;
-            }
-
-            return [String(issue.id), issue.description]
-                .join(" ")
-                .toLowerCase()
-                .includes(query);
-        });
-    }, [issueRows, searchText]);
+    useEffect(() => {
+        void loadIssues();
+    }, [loadIssues]);
 
     return {
         issueRows,
-        visibleIssueRows,
+        totalItems,
+        totalPages,
         isLoading,
         loadIssues,
     };

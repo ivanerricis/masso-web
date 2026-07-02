@@ -1,52 +1,42 @@
 import { getApiErrorMessage, listCustomers } from "@/lib/api";
 import type { CustomerDto } from "@/types/dtos";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type UseCustomersRowsParams = {
     searchText: string;
+    currentPage: number;
+    pageSize: number;
 };
 
-export const useCustomersRows = ({ searchText }: UseCustomersRowsParams) => {
+export const useCustomersRows = ({ searchText, currentPage, pageSize }: UseCustomersRowsParams) => {
     const [customerRows, setCustomerRows] = useState<CustomerDto[]>([]);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
 
     const loadCustomers = useCallback(async () => {
         setIsLoading(true);
         try {
-            const customers = await listCustomers();
-            setCustomerRows(customers);
+            const response = await listCustomers({ page: currentPage, pageSize, search: searchText });
+            setCustomerRows(response.items);
+            setTotalItems(response.totalItems);
+            setTotalPages(response.totalPages);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare i clienti"));
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentPage, pageSize, searchText]);
 
-    const visibleCustomerRows = useMemo(() => {
-        return customerRows.filter((customer) => {
-            const query = searchText.trim().toLowerCase();
-            if (!query) {
-                return true;
-            }
-
-            return [
-                String(customer.id),
-                customer.firstName,
-                customer.lastName ?? "",
-                customer.phoneNumber ?? "",
-                customer.phoneNumberSecondary ?? "",
-                customer.email ?? "",
-            ]
-                .join(" ")
-                .toLowerCase()
-                .includes(query);
-        });
-    }, [customerRows, searchText]);
+    useEffect(() => {
+        void loadCustomers();
+    }, [loadCustomers]);
 
     return {
         customerRows,
-        visibleCustomerRows,
+        totalItems,
+        totalPages,
         isLoading,
         loadCustomers,
     };

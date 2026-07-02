@@ -63,6 +63,13 @@ const cardIconSvg = `
     <path d="M6 16h2.5" />
 </svg>`;
 
+const euroIconSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2A75B9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 7a6 6 0 1 0 0 10" />
+    <path d="M5 10h8" />
+    <path d="M5 14h8" />
+</svg>`;
+
 const pairRow = (label: string, value: string) => [
     { text: label, style: "label" },
     { text: value, style: "value" },
@@ -221,7 +228,19 @@ const buildNotesAndPaymentSection = () => ({
             stack: [
                 { text: "Importo", style: "sectionTitle", margin: [0, 0, 0, 3] },
                 {
-                    table: { widths: ["*"], body: [[emptyCell()]] },
+                    table: {
+                        widths: [24, "*"],
+                        body: [[
+                            {
+                                svg: euroIconSvg,
+                                width: 18,
+                                height: 18,
+                                alignment: "left",
+                                margin: [0, 1, 2, 0],
+                            },
+                            emptyCell(),
+                        ]],
+                    },
                     layout: tableLayout,
                     heights: [46],
                 },

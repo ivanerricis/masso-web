@@ -230,7 +230,7 @@ const BackupSettingsDialog = ({ open, onOpenChange }: BackupSettingsDialogProps)
                                         id="outputDir"
                                         placeholder="es: backups oppure /app/backups"
                                         value={formValues.outputDir}
-                                        disabled={!formValues.dumpEnabled}
+                                        disabled
                                         onChange={(event) =>
                                             setFormValues((prev) => ({
                                                 ...prev,
@@ -238,6 +238,9 @@ const BackupSettingsDialog = ({ open, onOpenChange }: BackupSettingsDialogProps)
                                             }))
                                         }
                                     />
+                                    <p className="text-xs text-muted-foreground">
+                                        La cartella di destinazione segue la configurazione del compose/.env.
+                                    </p>
                                 </div>
 
                                 <div className="flex justify-end">

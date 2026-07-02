@@ -1,6 +1,7 @@
 import type { TechnicianDto } from "@/types/dtos";
 import { api, mapEntityTimestamps } from "./client";
 import type { EntityWithRawTimestamps } from "./client";
+import type { PaginatedResponse } from "./client";
 
 export type TechnicianCreateInput = {
     firstName: string;
@@ -11,10 +12,32 @@ export type TechnicianCreateInput = {
 
 export type TechnicianUpdateInput = Partial<TechnicianCreateInput>;
 
-export const listTechnicians = async () => {
-    const response = await api.get<EntityWithRawTimestamps<TechnicianDto>[]>("/technicians");
-    return response.data.map((technician) => mapEntityTimestamps(technician));
+export type ListTechniciansParams = {
+    page?: number;
+    pageSize?: number;
+    search?: string;
 };
+
+export function listTechnicians(): Promise<TechnicianDto[]>;
+export function listTechnicians(params: ListTechniciansParams): Promise<PaginatedResponse<TechnicianDto>>;
+export async function listTechnicians(params?: ListTechniciansParams) {
+    const resolvedPage = params?.page ?? 1;
+    const resolvedPageSize = params?.pageSize ?? 1000;
+    const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<TechnicianDto>>>("/technicians", {
+        params: { page: resolvedPage, pageSize: resolvedPageSize, search: params?.search?.trim() || undefined },
+    });
+
+    const items = response.data.items.map((technician) => mapEntityTimestamps(technician));
+
+    if (!params) {
+        return items;
+    }
+
+    return {
+        ...response.data,
+        items,
+    };
+}
 
 export const createTechnician = async (payload: TechnicianCreateInput) =>
     mapEntityTimestamps((await api.post<EntityWithRawTimestamps<TechnicianDto>>("/technicians", payload)).data);
