@@ -4,8 +4,8 @@ import { technicianTable } from "../schema";
 import type { NewTechnician, UpdateTechnician } from "../types";
 
 type ListTechniciansParams = {
-    page: number;
-    pageSize: number;
+    page?: number;
+    pageSize?: number;
     search?: string;
 };
 
@@ -24,10 +24,14 @@ export const listTechnicians = async ({ page, pageSize, search }: ListTechnician
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const offset = (page - 1) * pageSize;
+    const baseQuery = db.select().from(technicianTable).where(whereClause).orderBy(desc(technicianTable.created_at));
+
+    if (page == null || pageSize == null) {
+        return baseQuery;
+    }
 
     const [items, totalCountRows] = await Promise.all([
-        db.select().from(technicianTable).where(whereClause).orderBy(desc(technicianTable.created_at)).limit(pageSize).offset(offset),
+        baseQuery.limit(pageSize).offset((page - 1) * pageSize),
         db.select({ total: sql<number>`count(*)` }).from(technicianTable).where(whereClause),
     ]);
 

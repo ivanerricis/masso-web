@@ -4,14 +4,14 @@ import { collaboratorTable, customerTable, deviceTable, IssueTable, reportTable,
 import type { NewReport, UpdateReport } from "../types";
 
 type ListReportsParams = {
-    page: number;
-    pageSize: number;
+    page?: number;
+    pageSize?: number;
     search?: string;
     visibility?: "all" | "open" | "closed";
     date?: string;
 };
 
-export const listReports = async ({ page, pageSize, search, visibility = "open", date }: ListReportsParams) => {
+export const listReports = async ({ page, pageSize, search, visibility = "all", date }: ListReportsParams) => {
     const technicianPriceSubquery = db
         .select({
             reportId: reportTechnicianTable.reportId,
@@ -62,7 +62,6 @@ export const listReports = async ({ page, pageSize, search, visibility = "open",
         (condition): condition is NonNullable<typeof condition> => condition != null
     );
     const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
-    const offset = (page - 1) * pageSize;
 
     const baseQuery = db
         .select({
@@ -98,8 +97,12 @@ export const listReports = async ({ page, pageSize, search, visibility = "open",
         .leftJoin(collaboratorTable, eq(collaboratorTable.id, reportTable.collaboratorId))
         .leftJoin(technicianPriceSubquery, eq(technicianPriceSubquery.reportId, reportTable.id));
 
+    if (page == null || pageSize == null) {
+        return baseQuery.where(whereClause).orderBy(desc(reportTable.created_at));
+    }
+
     const [items, totalCountRows] = await Promise.all([
-        baseQuery.where(whereClause).orderBy(desc(reportTable.created_at)).limit(pageSize).offset(offset),
+        baseQuery.where(whereClause).orderBy(desc(reportTable.created_at)).limit(pageSize).offset((page - 1) * pageSize),
         db.select({ total: sql<number>`count(*)` })
             .from(reportTable)
             .innerJoin(customerTable, eq(customerTable.id, reportTable.customerId))

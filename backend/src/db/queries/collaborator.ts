@@ -4,8 +4,8 @@ import { collaboratorTable } from "../schema";
 import type { NewCollaborator, UpdateCollaborator } from "../types";
 
 type ListCollaboratorsParams = {
-    page: number;
-    pageSize: number;
+    page?: number;
+    pageSize?: number;
     search?: string;
 };
 
@@ -23,10 +23,14 @@ export const listCollaborators = async ({ page, pageSize, search }: ListCollabor
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const offset = (page - 1) * pageSize;
+    const baseQuery = db.select().from(collaboratorTable).where(whereClause).orderBy(desc(collaboratorTable.created_at));
+
+    if (page == null || pageSize == null) {
+        return baseQuery;
+    }
 
     const [items, totalCountRows] = await Promise.all([
-        db.select().from(collaboratorTable).where(whereClause).orderBy(desc(collaboratorTable.created_at)).limit(pageSize).offset(offset),
+        baseQuery.limit(pageSize).offset((page - 1) * pageSize),
         db.select({ total: sql<number>`count(*)` }).from(collaboratorTable).where(whereClause),
     ]);
 

@@ -18,17 +18,16 @@ export type ListIssuesParams = {
 export function listIssues(): Promise<IssueDto[]>;
 export function listIssues(params: ListIssuesParams): Promise<PaginatedResponse<IssueDto>>;
 export async function listIssues(params?: ListIssuesParams) {
-    const resolvedPage = params?.page ?? 1;
-    const resolvedPageSize = params?.pageSize ?? 1000;
+    if (!params) {
+        const response = await api.get<EntityWithRawTimestamps<IssueDto>[]>("/issues");
+        return response.data.map((issue) => mapEntityTimestamps(issue));
+    }
+
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<IssueDto>>>("/issues", {
-        params: { page: resolvedPage, pageSize: resolvedPageSize, search: params?.search?.trim() || undefined },
+        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
     });
 
     const items = response.data.items.map((issue) => mapEntityTimestamps(issue));
-
-    if (!params) {
-        return items;
-    }
 
     return {
         ...response.data,

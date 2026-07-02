@@ -21,7 +21,7 @@ import {
 import { useEffect, useState } from "react";
 import type { CustomerDto, ReportDto } from "@/types/dtos";
 import { toast } from "sonner";
-import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
+import LoadingPage from "@/components/loadingPage";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { reportColumns } from "./components/report-columns";
 import ReportsFilters from "./components/reports-filters";
@@ -346,7 +346,7 @@ const ReportsPage = () => {
                 />
 
                 {isLoading && reportRows.length === 0 ? (
-                    <TableLoadingSkeleton columns={reportColumns.length} />
+                    <LoadingPage />
                 ) : (
                     <div className="flex flex-col gap-4">
                         <ReportsTable

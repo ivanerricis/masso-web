@@ -1,9 +1,41 @@
+import { useLayoutEffect, useRef, useState } from "react"
+import { Outlet, useLocation } from "react-router-dom"
+import LoadingPage from "@/components/loadingPage"
 import { ModeToggle } from "@/components/mode-toggle"
 import MainSidebar from "@/components/main-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Outlet } from "react-router-dom"
 
 export const MainLayout = () => {
+    const { pathname } = useLocation()
+    const hasMountedRef = useRef(false)
+    const transitionTimerRef = useRef<number | null>(null)
+    const [isRouteTransitioning, setIsRouteTransitioning] = useState(false)
+
+    useLayoutEffect(() => {
+        if (!hasMountedRef.current) {
+            hasMountedRef.current = true
+            return
+        }
+
+        setIsRouteTransitioning(true)
+
+        if (transitionTimerRef.current != null) {
+            window.clearTimeout(transitionTimerRef.current)
+        }
+
+        transitionTimerRef.current = window.setTimeout(() => {
+            setIsRouteTransitioning(false)
+            transitionTimerRef.current = null
+        }, 150)
+
+        return () => {
+            if (transitionTimerRef.current != null) {
+                window.clearTimeout(transitionTimerRef.current)
+                transitionTimerRef.current = null
+            }
+        }
+    }, [pathname])
+
     return (
         <SidebarProvider defaultOpen>
             <MainSidebar />
@@ -13,7 +45,7 @@ export const MainLayout = () => {
                     <ModeToggle />
                 </header>
                 <main className="flex flex-1 w-full min-h-0 overflow-hidden p-3">
-                    <Outlet />
+                    {isRouteTransitioning ? <LoadingPage /> : <Outlet />}
                 </main>
             </SidebarInset>
         </SidebarProvider>

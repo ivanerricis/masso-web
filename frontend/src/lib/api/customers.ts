@@ -22,17 +22,16 @@ export type ListCustomersParams = {
 export function listCustomers(): Promise<CustomerDto[]>;
 export function listCustomers(params: ListCustomersParams): Promise<PaginatedResponse<CustomerDto>>;
 export async function listCustomers(params?: ListCustomersParams) {
-    const resolvedPage = params?.page ?? 1;
-    const resolvedPageSize = params?.pageSize ?? 1000;
+    if (!params) {
+        const response = await api.get<EntityWithRawTimestamps<CustomerDto>[]>("/customers");
+        return response.data.map((customer) => mapEntityTimestamps(customer));
+    }
+
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<CustomerDto>>>("/customers", {
-        params: { page: resolvedPage, pageSize: resolvedPageSize, search: params?.search?.trim() || undefined },
+        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
     });
 
     const items = response.data.items.map((customer) => mapEntityTimestamps(customer));
-
-    if (!params) {
-        return items;
-    }
 
     return {
         ...response.data,

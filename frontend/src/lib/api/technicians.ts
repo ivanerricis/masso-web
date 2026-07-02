@@ -21,17 +21,16 @@ export type ListTechniciansParams = {
 export function listTechnicians(): Promise<TechnicianDto[]>;
 export function listTechnicians(params: ListTechniciansParams): Promise<PaginatedResponse<TechnicianDto>>;
 export async function listTechnicians(params?: ListTechniciansParams) {
-    const resolvedPage = params?.page ?? 1;
-    const resolvedPageSize = params?.pageSize ?? 1000;
+    if (!params) {
+        const response = await api.get<EntityWithRawTimestamps<TechnicianDto>[]>("/technicians");
+        return response.data.map((technician) => mapEntityTimestamps(technician));
+    }
+
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<TechnicianDto>>>("/technicians", {
-        params: { page: resolvedPage, pageSize: resolvedPageSize, search: params?.search?.trim() || undefined },
+        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
     });
 
     const items = response.data.items.map((technician) => mapEntityTimestamps(technician));
-
-    if (!params) {
-        return items;
-    }
 
     return {
         ...response.data,

@@ -20,17 +20,16 @@ export type ListCollaboratorsParams = {
 export function listCollaborators(): Promise<CollaboratorDto[]>;
 export function listCollaborators(params: ListCollaboratorsParams): Promise<PaginatedResponse<CollaboratorDto>>;
 export async function listCollaborators(params?: ListCollaboratorsParams) {
-    const resolvedPage = params?.page ?? 1;
-    const resolvedPageSize = params?.pageSize ?? 1000;
+    if (!params) {
+        const response = await api.get<EntityWithRawTimestamps<CollaboratorDto>[]>("/collaborators");
+        return response.data.map((collaborator) => mapEntityTimestamps(collaborator));
+    }
+
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<CollaboratorDto>>>("/collaborators", {
-        params: { page: resolvedPage, pageSize: resolvedPageSize, search: params?.search?.trim() || undefined },
+        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
     });
 
     const items = response.data.items.map((collaborator) => mapEntityTimestamps(collaborator));
-
-    if (!params) {
-        return items;
-    }
 
     return {
         ...response.data,

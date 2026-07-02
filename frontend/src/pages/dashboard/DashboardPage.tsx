@@ -1,6 +1,7 @@
 import { CircleCheck, CircleDashed, Euro } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
+import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import { useEffect, useState } from "react";
 import CreateEntityButton from "@/components/create-entity-button";
@@ -17,7 +18,6 @@ import {
 } from "@/lib/api";
 import { formatEuro } from "@/lib/utils";
 import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
@@ -178,15 +178,7 @@ const DashboardPage = () => {
 
             <div className="flex flex-wrap gap-4">
                 {isLoading && openReports === 0 && closedReports === 0 && totalRevenue === 0 ? (
-                    Array.from({ length: 3 }).map((_, index) => (
-                        <div key={`dashboard-skeleton-${index}`} className="flex w-58 flex-col gap-2 rounded-lg border bg-card p-6 shadow">
-                            <div className="flex items-center justify-between">
-                                <Skeleton className="h-5 w-30" />
-                                <Skeleton className="size-6 rounded-full" />
-                            </div>
-                            <Skeleton className="mt-1 h-8 w-24" />
-                        </div>
-                    ))
+                    <LoadingPage />
                 ) : (
                     <>
                         <CardDashboard

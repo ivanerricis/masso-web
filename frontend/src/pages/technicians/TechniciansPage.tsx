@@ -3,11 +3,11 @@ import CreateTechnicianDialog from "@/components/dialogs/create/createTechnician
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
+import LoadingPage from "@/components/loadingPage";
 import { createTechnician, deleteTechnician, getApiErrorMessage, updateTechnician } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { TechnicianDto } from "@/types/dtos";
 import { toast } from "sonner";
-import TableLoadingSkeleton from "@/components/tableLoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { technicianColumns } from "./components/technician-columns";
 import TechniciansFilters from "./components/technicians-filters";
@@ -150,7 +150,7 @@ const TechniciansPage = () => {
             <TechniciansFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
             {isLoading && technicianRows.length === 0 ? (
-                <TableLoadingSkeleton columns={technicianColumns.length} />
+                <LoadingPage />
             ) : (
                 <div className="flex flex-col gap-4">
                     <TechniciansTable

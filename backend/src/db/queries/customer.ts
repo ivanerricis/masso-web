@@ -4,8 +4,8 @@ import { customerTable } from "../schema";
 import type { NewCustomer, UpdateCustomer } from "../types";
 
 type ListCustomersParams = {
-    page: number;
-    pageSize: number;
+    page?: number;
+    pageSize?: number;
     search?: string;
 };
 
@@ -25,10 +25,14 @@ export const listCustomers = async ({ page, pageSize, search }: ListCustomersPar
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const offset = (page - 1) * pageSize;
+    const baseQuery = db.select().from(customerTable).where(whereClause).orderBy(desc(customerTable.created_at));
+
+    if (page == null || pageSize == null) {
+        return baseQuery;
+    }
 
     const [items, totalCountRows] = await Promise.all([
-        db.select().from(customerTable).where(whereClause).orderBy(desc(customerTable.created_at)).limit(pageSize).offset(offset),
+        baseQuery.limit(pageSize).offset((page - 1) * pageSize),
         db.select({ total: sql<number>`count(*)` }).from(customerTable).where(whereClause),
     ]);
 

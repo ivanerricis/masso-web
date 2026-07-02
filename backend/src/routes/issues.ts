@@ -16,8 +16,8 @@ const issueIdParamsSchema = z.object({
 });
 
 const issueListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).default(1),
-    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
     search: z.string().trim().max(255).optional(),
 });
 
@@ -35,12 +35,19 @@ const issueUpdateBodySchema = issueCreateBodySchema
 
 issuesRouter.get("/", validate({ query: issueListQuerySchema }), async (req, res) => {
     const { page, pageSize, search } = req.query as unknown as {
-        page: number;
-        pageSize: number;
+        page?: number;
+        pageSize?: number;
         search?: string;
     };
 
-    const { items, totalItems } = await listIssues({ page, pageSize, search });
+    const issues = await listIssues({ page, pageSize, search });
+
+    if (page == null || pageSize == null) {
+        res.json(issues);
+        return;
+    }
+
+    const { items, totalItems } = issues;
 
     res.json({
         items,

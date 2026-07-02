@@ -16,8 +16,8 @@ const deviceIdParamsSchema = z.object({
 });
 
 const deviceListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).default(1),
-    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
     search: z.string().trim().max(255).optional(),
 });
 
@@ -35,12 +35,19 @@ const deviceUpdateBodySchema = deviceCreateBodySchema
 
 devicesRouter.get("/", validate({ query: deviceListQuerySchema }), async (req, res) => {
     const { page, pageSize, search } = req.query as unknown as {
-        page: number;
-        pageSize: number;
+        page?: number;
+        pageSize?: number;
         search?: string;
     };
 
-    const { items, totalItems } = await listDevices({ page, pageSize, search });
+    const devices = await listDevices({ page, pageSize, search });
+
+    if (page == null || pageSize == null) {
+        res.json(devices);
+        return;
+    }
+
+    const { items, totalItems } = devices;
 
     res.json({
         items,

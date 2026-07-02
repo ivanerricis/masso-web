@@ -16,8 +16,8 @@ const collaboratorIdParamsSchema = z.object({
 });
 
 const collaboratorListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).default(1),
-    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
     search: z.string().trim().max(255).optional(),
 });
 
@@ -37,12 +37,19 @@ const collaboratorUpdateBodySchema = collaboratorCreateBodySchema
 
 collaboratorsRouter.get("/", validate({ query: collaboratorListQuerySchema }), async (req, res) => {
     const { page, pageSize, search } = req.query as unknown as {
-        page: number;
-        pageSize: number;
+        page?: number;
+        pageSize?: number;
         search?: string;
     };
 
-    const { items, totalItems } = await listCollaborators({ page, pageSize, search });
+    const collaborators = await listCollaborators({ page, pageSize, search });
+
+    if (page == null || pageSize == null) {
+        res.json(collaborators);
+        return;
+    }
+
+    const { items, totalItems } = collaborators;
 
     res.json({
         items,

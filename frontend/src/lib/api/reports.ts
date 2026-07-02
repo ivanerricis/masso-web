@@ -49,21 +49,20 @@ export type ListReportsParams = {
 export function listReports(): Promise<ReportDto[]>;
 export function listReports(params: ListReportsParams): Promise<PaginatedResponse<ReportDto>>;
 export async function listReports(params?: ListReportsParams) {
-    const resolvedPage = params?.page ?? 1;
-    const resolvedPageSize = params?.pageSize ?? 1000;
+    if (!params) {
+        const response = await api.get<ReportDto[]>("/reports");
+        return response.data;
+    }
+
     const response = await api.get<PaginatedResponse<ReportDto>>("/reports", {
         params: {
-            page: resolvedPage,
-            pageSize: resolvedPageSize,
-            search: params?.search?.trim() || undefined,
-            visibility: params?.visibility,
-            date: params?.date,
+            page: params.page ?? 1,
+            pageSize: params.pageSize ?? 1000,
+            search: params.search?.trim() || undefined,
+            visibility: params.visibility,
+            date: params.date,
         },
     });
-
-    if (!params) {
-        return response.data.items;
-    }
 
     return response.data;
 }

@@ -4,8 +4,8 @@ import { IssueTable } from "../schema";
 import type { NewIssue, UpdateIssue } from "../types";
 
 type ListIssuesParams = {
-    page: number;
-    pageSize: number;
+    page?: number;
+    pageSize?: number;
     search?: string;
 };
 
@@ -21,10 +21,14 @@ export const listIssues = async ({ page, pageSize, search }: ListIssuesParams) =
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const offset = (page - 1) * pageSize;
+    const baseQuery = db.select().from(IssueTable).where(whereClause).orderBy(desc(IssueTable.created_at));
+
+    if (page == null || pageSize == null) {
+        return baseQuery;
+    }
 
     const [items, totalCountRows] = await Promise.all([
-        db.select().from(IssueTable).where(whereClause).orderBy(desc(IssueTable.created_at)).limit(pageSize).offset(offset),
+        baseQuery.limit(pageSize).offset((page - 1) * pageSize),
         db.select({ total: sql<number>`count(*)` }).from(IssueTable).where(whereClause),
     ]);
 

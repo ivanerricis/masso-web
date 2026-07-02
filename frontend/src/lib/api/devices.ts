@@ -18,17 +18,16 @@ export type ListDevicesParams = {
 export function listDevices(): Promise<DeviceDto[]>;
 export function listDevices(params: ListDevicesParams): Promise<PaginatedResponse<DeviceDto>>;
 export async function listDevices(params?: ListDevicesParams) {
-    const resolvedPage = params?.page ?? 1;
-    const resolvedPageSize = params?.pageSize ?? 1000;
+    if (!params) {
+        const response = await api.get<EntityWithRawTimestamps<DeviceDto>[]>("/devices");
+        return response.data.map((device) => mapEntityTimestamps(device));
+    }
+
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<DeviceDto>>>("/devices", {
-        params: { page: resolvedPage, pageSize: resolvedPageSize, search: params?.search?.trim() || undefined },
+        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
     });
 
     const items = response.data.items.map((device) => mapEntityTimestamps(device));
-
-    if (!params) {
-        return items;
-    }
 
     return {
         ...response.data,

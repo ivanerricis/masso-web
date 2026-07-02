@@ -27,10 +27,10 @@ const reportIdParamsSchema = z.object({
 });
 
 const reportListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).default(1),
-    pageSize: z.coerce.number().int().min(1).max(1000).default(10),
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
     search: z.string().trim().max(255).optional(),
-    visibility: z.enum(["all", "open", "closed"]).default("open"),
+    visibility: z.enum(["all", "open", "closed"]).optional(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
@@ -71,14 +71,27 @@ const reportUpdateBodySchema = reportBodySchema.partial().refine((value) => Obje
 
 reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, res) => {
     const { page, pageSize, search, visibility, date } = req.query as unknown as {
-        page: number;
-        pageSize: number;
+        page?: number;
+        pageSize?: number;
         search?: string;
-        visibility: "all" | "open" | "closed";
+        visibility?: "all" | "open" | "closed";
         date?: string;
     };
 
-    const { items, totalItems } = await listReports({ page, pageSize, search, visibility, date });
+    const reports = await listReports({
+        page,
+        pageSize,
+        search,
+        visibility: visibility ?? (page == null || pageSize == null ? "all" : "open"),
+        date,
+    });
+
+    if (page == null || pageSize == null) {
+        res.json(reports);
+        return;
+    }
+
+    const { items, totalItems } = reports;
 
     res.json({
         items,

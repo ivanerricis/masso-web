@@ -4,8 +4,8 @@ import { deviceTable } from "../schema";
 import type { NewDevice, UpdateDevice } from "../types";
 
 type ListDevicesParams = {
-    page: number;
-    pageSize: number;
+    page?: number;
+    pageSize?: number;
     search?: string;
 };
 
@@ -21,10 +21,14 @@ export const listDevices = async ({ page, pageSize, search }: ListDevicesParams)
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const offset = (page - 1) * pageSize;
+    const baseQuery = db.select().from(deviceTable).where(whereClause).orderBy(desc(deviceTable.created_at));
+
+    if (page == null || pageSize == null) {
+        return baseQuery;
+    }
 
     const [items, totalCountRows] = await Promise.all([
-        db.select().from(deviceTable).where(whereClause).orderBy(desc(deviceTable.created_at)).limit(pageSize).offset(offset),
+        baseQuery.limit(pageSize).offset((page - 1) * pageSize),
         db.select({ total: sql<number>`count(*)` }).from(deviceTable).where(whereClause),
     ]);
 
