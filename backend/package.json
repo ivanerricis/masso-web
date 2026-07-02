@@ -19,8 +19,8 @@
     "dotenv": "^17.4.1",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
+    "pdfmake": "^0.3.11",
     "pg": "^8.20.0",
-    "puppeteer": "^24.40.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

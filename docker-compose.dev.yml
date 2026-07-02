@@ -32,7 +32,7 @@ services:
       LAB_LOGO_URL: ${LAB_LOGO_URL}
     volumes:
       - ./backend:/app
-      - /home/ivan/Scrivania/backups:/app/backups
+      - ${BACKUP_HOST_DIR}:/app/backups
       - backend_node_modules:/app/node_modules
     command: sh -c 'echo "DATABASE_URL=$$DATABASE_URL"; node migrate.js && npm run dev'
     ports:

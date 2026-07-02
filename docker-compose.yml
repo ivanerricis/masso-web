@@ -31,7 +31,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - /home/ivan/Scrivania/backups:/app/backups
+      - ${BACKUP_HOST_DIR}:/app/backups
     command: >-
       sh -c 'echo "DATABASE_URL=$$DATABASE_URL"; node migrate.js; if [ $$? -ne 0 ]; then exit 1; fi; npm run start'
     depends_on:

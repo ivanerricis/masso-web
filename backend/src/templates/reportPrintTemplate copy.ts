@@ -45,7 +45,7 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
       }
 
       :root {
-        --primary: #2563eb;
+        --primary: #2A75B9;
         --primary-soft: #eff6ff;
         --primary-border: #bfdbfe;
         --text-strong: #0f172a;

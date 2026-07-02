@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
-import puppeteer from "puppeteer";
 import { z } from "zod";
 import {
     createReport,
@@ -15,7 +14,7 @@ import {
     deviceTable,
     reportTable,
 } from "../db/schema";
-import { buildReportPrintHtml } from "../templates/reportPrintTemplate";
+import { createReportPdfBuffer } from "../services/reportPdf";
 import { validate } from "./validation";
 
 const reportsRouter = Router();
@@ -112,7 +111,7 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
         ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
         : customerPhonePrimary || customerPhoneSecondary || "N/D";
 
-    const html = buildReportPrintHtml({
+    const pdfBuffer = await createReportPdfBuffer({
         id: report.id,
         labName,
         labEmail,
@@ -132,26 +131,9 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
         }).format(report.createdAt),
     });
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
-    try {
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "load" });
-
-        const pdfBuffer = await page.pdf({
-            format: "A4",
-            printBackground: true,
-        });
-
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename=report-${id}.pdf`);
-        res.send(pdfBuffer);
-    } finally {
-        await browser.close();
-    }
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename=report-${id}.pdf`);
+    res.send(pdfBuffer);
 });
 
 reportsRouter.get("/:id", validate({ params: reportIdParamsSchema }), async (req, res) => {

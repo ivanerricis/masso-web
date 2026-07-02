@@ -1,6 +1,9 @@
 node_modules
 dist
+backups
+logs
 .git
 .gitignore
 Dockerfile
 npm-debug.log
+*.log

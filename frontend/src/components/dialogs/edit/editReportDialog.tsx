@@ -37,7 +37,6 @@ export type EditReportSubmitValues = {
     technicianId: number | null;
     existingTechnicianId: number | null;
     technicianPrice: number;
-    issueDescription: string | null;
     serviceDescription: string | null;
     note: string | null;
     password: string | null;
@@ -65,7 +64,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
         collaboratorId: "none",
         technicianId: "none",
         technicianPrice: "0",
-        issueDescription: "",
         serviceDescription: "",
         note: "",
         password: "",
@@ -109,7 +107,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                     collaboratorId: report.collaboratorId ? String(report.collaboratorId) : "none",
                     technicianId: reportTechnician ? String(reportTechnician.technicianId) : "none",
                     technicianPrice: String(reportTechnician?.price ?? 0),
-                    issueDescription: report.issueDescription ?? "",
                     serviceDescription: report.serviceDescription ?? "",
                     note: report.note ?? "",
                     password: report.password ?? "",
@@ -185,7 +182,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                 technicianId,
                 existingTechnicianId,
                 technicianPrice,
-                issueDescription: formValues.issueDescription.trim() || null,
                 serviceDescription: formValues.serviceDescription.trim() || null,
                 note: formValues.note.trim() || null,
                 password: formValues.password.trim() || null,
@@ -321,24 +317,12 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                     {/* Campi principali */}
                                     <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3 content-start">
                                         <div className="grid gap-1">
-                                            <Label htmlFor="issueDescription" className="text-lg">Descrizione difetto</Label>
-                                            <Input
-                                                id="issueDescription"
-                                                className="text-lg!"
-                                                placeholder="Descrivi il difetto"
-                                                value={formValues.issueDescription}
-                                                onChange={(event) =>
-                                                    setFormValues((prev) => ({ ...prev, issueDescription: event.target.value }))
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-1">
                                             <Label htmlFor="serviceDescription" className="text-lg">Descrizione servizio</Label>
-                                            <Input
+                                            <Textarea
                                                 id="serviceDescription"
                                                 className="text-lg!"
                                                 placeholder="Descrivi l'intervento"
+                                                rows={4}
                                                 value={formValues.serviceDescription}
                                                 onChange={(event) =>
                                                     setFormValues((prev) => ({ ...prev, serviceDescription: event.target.value }))

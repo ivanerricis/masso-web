@@ -4,4 +4,8 @@ dist
 .gitignore
 Dockerfile
 npm-debug.log
+*.log
+*.map
+*.env
+*.env.*
 vite.config.ts.timestamp-*

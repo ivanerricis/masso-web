@@ -46,7 +46,7 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
 }
 
 :root {
-  --blue: #2563eb;
+  --blue: #2A75B9;
 }
 
 body {

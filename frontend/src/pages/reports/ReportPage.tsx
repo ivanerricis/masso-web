@@ -62,6 +62,18 @@ const DetailItem = ({ label, value }: { label: string; value: string }) => (
     </div>
 );
 
+const TableHeaderCell = ({ children }: { children: string }) => (
+    <th className="border border-border/70 bg-muted/40 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {children}
+    </th>
+);
+
+const TableCell = ({ children, alignRight = false }: { children: string; alignRight?: boolean }) => (
+    <td className={`border border-border/70 px-3 py-2 text-sm ${alignRight ? "text-right font-semibold" : ""}`}>
+        {children}
+    </td>
+);
+
 const ReportPage = () => {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -142,7 +154,6 @@ const ReportPage = () => {
             deviceId: values.deviceId,
             issueId: values.issueId,
             collaboratorId: values.collaboratorId,
-            issueDescription: values.issueDescription,
             serviceDescription: values.serviceDescription,
             note: values.note,
             password: values.password,
@@ -348,16 +359,23 @@ const ReportPage = () => {
                         {details.technicians.length === 0 ? (
                             <p className="text-muted-foreground">Nessun tecnico associato a questo report.</p>
                         ) : (
-                            <div className="space-y-2">
-                                {details.technicians.map((technician) => (
-                                    <div
-                                        key={technician.id}
-                                        className="flex items-center justify-between rounded-md border border-border/70 bg-muted/20 px-3 py-2"
-                                    >
-                                        <span className="text-sm">{technician.name}</span>
-                                        <span className="text-sm font-semibold">{formatEuro(technician.price)}</span>
-                                    </div>
-                                ))}
+                            <div className="overflow-hidden rounded-md border border-border/70">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr>
+                                            <TableHeaderCell>Tecnico</TableHeaderCell>
+                                            <TableHeaderCell>Prezzo</TableHeaderCell>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {details.technicians.map((technician) => (
+                                            <tr key={technician.id} className="odd:bg-muted/20">
+                                                <TableCell>{technician.name}</TableCell>
+                                                <TableCell alignRight>{formatEuro(technician.price)}</TableCell>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
                     </CardContent>

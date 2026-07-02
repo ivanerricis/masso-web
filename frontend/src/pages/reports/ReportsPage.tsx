@@ -216,7 +216,6 @@ const ReportsPage = () => {
             deviceId: values.deviceId,
             issueId: values.issueId,
             collaboratorId: values.collaboratorId,
-            issueDescription: values.issueDescription,
             serviceDescription: values.serviceDescription,
             note: values.note,
             password: values.password,
