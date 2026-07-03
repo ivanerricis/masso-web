@@ -1,4 +1,6 @@
+import CreateCollaboratorDialog from "@/components/dialogs/create/createCollaboratorDialog";
 import CustomDialog from "@/components/dialogs/customDialog";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import PaymentMethodSelector from "@/components/payment-method-selector";
 import {
+    createCollaborator,
     getApiErrorMessage,
     getReport,
     listCollaborators,
@@ -56,6 +59,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
     const [collaborators, setCollaborators] = useState<CollaboratorDto[]>([]);
     const [technicians, setTechnicians] = useState<TechnicianDto[]>([]);
     const [existingTechnicianId, setExistingTechnicianId] = useState<number | null>(null);
+    const [isCreateCollaboratorDialogOpen, setIsCreateCollaboratorDialogOpen] = useState(false);
 
     const [formValues, setFormValues] = useState({
         customerId: "",
@@ -127,6 +131,17 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
 
         void loadData();
     }, [open, reportId, onOpenChange]);
+
+    const handleCreateCollaborator = async (values: Record<string, string | boolean>) => {
+        const createdCollaborator = await createCollaborator({
+            firstName: String(values.firstName).trim(),
+            lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
+            phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+        });
+
+        setCollaborators((currentCollaborators) => [...currentCollaborators, createdCollaborator]);
+        setFormValues((prev) => ({ ...prev, collaboratorId: String(createdCollaborator.id) }));
+    };
 
     const handleConfirm = async () => {
         if (!reportId || isSubmitting || isLoading) {
@@ -202,159 +217,56 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
     };
 
     return (
-        <CustomDialog
-            open={open}
-            onOpenChange={onOpenChange}
-            title="Modifica rapporto"
-            contentClassName="sm:max-w-4xl lg:max-w-6xl xl:max-w-[88rem]"
-            confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
-            cancelLabel="Annulla"
-            onCancel={() => onOpenChange(false)}
-            onConfirm={() => void handleConfirm()}
-            cancelDisabled={isSubmitting || isLoading}
-            confirmDisabled={isSubmitting || isLoading}
-            content={
-                <div className="grid gap-4 py-4">
-                    {isLoading || loadedReportId !== reportId ? (
-                        <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-                            Caricamento dati del report...
-                        </div>
-                    ) : (
-                        <div className="grid max-h-[70vh] gap-2 overflow-y-auto pr-1">
-                            <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-                                <div className="space-y-1">
-                                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                        Anagrafica
-                                    </h3>
-                                </div>
-
-                                <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-                                    <div className="grid gap-1">
-                                        <Label htmlFor="customerId" className="text-lg">Cliente</Label>
-                                        <Select
-                                            disabled
-                                            value={formValues.customerId}
-                                        >
-                                            <SelectTrigger id="customerId" className="w-full">
-                                                <SelectValue placeholder={customerName} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value={formValues.customerId}>
-                                                    {customerName}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
+        <>
+            <CustomDialog
+                open={open}
+                onOpenChange={onOpenChange}
+                title="Modifica rapporto"
+                contentClassName="sm:max-w-4xl lg:max-w-6xl xl:max-w-[88rem]"
+                confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
+                cancelLabel="Annulla"
+                onCancel={() => onOpenChange(false)}
+                onConfirm={() => void handleConfirm()}
+                cancelDisabled={isSubmitting || isLoading}
+                confirmDisabled={isSubmitting || isLoading}
+                content={
+                    <div className="grid gap-4 py-4">
+                        {isLoading || loadedReportId !== reportId ? (
+                            <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
+                                Caricamento dati del report...
+                            </div>
+                        ) : (
+                            <div className="grid max-h-[70vh] gap-2 overflow-y-auto pr-1">
+                                <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+                                    <div className="space-y-1">
+                                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Anagrafica
+                                        </h3>
                                     </div>
 
-                                    <div className="grid gap-1">
-                                        <Label htmlFor="deviceId" className="text-lg">Dispositivo</Label>
-                                        <Select
-                                            value={formValues.deviceId}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, deviceId: value }))}
-                                        >
-                                            <SelectTrigger id="deviceId" className="w-full">
-                                                <SelectValue placeholder="Seleziona dispositivo" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {devices.map((device) => (
-                                                    <SelectItem key={device.id} value={String(device.id)}>
-                                                        {device.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="grid gap-1">
-                                        <Label htmlFor="issueId" className="text-lg">Difetto catalogo</Label>
-                                        <Select
-                                            value={formValues.issueId}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, issueId: value }))}
-                                        >
-                                            <SelectTrigger id="issueId" className="w-full">
-                                                <SelectValue placeholder="Seleziona difetto" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {issues.map((issue) => (
-                                                    <SelectItem key={issue.id} value={String(issue.id)}>
-                                                        {issue.description}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="grid gap-1">
-                                        <Label htmlFor="collaboratorId" className="text-lg">Collaboratore</Label>
-                                        <Select
-                                            value={formValues.collaboratorId}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, collaboratorId: value }))}
-                                        >
-                                            <SelectTrigger id="collaboratorId" className="w-full">
-                                                <SelectValue placeholder="Nessun collaboratore" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">Nessuno</SelectItem>
-                                                {collaborators.map((collaborator) => (
-                                                    <SelectItem key={collaborator.id} value={String(collaborator.id)}>
-                                                        {formatPersonName(collaborator.firstName, collaborator.lastName)}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-                                <div className="space-y-1">
-                                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                        Intervento
-                                    </h3>
-                                </div>
-
-                                <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-                                    {/* Campi principali */}
-                                    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3 content-start">
+                                    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
                                         <div className="grid gap-1">
-                                            <Label htmlFor="serviceDescription" className="text-lg">Descrizione servizio</Label>
-                                            <Textarea
-                                                id="serviceDescription"
-                                                className="text-lg!"
-                                                placeholder="Descrivi l'intervento"
-                                                rows={4}
-                                                value={formValues.serviceDescription}
-                                                onChange={(event) =>
-                                                    setFormValues((prev) => ({ ...prev, serviceDescription: event.target.value }))
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="password" className="text-lg">Password sblocco</Label>
-                                            <Input
-                                                id="password"
-                                                className="text-lg!"
-                                                placeholder="Password dispositivo"
-                                                value={formValues.password}
-                                                onChange={(event) => setFormValues((prev) => ({ ...prev, password: event.target.value }))}
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="technicianId" className="text-lg">Tecnico esterno</Label>
-                                            <Select
-                                                value={formValues.technicianId}
-                                                onValueChange={(value) => setFormValues((prev) => ({ ...prev, technicianId: value }))}
-                                            >
-                                                <SelectTrigger id="technicianId" className="w-full">
-                                                    <SelectValue placeholder="Nessun tecnico" />
+                                            <Label htmlFor="customerId" className="text-lg">Cliente</Label>
+                                            <Select disabled value={formValues.customerId}>
+                                                <SelectTrigger id="customerId" className="w-full">
+                                                    <SelectValue placeholder={customerName} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="none">Nessuno</SelectItem>
-                                                    {technicians.map((technician) => (
-                                                        <SelectItem key={technician.id} value={String(technician.id)}>
-                                                            {formatPersonName(technician.firstName, technician.lastName)}
+                                                    <SelectItem value={formValues.customerId}>{customerName}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="grid gap-1">
+                                            <Label htmlFor="deviceId" className="text-lg">Dispositivo</Label>
+                                            <Select value={formValues.deviceId} onValueChange={(value) => setFormValues((prev) => ({ ...prev, deviceId: value }))}>
+                                                <SelectTrigger id="deviceId" className="w-full">
+                                                    <SelectValue placeholder="Seleziona dispositivo" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {devices.map((device) => (
+                                                        <SelectItem key={device.id} value={String(device.id)}>
+                                                            {device.name}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -362,122 +274,159 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                         </div>
 
                                         <div className="grid gap-1">
-                                            <Label htmlFor="technicianPrice" className="text-lg">Prezzo lavoro tecnico</Label>
-                                            <Input
-                                                id="technicianPrice"
-                                                className="text-lg!"
-                                                type="number"
-                                                min={0}
-                                                step={1}
-                                                value={formValues.technicianPrice}
-                                                onChange={(event) =>
-                                                    setFormValues((prev) => ({ ...prev, technicianPrice: event.target.value }))
-                                                }
-                                            />
+                                            <Label htmlFor="issueId" className="text-lg">Difetto catalogo</Label>
+                                            <Select value={formValues.issueId} onValueChange={(value) => setFormValues((prev) => ({ ...prev, issueId: value }))}>
+                                                <SelectTrigger id="issueId" className="w-full">
+                                                    <SelectValue placeholder="Seleziona difetto" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {issues.map((issue) => (
+                                                        <SelectItem key={issue.id} value={String(issue.id)}>
+                                                            {issue.description}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
 
                                         <div className="grid gap-1">
-                                            <Label htmlFor="internalPrice" className="text-lg">Prezzo interno</Label>
-                                            <Input
-                                                id="internalPrice"
-                                                className="text-lg!"
-                                                type="number"
-                                                min={0}
-                                                step={1}
-                                                value={formValues.internalPrice}
-                                                onChange={(event) =>
-                                                    setFormValues((prev) => ({ ...prev, internalPrice: event.target.value }))
-                                                }
-                                            />
+                                            <Label htmlFor="collaboratorId" className="text-lg">Collaboratore</Label>
+                                            <div className="flex gap-2">
+                                                <Select value={formValues.collaboratorId} onValueChange={(value) => setFormValues((prev) => ({ ...prev, collaboratorId: value }))}>
+                                                    <SelectTrigger id="collaboratorId" className="w-full">
+                                                        <SelectValue placeholder="Nessun collaboratore" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">Nessuno</SelectItem>
+                                                        {collaborators.map((collaborator) => (
+                                                            <SelectItem key={collaborator.id} value={String(collaborator.id)}>
+                                                                {formatPersonName(collaborator.firstName, collaborator.lastName)}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="shrink-0"
+                                                    onClick={() => setIsCreateCollaboratorDialogOpen(true)}
+                                                    aria-label="Crea nuovo collaboratore"
+                                                >
+                                                    +
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
+                                </section>
 
-                                    {/* Note — colonna destra, occupa tutta l'altezza */}
-                                    <div className="grid gap-1 grid-rows-[auto_1fr]">
-                                        <Label htmlFor="note" className="text-lg">Note</Label>
-                                        <Textarea
-                                            id="note"
-                                            className="text-lg! h-31 resize-none"
-                                            placeholder="Note"
-                                            value={formValues.note}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, note: event.target.value }))
-                                            }
-                                        />
-                                    </div>
-                                </div>
-                            </section>
-
-                            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
                                 <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
                                     <div className="space-y-1">
                                         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                            Stato
+                                            Intervento
                                         </h3>
                                     </div>
 
-                                    <div className="grid gap-3 lg:grid-cols-2">
-                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
-                                            <Checkbox
-                                                id="charger"
-                                                className="size-5"
-                                                checked={formValues.charger}
-                                                onCheckedChange={(checked) =>
-                                                    setFormValues((prev) => ({ ...prev, charger: checked === true }))
-                                                }
-                                            />
-                                            <Label htmlFor="charger" className="cursor-pointer text-lg w-full">Alimentatore presente</Label>
+                                    <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+                                        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3 content-start">
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="serviceDescription" className="text-lg">Descrizione servizio</Label>
+                                                <Textarea id="serviceDescription" className="text-lg!" placeholder="Descrivi l'intervento" rows={4} value={formValues.serviceDescription} onChange={(event) => setFormValues((prev) => ({ ...prev, serviceDescription: event.target.value }))} />
+                                            </div>
+
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="password" className="text-lg">Password sblocco</Label>
+                                                <Input id="password" className="text-lg!" placeholder="Password dispositivo" value={formValues.password} onChange={(event) => setFormValues((prev) => ({ ...prev, password: event.target.value }))} />
+                                            </div>
+
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="technicianId" className="text-lg">Tecnico esterno</Label>
+                                                <Select value={formValues.technicianId} onValueChange={(value) => setFormValues((prev) => ({ ...prev, technicianId: value }))}>
+                                                    <SelectTrigger id="technicianId" className="w-full">
+                                                        <SelectValue placeholder="Nessun tecnico" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">Nessuno</SelectItem>
+                                                        {technicians.map((technician) => (
+                                                            <SelectItem key={technician.id} value={String(technician.id)}>
+                                                                {formatPersonName(technician.firstName, technician.lastName)}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="technicianPrice" className="text-lg">Prezzo lavoro tecnico</Label>
+                                                <Input id="technicianPrice" className="text-lg!" type="number" min={0} step={1} value={formValues.technicianPrice} onChange={(event) => setFormValues((prev) => ({ ...prev, technicianPrice: event.target.value }))} />
+                                            </div>
+
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="internalPrice" className="text-lg">Prezzo interno</Label>
+                                                <Input id="internalPrice" className="text-lg!" type="number" min={0} step={1} value={formValues.internalPrice} onChange={(event) => setFormValues((prev) => ({ ...prev, internalPrice: event.target.value }))} />
+                                            </div>
                                         </div>
 
-                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
-                                            <Checkbox
-                                                id="dataBackup"
-                                                className="size-5"
-                                                checked={formValues.dataBackup}
-                                                onCheckedChange={(checked) =>
-                                                    setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))
-                                                }
-                                            />
-                                            <Label htmlFor="dataBackup" className="cursor-pointer text-lg w-full">Backup dati</Label>
-                                        </div>
-
-                                        <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
-                                            <Checkbox
-                                                id="closed"
-                                                className="size-5"
-                                                checked={formValues.closed}
-                                                onCheckedChange={(checked) =>
-                                                    setFormValues((prev) => ({ ...prev, closed: checked === true }))
-                                                }
-                                            />
-                                            <Label htmlFor="closed" className="cursor-pointer text-lg w-full">Report chiuso</Label>
+                                        <div className="grid gap-1 grid-rows-[auto_1fr]">
+                                            <Label htmlFor="note" className="text-lg">Note</Label>
+                                            <Textarea id="note" className="text-lg! h-31 resize-none" placeholder="Note" value={formValues.note} onChange={(event) => setFormValues((prev) => ({ ...prev, note: event.target.value }))} />
                                         </div>
                                     </div>
                                 </section>
 
-                                <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-                                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                        Pagamento
-                                    </h3>
+                                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+                                    <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+                                        <div className="space-y-1">
+                                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Stato</h3>
+                                        </div>
 
-                                    <PaymentMethodSelector
-                                        value={formValues.paymentMethod}
-                                        onValueChange={(paymentMethod) =>
-                                            setFormValues((prev) => ({
-                                                ...prev,
-                                                paymentMethod,
-                                                internalPrice: paymentMethod === "non_paid" ? "0" : prev.internalPrice,
-                                            }))
-                                        }
-                                        className="grid-cols-1"
-                                    />
-                                </section>
+                                        <div className="grid gap-3 lg:grid-cols-2">
+                                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
+                                                <Checkbox id="charger" className="size-5" checked={formValues.charger} onCheckedChange={(checked) => setFormValues((prev) => ({ ...prev, charger: checked === true }))} />
+                                                <Label htmlFor="charger" className="cursor-pointer text-lg w-full">Alimentatore presente</Label>
+                                            </div>
+
+                                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
+                                                <Checkbox id="dataBackup" className="size-5" checked={formValues.dataBackup} onCheckedChange={(checked) => setFormValues((prev) => ({ ...prev, dataBackup: checked === true }))} />
+                                                <Label htmlFor="dataBackup" className="cursor-pointer text-lg w-full">Backup dati</Label>
+                                            </div>
+
+                                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
+                                                <Checkbox id="closed" className="size-5" checked={formValues.closed} onCheckedChange={(checked) => setFormValues((prev) => ({ ...prev, closed: checked === true }))} />
+                                                <Label htmlFor="closed" className="cursor-pointer text-lg w-full">Report chiuso</Label>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+                                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Pagamento</h3>
+
+                                        <PaymentMethodSelector
+                                            value={formValues.paymentMethod}
+                                            onValueChange={(paymentMethod) =>
+                                                setFormValues((prev) => ({
+                                                    ...prev,
+                                                    paymentMethod,
+                                                    internalPrice: paymentMethod === "non_paid" ? "0" : prev.internalPrice,
+                                                }))
+                                            }
+                                            className="grid-cols-1"
+                                        />
+                                    </section>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-            }
-        />
+                        )}
+                    </div>
+                }
+            />
+
+            <CreateCollaboratorDialog
+                open={isCreateCollaboratorDialogOpen}
+                onOpenChange={setIsCreateCollaboratorDialogOpen}
+                onSubmit={handleCreateCollaborator}
+            />
+        </>
     );
 };
 

@@ -3,6 +3,21 @@ import type { PaymentMethod } from "@/types/dtos";
 import type { PaginatedResponse } from "./client";
 import type { ReportDto } from "@/types/dtos";
 
+type RawReportDto = Omit<ReportDto, "price" | "internalPrice" | "technicianPrice" | "totalPrice"> & {
+    price: number | string;
+    internalPrice: number | string;
+    technicianPrice: number | string;
+    totalPrice: number | string;
+};
+
+const normalizeReportDto = (report: RawReportDto): ReportDto => ({
+    ...report,
+    price: Number(report.price),
+    internalPrice: Number(report.internalPrice),
+    technicianPrice: Number(report.technicianPrice),
+    totalPrice: Number(report.totalPrice),
+});
+
 export type ReportEntityDto = {
     id: number;
     note: string | null;
@@ -50,11 +65,11 @@ export function listReports(): Promise<ReportDto[]>;
 export function listReports(params: ListReportsParams): Promise<PaginatedResponse<ReportDto>>;
 export async function listReports(params?: ListReportsParams) {
     if (!params) {
-        const response = await api.get<ReportDto[]>("/reports");
-        return response.data;
+        const response = await api.get<RawReportDto[]>("/reports");
+        return response.data.map(normalizeReportDto);
     }
 
-    const response = await api.get<PaginatedResponse<ReportDto>>("/reports", {
+    const response = await api.get<PaginatedResponse<RawReportDto>>("/reports", {
         params: {
             page: params.page ?? 1,
             pageSize: params.pageSize ?? 1000,
@@ -64,7 +79,12 @@ export async function listReports(params?: ListReportsParams) {
         },
     });
 
-    return response.data;
+    const items = response.data.items.map(normalizeReportDto);
+
+    return {
+        ...response.data,
+        items,
+    };
 }
 
 export const getReport = async (id: number) =>

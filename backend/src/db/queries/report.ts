@@ -15,7 +15,7 @@ export const listReports = async ({ page, pageSize, search, visibility = "all", 
     const technicianPriceSubquery = db
         .select({
             reportId: reportTechnicianTable.reportId,
-            technicianPrice: sql<number>`coalesce(sum(${reportTechnicianTable.price}), 0)`.as("technicianPrice"),
+            technicianPrice: sql<number>`coalesce(sum(${reportTechnicianTable.price}), 0)::int`.as("technicianPrice"),
         })
         .from(reportTechnicianTable)
         .groupBy(reportTechnicianTable.reportId)
@@ -84,8 +84,8 @@ export const listReports = async ({ page, pageSize, search, visibility = "all", 
             issue: IssueTable.description,
             technician: sql<string>`coalesce(nullif(concat_ws(' ', ${collaboratorTable.firstName}, ${collaboratorTable.lastName}), ''), '-')`,
             internalPrice: reportTable.price,
-            technicianPrice: sql<number>`coalesce(${technicianPriceSubquery.technicianPrice}, 0)`,
-            totalPrice: sql<number>`${reportTable.price} + coalesce(${technicianPriceSubquery.technicianPrice}, 0)`,
+            technicianPrice: sql<number>`coalesce(${technicianPriceSubquery.technicianPrice}, 0)::int`,
+            totalPrice: sql<number>`(${reportTable.price} + coalesce(${technicianPriceSubquery.technicianPrice}, 0))::int`,
             closed: reportTable.closed,
             createdAt: reportTable.created_at,
             updatedAt: reportTable.updated_at,

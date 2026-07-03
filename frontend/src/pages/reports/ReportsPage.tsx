@@ -117,7 +117,7 @@ const ReportsPage = () => {
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [searchText, visibilityFilter, selectedDate],
     });
-    const { reportRows, totalItems, totalPages, isLoading, loadReports } = useReportsRows({
+    const { reportRows, totalItems, totalPages, isLoading, loadReports, updateReportRow } = useReportsRows({
         searchText,
         visibilityFilter,
         selectedDate,
@@ -219,6 +219,8 @@ const ReportsPage = () => {
     };
 
     const handleEditReport = async (values: EditReportSubmitValues) => {
+        const technicianTotal = values.technicianId == null ? 0 : values.technicianPrice;
+
         await updateReport(values.reportId, {
             customerId: values.customerId,
             deviceId: values.deviceId,
@@ -254,6 +256,24 @@ const ReportsPage = () => {
         } else if (values.existingTechnicianId != null) {
             await deleteReportTechnician(values.reportId, values.existingTechnicianId);
         }
+
+        updateReportRow(values.reportId, (report) => ({
+            ...report,
+            customerId: values.customerId,
+            deviceId: values.deviceId,
+            issueId: values.issueId,
+            collaboratorId: values.collaboratorId,
+            serviceDescription: values.serviceDescription,
+            note: values.note,
+            password: values.password,
+            dataBackup: values.dataBackup,
+            charger: values.charger,
+            closed: values.closed,
+            paymentMethod: values.paymentMethod,
+            internalPrice: values.internalPrice,
+            technicianPrice: technicianTotal,
+            totalPrice: values.internalPrice + technicianTotal,
+        }));
 
         await loadReports();
     };

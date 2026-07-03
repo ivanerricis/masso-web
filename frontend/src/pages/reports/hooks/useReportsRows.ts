@@ -51,11 +51,19 @@ export const useReportsRows = ({
         void loadReports();
     }, [loadReports]);
 
+    const updateReportRow = useCallback(
+        (reportId: number, updater: (report: ReportDto) => ReportDto) => {
+            setReportRows((currentRows) => currentRows.map((report) => (report.id === reportId ? updater(report) : report)));
+        },
+        []
+    );
+
     return {
         reportRows,
         totalItems,
         totalPages,
         isLoading,
         loadReports,
+        updateReportRow,
     };
 };
