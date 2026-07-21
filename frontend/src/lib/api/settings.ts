@@ -29,3 +29,19 @@ export const runBackupNow = async () =>
     (await api.post<BackupSettingsDto & { message: string }>("/settings/backup/run")).data;
 
 export const getBackupDownloadUrl = () => api.getUri({ url: "/settings/backup/download" });
+
+export type LogoStatusDto = {
+    hasCustomLogo: boolean;
+    updatedAt: string | null;
+};
+
+export const getLogoStatus = async () => (await api.get<LogoStatusDto>("/settings/logo")).data;
+
+export const uploadLogo = async (file: File) => {
+    const formData = new FormData();
+    formData.append("logo", file);
+
+    return (await api.post<LogoStatusDto>("/settings/logo", formData)).data;
+};
+
+export const resetLogo = async () => (await api.delete<LogoStatusDto>("/settings/logo")).data;

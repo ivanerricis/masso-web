@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Database, Palette, RefreshCw } from "lucide-react";
+import { Database, Image, Palette, RefreshCw } from "lucide-react";
 import BackupSettingsPanel from "@/components/dialogs/settings/backupSettingsPanel";
+import LogoSettingsPanel from "@/components/dialogs/settings/logoSettingsPanel";
 import UpdateSettingsPanel from "@/components/dialogs/settings/updateSettingsPanel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
 
-type SettingsSectionKey = "theme" | "backup" | "update";
+type SettingsSectionKey = "theme" | "logo" | "backup" | "update";
 
 const settingsSections: Array<{
     key: SettingsSectionKey;
@@ -20,6 +21,12 @@ const settingsSections: Array<{
         label: "Tema",
         description: "Colori, modalità e accenti visivi",
         icon: Palette,
+    },
+    {
+        key: "logo",
+        label: "Logo",
+        description: "Logo del laboratorio su app e report",
+        icon: Image,
     },
     {
         key: "backup",
@@ -82,6 +89,8 @@ const SettingsPage = () => {
             <section className="min-w-0 flex-1 overflow-y-auto rounded-2xl border bg-background/90 p-4 shadow-sm backdrop-blur-sm md:p-6">
                 {activeSection === "theme" ? (
                     <ThemeSettingsSection />
+                ) : activeSection === "logo" ? (
+                    <LogoSettingsPanel />
                 ) : activeSection === "backup" ? (
                     <BackupSettingsPanel />
                 ) : (

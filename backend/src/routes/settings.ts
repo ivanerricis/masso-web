@@ -1,5 +1,6 @@
 import path from "node:path";
 import { type Response, Router } from "express";
+import multer from "multer";
 import { z } from "zod";
 import { validate } from "./validation";
 import {
@@ -8,12 +9,24 @@ import {
     runBackupNow,
     updateBackupSettings,
 } from "../services/backupManager";
+import { LogoManagerError, getLogoStatus, resetLogo, saveLogo } from "../services/logoManager";
 import { UpdateManagerError, getUpdateStatus, requestUpdate, requestUpdateCheck } from "../services/updateManager";
 
 const settingsRouter = Router();
+const logoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const handleBackupError = (error: unknown, res: Response) => {
     if (error instanceof BackupManagerError) {
+        res.locals.apiErrorMessage = error.message;
+        res.status(error.statusCode).json({ message: error.message });
+        return true;
+    }
+
+    return false;
+};
+
+const handleLogoError = (error: unknown, res: Response) => {
+    if (error instanceof LogoManagerError) {
         res.locals.apiErrorMessage = error.message;
         res.status(error.statusCode).json({ message: error.message });
         return true;
@@ -94,6 +107,47 @@ settingsRouter.get("/backup/download", async (_req, res, next) => {
         });
     } catch (error) {
         if (handleBackupError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.get("/logo", async (_req, res, next) => {
+    try {
+        const status = await getLogoStatus();
+        res.json(status);
+    } catch (error) {
+        if (handleLogoError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.post("/logo", logoUpload.single("logo"), async (req, res, next) => {
+    try {
+        if (!req.file) {
+            res.status(400).json({ message: "Nessun file caricato" });
+            return;
+        }
+
+        const status = await saveLogo(req.file.buffer, req.file.mimetype);
+        res.status(201).json(status);
+    } catch (error) {
+        if (handleLogoError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.delete("/logo", async (_req, res, next) => {
+    try {
+        const status = await resetLogo();
+        res.json(status);
+    } catch (error) {
+        if (handleLogoError(error, res)) {
             return;
         }
         next(error);

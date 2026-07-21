@@ -12,12 +12,19 @@ import reportTechniciansRouter from "./routes/reportTechnicians";
 import { userActionLogger } from "./middleware/userActionLogger";
 import settingsRouter from "./routes/settings";
 import { startBackupScheduler } from "./services/backupManager";
+import { getLogoFile } from "./services/logoManager";
 
 const app = express();
 
 app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json());
+app.get("/assets/logo.jpg", async (_req, res) => {
+    const { filePath, mimeType } = await getLogoFile();
+    res.setHeader("Cache-Control", "no-store");
+    res.type(mimeType);
+    res.sendFile(filePath);
+});
 app.use("/assets", express.static(path.join(process.cwd(), "public")));
 app.use(userActionLogger);
 
