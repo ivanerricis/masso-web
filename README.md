@@ -29,18 +29,11 @@ Produzione (VM Proxmox): vedi [Installazione su Proxmox VM (prima volta)](#insta
 3. **Clona il repository** sulla VM, ad es. in `/opt/masso-web`:
 
 	```bash
-	sudo git clone <url-del-repo> /opt/masso-web
+	sudo git clone https://github.com/ivanerricis/masso-web.git /opt/masso-web
 	cd /opt/masso-web
 	```
 
-	La repository **non deve essere pubblica**: può restare privata. Serve però un metodo di autenticazione **non interattivo**, perché `git fetch`/`git reset` vengono eseguiti da systemd senza terminale (niente prompt di password). Il modo più semplice è una **deploy key SSH** dedicata:
-
-	```bash
-	sudo ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N ""
-	sudo cat /root/.ssh/id_ed25519.pub   # aggiungila su GitHub: Repo > Settings > Deploy keys (sola lettura)
-	```
-
-	e clona/imposta il remote con l'URL SSH (`git@github.com:...`) invece che HTTPS.
+	Il repository è **pubblico**, quindi basta l'URL HTTPS: non serve alcuna autenticazione (né deploy key SSH né token), sia per il clone iniziale sia per `git fetch`/`git reset` eseguiti da systemd durante gli aggiornamenti.
 
 4. **Configura l'ambiente**:
 
@@ -215,6 +208,17 @@ docker compose up --build -d
 ```
 
 Log dettagliati dell'ultima esecuzione: `journalctl -u masso-update.service` (aggiornamento) o `journalctl -u masso-check-updates.service` (verifica).
+
+Ogni aggiornamento esegue anche `docker builder prune -f --filter until=24h`, per evitare che la cache di build si accumuli indefinitamente sulla VM ad ogni rebuild.
+
+## Spazio su disco
+
+Alcuni accorgimenti per limitare lo spazio occupato su una VM di produzione a lungo termine:
+
+- **Immagini**: backend e frontend usano Dockerfile multi-stage su basi Alpine (più leggere delle equivalenti Debian).
+- **Cache di build**: `scripts/update-server.sh` esegue `docker builder prune` ad ogni aggiornamento (mantiene solo la cache delle ultime 24h, utile per rebuild ravvicinati).
+- **Backup database**: i dump creati da Impostazioni > Backup vengono conservati automaticamente solo per gli ultimi 14, i più vecchi vengono eliminati ad ogni nuovo dump.
+- **Log dei container**: `docker-compose.yml` limita i log di ogni servizio a 3 file da 10 MB (driver `json-file`), per evitare crescita illimitata su container sempre attivi (`restart: always`).
 
 ## Struttura configurazioni Docker
 

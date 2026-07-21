@@ -1,8 +1,15 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16
     container_name: postgres_db
     restart: always
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -20,6 +27,7 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     restart: always
+    logging: *default-logging
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       LAB_NAME: ${LAB_NAME}
@@ -47,6 +55,7 @@ services:
         VITE_LOGO_URL: /assets/logo.jpg
     container_name: frontend
     restart: always
+    logging: *default-logging
     ports:
       - "80:80"
     depends_on:

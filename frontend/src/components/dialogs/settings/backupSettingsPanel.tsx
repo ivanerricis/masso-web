@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     getApiErrorMessage,
+    getBackupDownloadUrl,
     getBackupSettings,
     runBackupNow,
     updateBackupSettings,
@@ -24,6 +25,7 @@ const defaultForm: BackupSettingsInput = {
     frequencyDays: 1,
     runAt: "02:00",
     outputDir: "backups",
+    maxBackupsToKeep: 14,
 };
 
 const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
@@ -48,6 +50,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                 frequencyDays: settings.frequencyDays,
                 runAt: settings.runAt,
                 outputDir: settings.outputDir,
+                maxBackupsToKeep: settings.maxBackupsToKeep,
             });
             setLastRunAt(settings.lastRunAt);
             setLastRunStatus(settings.lastRunStatus);
@@ -85,6 +88,11 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             return;
         }
 
+        if (!Number.isInteger(formValues.maxBackupsToKeep) || formValues.maxBackupsToKeep <= 0) {
+            toast.error("Il numero di backup da mantenere deve essere un numero intero positivo");
+            return;
+        }
+
         try {
             setIsSaving(true);
             const settings = await updateBackupSettings({
@@ -104,6 +112,10 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleDownloadLastBackup = () => {
+        window.location.href = getBackupDownloadUrl();
     };
 
     const handleRunBackup = async () => {
@@ -212,6 +224,27 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                 </div>
 
                                 <div className="grid gap-2">
+                                    <Label htmlFor="maxBackupsToKeep">Numero di backup da mantenere</Label>
+                                    <Input
+                                        id="maxBackupsToKeep"
+                                        type="number"
+                                        min={1}
+                                        max={365}
+                                        disabled={!formValues.dumpEnabled}
+                                        value={formValues.maxBackupsToKeep}
+                                        onChange={(event) =>
+                                            setFormValues((prev) => ({
+                                                ...prev,
+                                                maxBackupsToKeep: Number(event.target.value),
+                                            }))
+                                        }
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        I dump più vecchi oltre questo numero vengono eliminati automaticamente ad ogni nuovo backup.
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-2">
                                     <Label htmlFor="outputDir">Cartella dump sul server</Label>
                                     <Input
                                         id="outputDir"
@@ -231,6 +264,15 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                 </div>
 
                                 <div className="flex flex-wrap justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="lg"
+                                        disabled={!lastDumpPath}
+                                        onClick={handleDownloadLastBackup}
+                                    >
+                                        Scarica ultimo dump
+                                    </Button>
                                     <Button
                                         type="button"
                                         variant="outline"

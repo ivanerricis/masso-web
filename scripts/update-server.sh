@@ -69,6 +69,8 @@ set -euo pipefail
     docker compose up --build -d --remove-orphans
     echo "=== docker image prune -f ==="
     docker image prune -f
+    echo "=== docker builder prune -f --filter until=24h ==="
+    docker builder prune -f --filter until=24h
 } >>"$LOG_FILE" 2>&1
 
 write_status "success" "success" ""

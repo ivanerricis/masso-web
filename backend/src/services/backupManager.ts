@@ -5,6 +5,8 @@ import { spawn } from "node:child_process";
 const settingsDir = path.join(process.cwd(), "data");
 const settingsFilePath = path.join(settingsDir, "backup-settings.json");
 const defaultOutputDir = "backups";
+const defaultMaxBackupsToKeep = 14;
+const dumpFileNamePattern = /^db-dump-\d{8}-\d{6}\.sql$/;
 
 export type BackupSettingsState = {
     dumpEnabled: boolean;
@@ -12,6 +14,7 @@ export type BackupSettingsState = {
     frequencyDays: number;
     runAt: string;
     outputDir: string;
+    maxBackupsToKeep: number;
     nextRunAt: string | null;
     lastRunAt: string | null;
     lastRunStatus: "idle" | "success" | "failed";
@@ -34,6 +37,7 @@ const defaultState: BackupSettingsState = {
     frequencyDays: 1,
     runAt: "02:00",
     outputDir: defaultOutputDir,
+    maxBackupsToKeep: defaultMaxBackupsToKeep,
     nextRunAt: null,
     lastRunAt: null,
     lastRunStatus: "idle",
@@ -110,9 +114,14 @@ const computeNextRunAt = (referenceDate: Date, frequencyDays: number, runAt: str
 const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState => {
     const frequencyDays = Number(input.frequencyDays ?? defaultState.frequencyDays);
     const runAt = typeof input.runAt === "string" ? input.runAt : defaultState.runAt;
+    const maxBackupsToKeep = Number(input.maxBackupsToKeep ?? defaultState.maxBackupsToKeep);
 
     if (!Number.isInteger(frequencyDays) || frequencyDays <= 0 || frequencyDays > 365) {
         throw new BackupManagerError("La frequenza deve essere tra 1 e 365 giorni", 400);
+    }
+
+    if (!Number.isInteger(maxBackupsToKeep) || maxBackupsToKeep <= 0 || maxBackupsToKeep > 365) {
+        throw new BackupManagerError("Il numero di backup da mantenere deve essere tra 1 e 365", 400);
     }
 
     parseRunTime(runAt);
@@ -123,6 +132,7 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
         frequencyDays,
         runAt,
         outputDir: getConfiguredOutputDir(),
+        maxBackupsToKeep,
         nextRunAt: typeof input.nextRunAt === "string" ? input.nextRunAt : null,
         lastRunAt: typeof input.lastRunAt === "string" ? input.lastRunAt : null,
         lastRunStatus:
@@ -239,6 +249,27 @@ const runPgDump = async (outputPath: string) => {
     });
 };
 
+const pruneOldBackups = async (outputDir: string, keep: number) => {
+    const absoluteOutputDir = toAbsoluteOutputDir(outputDir);
+
+    let entries: string[];
+
+    try {
+        entries = await fs.promises.readdir(absoluteOutputDir);
+    } catch {
+        return;
+    }
+
+    const dumpFiles = entries.filter((name) => dumpFileNamePattern.test(name)).sort();
+    const filesToDelete = dumpFiles.slice(0, Math.max(0, dumpFiles.length - keep));
+
+    await Promise.all(
+        filesToDelete.map((name) =>
+            fs.promises.unlink(path.join(absoluteOutputDir, name)).catch(() => {})
+        )
+    );
+};
+
 const setNextRunIfNeeded = (state: BackupSettingsState, reference: Date) => {
     if (state.dumpEnabled && state.autoEnabled) {
         state.nextRunAt = computeNextRunAt(reference, state.frequencyDays, state.runAt);
@@ -254,7 +285,10 @@ export const getBackupSettings = async () => {
 };
 
 export const updateBackupSettings = async (
-    input: Pick<BackupSettingsState, "dumpEnabled" | "autoEnabled" | "frequencyDays" | "runAt" | "outputDir">
+    input: Pick<
+        BackupSettingsState,
+        "dumpEnabled" | "autoEnabled" | "frequencyDays" | "runAt" | "outputDir" | "maxBackupsToKeep"
+    >
 ) => {
     const current = await loadState();
 
@@ -263,6 +297,7 @@ export const updateBackupSettings = async (
     current.frequencyDays = input.frequencyDays;
     current.runAt = input.runAt;
     current.outputDir = getConfiguredOutputDir();
+    current.maxBackupsToKeep = input.maxBackupsToKeep;
 
     setNextRunIfNeeded(current, new Date());
     await persistState(current);
@@ -288,6 +323,7 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
         const outputPath = buildDumpFilePath(getConfiguredOutputDir(), now);
         await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
         await runPgDump(outputPath);
+        await pruneOldBackups(getConfiguredOutputDir(), state.maxBackupsToKeep);
 
         state.lastRunAt = now.toISOString();
         state.lastRunStatus = "success";

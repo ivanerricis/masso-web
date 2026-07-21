@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -11,11 +11,13 @@ COPY src ./src
 
 RUN npm run build
 
-FROM node:20-bookworm-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
 ENV NODE_ENV=production
+
+RUN apk add --no-cache postgresql16-client
 
 COPY package*.json ./
 RUN npm ci --omit=dev

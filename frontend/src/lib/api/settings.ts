@@ -6,6 +6,7 @@ export type BackupSettingsDto = {
     frequencyDays: number;
     runAt: string;
     outputDir: string;
+    maxBackupsToKeep: number;
     nextRunAt: string | null;
     lastRunAt: string | null;
     lastRunStatus: "idle" | "success" | "failed";
@@ -15,7 +16,7 @@ export type BackupSettingsDto = {
 
 export type BackupSettingsInput = Pick<
     BackupSettingsDto,
-    "dumpEnabled" | "autoEnabled" | "frequencyDays" | "runAt" | "outputDir"
+    "dumpEnabled" | "autoEnabled" | "frequencyDays" | "runAt" | "outputDir" | "maxBackupsToKeep"
 >;
 
 export const getBackupSettings = async () =>
@@ -26,3 +27,5 @@ export const updateBackupSettings = async (payload: BackupSettingsInput) =>
 
 export const runBackupNow = async () =>
     (await api.post<BackupSettingsDto & { message: string }>("/settings/backup/run")).data;
+
+export const getBackupDownloadUrl = () => api.getUri({ url: "/settings/backup/download" });

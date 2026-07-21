@@ -1,3 +1,4 @@
+import path from "node:path";
 import { type Response, Router } from "express";
 import { z } from "zod";
 import { validate } from "./validation";
@@ -37,6 +38,7 @@ const backupSettingsSchema = z.object({
     frequencyDays: z.coerce.number().int().min(1).max(365),
     runAt: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
     outputDir: z.string().trim().min(1).max(512),
+    maxBackupsToKeep: z.coerce.number().int().min(1).max(365),
 }).strict();
 
 settingsRouter.get("/backup", async (_req, res, next) => {
@@ -72,6 +74,28 @@ settingsRouter.post("/backup/run", async (_req, res, next) => {
             return;
         }
 
+        next(error);
+    }
+});
+
+settingsRouter.get("/backup/download", async (_req, res, next) => {
+    try {
+        const settings = await getBackupSettings();
+
+        if (!settings.lastDumpPath) {
+            res.status(404).json({ message: "Nessun dump disponibile" });
+            return;
+        }
+
+        res.download(settings.lastDumpPath, path.basename(settings.lastDumpPath), (error) => {
+            if (error && !res.headersSent) {
+                res.status(404).json({ message: "File di dump non trovato" });
+            }
+        });
+    } catch (error) {
+        if (handleBackupError(error, res)) {
+            return;
+        }
         next(error);
     }
 });
