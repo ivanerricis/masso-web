@@ -92,6 +92,18 @@ Sulla VM Proxmox (produzione) usa invece l'equivalente bash:
 
 `--configure-ufw` è opzionale e apre le porte 80/3000 con `ufw`, se presente.
 
+Al termine, `edit-env.sh` chiede anche se impostare un **IP statico** per la VM. Se confermi, viene eseguito `scripts/configure-static-ip.sh`, che:
+- rileva l'interfaccia di rete e i valori attuali (IP, gateway, DNS) come default;
+- fa scegliere il nuovo IP/prefisso (es. `192.168.1.50/24`), gateway e DNS;
+- rileva automaticamente se la VM usa netplan, NetworkManager o ifupdown (`/etc/network/interfaces`) e scrive la configurazione corrispondente (con backup del file esistente per ifupdown);
+- chiede sempre conferma esplicita prima di applicare la modifica, perché un valore errato interrompe subito la connessione SSH alla VM.
+
+Puoi anche eseguirlo da solo, in qualunque momento:
+
+```bash
+./scripts/configure-static-ip.sh
+```
+
 ## Modalita 1: Sviluppo locale (hot reload)
 
 Usa il compose dedicato allo sviluppo:

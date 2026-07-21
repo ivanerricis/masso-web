@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Bash port of scripts/edit-env.ps1, for the Proxmox VM (production/LAN mode).
 # Usage: scripts/edit-env.sh [--configure-ufw]
+# Al termine chiede anche se impostare un IP statico (scripts/configure-static-ip.sh).
 set -euo pipefail
 
 CONFIGURE_UFW=false
@@ -74,4 +75,10 @@ if [ "$CONFIGURE_UFW" = true ]; then
     else
         echo "ufw non trovato. Configura manualmente il firewall della VM/Proxmox per le porte 80 e 3000."
     fi
+fi
+
+echo ""
+read -r -p "Vuoi impostare un indirizzo IP statico per questa VM? [s/N]: " CONFIGURE_STATIC_IP
+if [[ "$CONFIGURE_STATIC_IP" =~ ^[sSyY] ]]; then
+    "$SCRIPT_DIR/configure-static-ip.sh"
 fi
