@@ -1,6 +1,7 @@
 import CardReport from "@/components/cardReport";
 import LoadingPage from "@/components/loadingPage";
 import { Button } from "@/components/ui/button";
+import TablePagination from "@/components/table-pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getApiErrorMessage, listCollaborators, listCustomers, listDevices, listReports } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
@@ -8,6 +9,7 @@ import { ArrowLeft } from "lucide-react";
 import type { ReportVisibilityFilter } from "../reports/components/types";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 type CollaboratorReportCard = {
     id: number;
@@ -45,6 +47,14 @@ const CollaboratorPage = () => {
 
         return reportCards;
     }, [reportCards, visibilityFilter]);
+
+    const pageSize = 10;
+    const { currentPage, setCurrentPage } = useTablePagination({
+        resetDependencies: [visibilityFilter],
+    });
+    const totalItems = visibleReportCards.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const paginatedReportCards = visibleReportCards.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     useEffect(() => {
         if (!hasValidCollaboratorId) {
@@ -122,19 +132,30 @@ const CollaboratorPage = () => {
                     </SelectContent>
                 </Select>
             </div>
-            <div className="ml-12 flex flex-wrap gap-6">
+            <div className="ml-12 flex flex-col gap-4">
                 {visibleReportCards.length === 0 ? (
                     <p className="text-muted-foreground">Nessun report associato a questo collaboratore.</p>
                 ) : (
-                    visibleReportCards.map((report) => (
-                        <CardReport
-                            key={report.id}
-                            customerName={report.customerName}
-                            isClosed={report.closed}
-                            deviceName={report.deviceName}
-                            onOpen={() => navigate(`/reports/${report.id}`)}
+                    <>
+                        <div className="flex flex-wrap gap-6">
+                            {paginatedReportCards.map((report) => (
+                                <CardReport
+                                    key={report.id}
+                                    customerName={report.customerName}
+                                    isClosed={report.closed}
+                                    deviceName={report.deviceName}
+                                    onOpen={() => navigate(`/reports/${report.id}`)}
+                                />
+                            ))}
+                        </div>
+                        <TablePagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            pageSize={pageSize}
+                            onPageChange={setCurrentPage}
                         />
-                    ))
+                    </>
                 )}
             </div>
         </div>
