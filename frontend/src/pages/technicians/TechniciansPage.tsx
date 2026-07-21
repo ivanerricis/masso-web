@@ -103,7 +103,7 @@ const TechniciansPage = () => {
     }, [loadTechnicians]);
 
     return (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="relative flex flex-col gap-4 w-full">
             <PageHeader
                 title="Tecnici"
                 description="Gestisci i tecnici del laboratorio."
@@ -149,26 +149,24 @@ const TechniciansPage = () => {
 
             <TechniciansFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            {isLoading && technicianRows.length === 0 ? (
-                <LoadingPage />
-            ) : (
-                <div className="flex flex-col gap-4">
-                    <TechniciansTable
-                        columns={technicianColumns}
-                        rows={technicianRows}
-                        onOpenTechnician={handleOpenTechnician}
-                        onEditTechnician={handleOpenEditDialog}
-                        onDeleteTechnician={handleOpenDeleteDialog}
-                    />
-                    <TablePagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                    />
-                </div>
-            )}
+            <div className="flex flex-col gap-4">
+                <TechniciansTable
+                    columns={technicianColumns}
+                    rows={technicianRows}
+                    onOpenTechnician={handleOpenTechnician}
+                    onEditTechnician={handleOpenEditDialog}
+                    onDeleteTechnician={handleOpenDeleteDialog}
+                />
+                <TablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                />
+            </div>
+
+            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
         </div>
     );
 }

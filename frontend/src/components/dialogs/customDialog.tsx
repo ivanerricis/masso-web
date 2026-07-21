@@ -38,6 +38,7 @@ type Props = Readonly<{
   showConfirmButton?: boolean;
 
   destructive?: boolean;
+  preventOutsideClose?: boolean;
 }>;
 
 const CustomDialog = ({
@@ -57,6 +58,7 @@ const CustomDialog = ({
   showCancelButton = true,
   showConfirmButton = true,
   destructive = false,
+  preventOutsideClose = false,
   contentClassName,
 }: Props) => {
   return (
@@ -68,6 +70,23 @@ const CustomDialog = ({
           destructive ? "border-destructive! border!" : "border-primary! border!",
           contentClassName
         )}
+        onPointerDownOutside={(event) => {
+          if (preventOutsideClose) {
+            event.preventDefault();
+          }
+        }}
+        onInteractOutside={(event) => {
+          if (preventOutsideClose) {
+            event.preventDefault();
+            return;
+          }
+
+          const target = event.target;
+
+          if (target instanceof HTMLElement && target.closest('[data-slot="select-content"]')) {
+            event.preventDefault();
+          }
+        }}
       >
         <form
           onSubmit={(event) => {

@@ -13,7 +13,7 @@ export const useIssuesRows = ({ searchText, currentPage, pageSize }: UseIssuesRo
     const [issueRows, setIssueRows] = useState<IssueDto[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadIssues = useCallback(async () => {
         setIsLoading(true);

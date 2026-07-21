@@ -4,7 +4,7 @@ import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
-import { createCustomer, deleteCustomer, getApiErrorMessage, updateCustomer } from "@/lib/api";
+import { createCustomer, deleteCustomer, getApiErrorMessage, updateCustomer, getCustomerReportsPrintUrl } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { CustomerDto } from "@/types/dtos";
 import { toast } from "sonner";
@@ -83,6 +83,10 @@ const CustomersPage = () => {
         navigate(`/clients/${id}`);
     };
 
+    const handlePrintCustomerReports = (id: number) => {
+        window.open(getCustomerReportsPrintUrl(id), "_blank", "noopener,noreferrer");
+    };
+
     const handleDeleteCustomer = async () => {
         if (!customerToDelete || isDeleting) {
             return;
@@ -107,7 +111,7 @@ const CustomersPage = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="relative flex flex-col gap-4 w-full">
             <PageHeader
                 title="Clienti"
                 description="Gestisci i clienti del laboratorio."
@@ -159,26 +163,25 @@ const CustomersPage = () => {
 
             <CustomersFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            {isLoading && customerRows.length === 0 ? (
-                <LoadingPage />
-            ) : (
-                <div className="flex flex-col gap-4">
-                    <CustomersTable
-                        columns={customerColumns}
-                        rows={customerRows}
-                        onOpenCustomer={handleOpenCustomer}
-                        onEditCustomer={handleOpenEditDialog}
-                        onDeleteCustomer={handleOpenDeleteDialog}
-                    />
-                    <TablePagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                    />
-                </div>
-            )}
+            <div className="flex flex-col gap-4">
+                <CustomersTable
+                    columns={customerColumns}
+                    rows={customerRows}
+                    onOpenCustomer={handleOpenCustomer}
+                    onPrintCustomerReports={handlePrintCustomerReports}
+                    onEditCustomer={handleOpenEditDialog}
+                    onDeleteCustomer={handleOpenDeleteDialog}
+                />
+                <TablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                />
+            </div>
+
+            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
         </div>
     );
 }

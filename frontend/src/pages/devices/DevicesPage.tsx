@@ -91,7 +91,7 @@ const DevicesPage = () => {
     }, [loadDevices]);
 
     return (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="relative flex flex-col gap-4 w-full">
             <PageHeader
                 title="Dispositivi"
                 description="Gestisci i dispositivi del laboratorio."
@@ -137,25 +137,23 @@ const DevicesPage = () => {
 
             <DevicesFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            {isLoading && deviceRows.length === 0 ? (
-                <LoadingPage />
-            ) : (
-                <div className="flex flex-col gap-4">
-                    <DevicesTable
-                        columns={deviceColumns}
-                        rows={deviceRows}
-                        onEditDevice={handleOpenEditDialog}
-                        onDeleteDevice={handleOpenDeleteDialog}
-                    />
-                    <TablePagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                    />
-                </div>
-            )}
+            <div className="flex flex-col gap-4">
+                <DevicesTable
+                    columns={deviceColumns}
+                    rows={deviceRows}
+                    onEditDevice={handleOpenEditDialog}
+                    onDeleteDevice={handleOpenDeleteDialog}
+                />
+                <TablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                />
+            </div>
+
+            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
         </div>
     );
 }

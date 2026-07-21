@@ -64,6 +64,13 @@
       "when": 1776339700000,
       "tag": "0008_drop_report_to_invoice",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776340000000,
+      "tag": "0009_add_report_alerted",
+      "breakpoints": true
     }
   ]
 }

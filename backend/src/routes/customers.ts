@@ -7,6 +7,8 @@ import {
     listCustomers,
     updateCustomerById,
 } from "../db/queries/customer";
+import { listReports } from "../db/queries/report";
+import { createCustomerReportsPdfBuffer } from "../services/reportPdf";
 import { validate } from "./validation";
 
 const customersRouter = Router();
@@ -95,6 +97,63 @@ customersRouter.get("/:id", validate({ params: customerIdParamsSchema }), async 
     }
 
     res.json(customers[0]);
+});
+
+customersRouter.get("/:id/reports/print", validate({ params: customerIdParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
+    const customers = await getCustomerById(id);
+
+    if (customers.length === 0) {
+        res.status(404).json({ message: "Customer not found" });
+        return;
+    }
+
+    const [customer] = customers;
+    const reports = await listReports({ customerId: id });
+    const customerName = `${customer.firstName} ${customer.lastName ?? ""}`.trim();
+    const customerPhonePrimary = customer.phoneNumber?.trim() ?? "";
+    const customerPhoneSecondary = customer.phoneNumberSecondary?.trim() ?? "";
+    const customerPhone =
+        customerPhonePrimary && customerPhoneSecondary
+            ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
+            : customerPhonePrimary || customerPhoneSecondary || "N/D";
+    const labName = process.env.LAB_NAME ?? "Masso";
+    const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
+    const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
+    const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
+    const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
+    const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
+        ? configuredLogoUrl
+        : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
+
+    const pdfBuffer = await createCustomerReportsPdfBuffer({
+        customerId: customer.id,
+        customerName,
+        customerPhone,
+        customerEmail: customer.email ?? "-",
+        labName,
+        labEmail,
+        labAddress,
+        labPhone,
+        labLogoUrl,
+        reportCount: reports.length,
+        reports: reports.map((report) => ({
+            id: report.id,
+            createdAtLabel: new Intl.DateTimeFormat("it-IT", {
+                dateStyle: "medium",
+            }).format(report.createdAt),
+            deviceName: report.device,
+            issueDescription: report.issue,
+            closed: report.closed,
+            alerted: report.alerted,
+            paymentMethod: report.paymentMethod,
+            totalPrice: report.totalPrice,
+        })),
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename=customer-${id}-reports.pdf`);
+    res.send(pdfBuffer);
 });
 
 customersRouter.post("/", validate({ body: customerCreateBodySchema }), async (req, res) => {

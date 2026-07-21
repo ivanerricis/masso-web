@@ -44,8 +44,11 @@ export const MainLayout = () => {
                     <SidebarTrigger />
                     <ModeToggle />
                 </header>
-                <main className="flex flex-1 w-full min-h-0 overflow-hidden p-3">
-                    {isRouteTransitioning ? <LoadingPage /> : <Outlet />}
+                <main className="relative flex flex-1 w-full min-h-0 overflow-hidden p-3">
+                    <Outlet />
+                    {isRouteTransitioning ? (
+                        <LoadingPage className="absolute inset-3 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+                    ) : null}
                 </main>
             </SidebarInset>
         </SidebarProvider>

@@ -9,9 +9,10 @@ type ListReportsParams = {
     search?: string;
     visibility?: "all" | "open" | "closed";
     date?: string;
+    customerId?: number;
 };
 
-export const listReports = async ({ page, pageSize, search, visibility = "all", date }: ListReportsParams) => {
+export const listReports = async ({ page, pageSize, search, visibility = "all", date, customerId }: ListReportsParams) => {
     const technicianPriceSubquery = db
         .select({
             reportId: reportTechnicianTable.reportId,
@@ -32,6 +33,7 @@ export const listReports = async ({ page, pageSize, search, visibility = "all", 
               sql`${reportTable.serviceDescription}::text ILIKE ${searchPattern}`,
               sql`${reportTable.dataBackup}::text ILIKE ${searchPattern}`,
               sql`${reportTable.charger}::text ILIKE ${searchPattern}`,
+              sql`${reportTable.alerted}::text ILIKE ${searchPattern}`,
               sql`${reportTable.closed}::text ILIKE ${searchPattern}`,
               sql`${reportTable.paymentMethod}::text ILIKE ${searchPattern}`,
               sql`${reportTable.price}::text ILIKE ${searchPattern}`,
@@ -57,8 +59,9 @@ export const listReports = async ({ page, pageSize, search, visibility = "all", 
     const visibilityCondition =
         visibility === "open" ? eq(reportTable.closed, false) : visibility === "closed" ? eq(reportTable.closed, true) : undefined;
     const dateCondition = date ? sql`${reportTable.created_at}::date = ${date}` : undefined;
+    const customerCondition = customerId ? eq(reportTable.customerId, customerId) : undefined;
     const searchCondition = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const whereConditions = [visibilityCondition, dateCondition, searchCondition].filter(
+    const whereConditions = [visibilityCondition, dateCondition, customerCondition, searchCondition].filter(
         (condition): condition is NonNullable<typeof condition> => condition != null
     );
     const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
@@ -76,6 +79,7 @@ export const listReports = async ({ page, pageSize, search, visibility = "all", 
             serviceDescription: reportTable.serviceDescription,
             dataBackup: reportTable.dataBackup,
             charger: reportTable.charger,
+            alerted: reportTable.alerted,
             paymentMethod: reportTable.paymentMethod,
             price: reportTable.price,
             customer: sql<string>`coalesce(nullif(concat_ws(' ', ${customerTable.firstName}, ${customerTable.lastName}), ''), '-')`,

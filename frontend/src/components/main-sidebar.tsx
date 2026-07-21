@@ -7,7 +7,6 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import BackupSettingsDialog from "@/components/dialogs/settings/backupSettingsDialog";
 import {
     BookUser,
     Bug,
@@ -19,7 +18,6 @@ import {
     Wrench,
     type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 type SidebarItem = {
@@ -50,7 +48,7 @@ const MainSidebar = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const logoUrl = import.meta.env.VITE_LOGO_URL ?? "http://localhost:3000/assets/logo.jpg";
-    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+    const isSettingsActive = pathname.startsWith("/settings");
 
     return (
         <Sidebar collapsible="icon">
@@ -110,8 +108,11 @@ const MainSidebar = () => {
                         <SidebarMenuButton
                             tooltip="Impostazioni"
                             size="lg"
-                            onClick={() => setIsSettingsDialogOpen(true)}
-                            className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:p-0"
+                            isActive={isSettingsActive}
+                            onClick={() => navigate("/settings")}
+                            className={`flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:p-0 ${
+                                isSettingsActive ? "bg-primary! text-background! dark:text-foreground!" : ""
+                            }`}
                         >
                             <Settings className="size-7 shrink-0" />
                             <span className="group-data-[collapsible=icon]:hidden">Impostazioni</span>
@@ -119,11 +120,6 @@ const MainSidebar = () => {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>
-
-            <BackupSettingsDialog
-                open={isSettingsDialogOpen}
-                onOpenChange={setIsSettingsDialogOpen}
-            />
         </Sidebar>
     );
 };

@@ -2,13 +2,14 @@ import OpenEntityButton from "@/components/open-entity-button";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { CustomerDto } from "@/types/dtos";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Printer, Trash2 } from "lucide-react";
 import type { CustomerColumn } from "./customer-columns";
 
 type CustomersTableProps = {
     columns: CustomerColumn[];
     rows: CustomerDto[];
     onOpenCustomer: (id: number) => void;
+    onPrintCustomerReports: (id: number) => void;
     onEditCustomer: (id: number) => void;
     onDeleteCustomer: (customer: CustomerDto) => void;
 };
@@ -17,6 +18,7 @@ const CustomersTable = ({
     columns,
     rows,
     onOpenCustomer,
+    onPrintCustomerReports,
     onEditCustomer,
     onDeleteCustomer,
 }: CustomersTableProps) => {
@@ -46,6 +48,15 @@ const CustomersTable = ({
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
                                             <OpenEntityButton size="lg" onClick={() => onOpenCustomer(row.id)} aria-label={`Apri cliente ${row.id}`} />
+                                            <Button
+                                                variant="default"
+                                                size="icon-lg"
+                                                className="bg-yellow-400/20 hover:bg-yellow-400/30"
+                                                onClick={() => onPrintCustomerReports(row.id)}
+                                                aria-label={`Stampa resoconto report cliente ${row.id}`}
+                                            >
+                                                <Printer className="size-5 text-yellow-400" />
+                                            </Button>
                                             <Button
                                                 variant="default"
                                                 size="icon-lg"

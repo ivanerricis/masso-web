@@ -13,7 +13,7 @@ export const useDevicesRows = ({ searchText, currentPage, pageSize }: UseDevices
     const [deviceRows, setDeviceRows] = useState<DeviceDto[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadDevices = useCallback(async () => {
         setIsLoading(true);

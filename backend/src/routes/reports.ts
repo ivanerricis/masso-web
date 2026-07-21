@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
     createReport,
@@ -12,6 +12,7 @@ import { db } from "../db";
 import {
     customerTable,
     deviceTable,
+    reportTechnicianTable,
     reportTable,
 } from "../db/schema";
 import { createReportPdfBuffer } from "../services/reportPdf";
@@ -46,6 +47,7 @@ const reportBodySchema = z
         serviceDescription: z.string().trim().min(1).max(255).nullable().optional(),
         dataBackup: z.boolean().optional(),
         charger: z.boolean().optional(),
+        alerted: z.boolean().optional(),
         closed: z.boolean().optional(),
         paymentMethod: z.enum(reportPaymentMethods).optional(),
         price: z.coerce.number().int().min(0).optional(),
@@ -110,25 +112,32 @@ reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, r
 reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
 
-    const reportRows = await db
-        .select({
-            id: reportTable.id,
-            note: reportTable.note,
-            password: reportTable.password,
-            issueDescription: reportTable.issueDescription,
-            dataBackup: reportTable.dataBackup,
-            charger: reportTable.charger,
-            createdAt: reportTable.created_at,
-            customerFirstName: customerTable.firstName,
-            customerLastName: customerTable.lastName,
-            customerPhone: customerTable.phoneNumber,
-            customerPhoneSecondary: customerTable.phoneNumberSecondary,
-            deviceName: deviceTable.name,
-        })
-        .from(reportTable)
-        .innerJoin(customerTable, eq(customerTable.id, reportTable.customerId))
-        .innerJoin(deviceTable, eq(deviceTable.id, reportTable.deviceId))
-        .where(eq(reportTable.id, id));
+    const [reportRows, technicianPriceRows] = await Promise.all([
+        db
+            .select({
+                id: reportTable.id,
+                note: reportTable.note,
+                password: reportTable.password,
+                issueDescription: reportTable.issueDescription,
+                dataBackup: reportTable.dataBackup,
+                charger: reportTable.charger,
+                alerted: reportTable.alerted,
+                price: reportTable.price,
+                createdAt: reportTable.created_at,
+                customerFirstName: customerTable.firstName,
+                customerLastName: customerTable.lastName,
+                customerPhone: customerTable.phoneNumber,
+                customerPhoneSecondary: customerTable.phoneNumberSecondary,
+                deviceName: deviceTable.name,
+            })
+            .from(reportTable)
+            .innerJoin(customerTable, eq(customerTable.id, reportTable.customerId))
+            .innerJoin(deviceTable, eq(deviceTable.id, reportTable.deviceId))
+            .where(eq(reportTable.id, id)),
+        db.select({ technicianPrice: sql<number>`coalesce(sum(${reportTechnicianTable.price}), 0)::int` })
+            .from(reportTechnicianTable)
+            .where(eq(reportTechnicianTable.reportId, id)),
+    ]);
 
     if (reportRows.length === 0) {
         res.status(404).json({ message: "Report not found" });
@@ -150,6 +159,8 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
     const customerPhoneLabel = customerPhonePrimary && customerPhoneSecondary
         ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
         : customerPhonePrimary || customerPhoneSecondary || "N/D";
+    const technicianPrice = Number(technicianPriceRows[0]?.technicianPrice ?? 0);
+    const totalPrice = Number(report.price ?? 0) + technicianPrice;
 
     const pdfBuffer = await createReportPdfBuffer({
         id: report.id,
@@ -166,6 +177,8 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
         password: report.password ?? "-",
         dataBackup: report.dataBackup,
         charger: report.charger,
+        alerted: report.alerted,
+        totalPrice,
         createdAtLabel: new Intl.DateTimeFormat("it-IT", {
             dateStyle: "medium",
         }).format(report.createdAt),

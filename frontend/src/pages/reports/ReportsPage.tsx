@@ -231,6 +231,7 @@ const ReportsPage = () => {
             password: values.password,
             dataBackup: values.dataBackup,
             charger: values.charger,
+            alerted: values.alerted,
             closed: values.closed,
             paymentMethod: values.paymentMethod,
             price: values.internalPrice,
@@ -268,6 +269,7 @@ const ReportsPage = () => {
             password: values.password,
             dataBackup: values.dataBackup,
             charger: values.charger,
+            alerted: values.alerted,
             closed: values.closed,
             paymentMethod: values.paymentMethod,
             internalPrice: values.internalPrice,
@@ -310,7 +312,7 @@ const ReportsPage = () => {
     }, [searchParams]);
 
     return (
-        <div className="flex flex-col gap-4 w-full h-full">
+        <div className="relative flex flex-col gap-4 w-full h-full">
             <>
                 <PageHeader
                     title="Rapporti"
@@ -365,27 +367,25 @@ const ReportsPage = () => {
                     onSelectedDateChange={setSelectedDate}
                 />
 
-                {isLoading && reportRows.length === 0 ? (
-                    <LoadingPage />
-                ) : (
-                    <div className="flex flex-col gap-4">
-                        <ReportsTable
-                            columns={reportColumns}
-                            rows={reportRows}
-                            onOpenReport={handleOpenReport}
-                            onEditReport={handleOpenEditDialog}
-                            onPrintReport={handlePrintReport}
-                            onDeleteReport={handleOpenDeleteDialog}
-                        />
-                        <TablePagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            totalItems={totalItems}
-                            pageSize={pageSize}
-                            onPageChange={setCurrentPage}
-                        />
-                    </div>
-                )}
+                <div className="flex flex-col gap-4">
+                    <ReportsTable
+                        columns={reportColumns}
+                        rows={reportRows}
+                        onOpenReport={handleOpenReport}
+                        onEditReport={handleOpenEditDialog}
+                        onPrintReport={handlePrintReport}
+                        onDeleteReport={handleOpenDeleteDialog}
+                    />
+                    <TablePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
+
+                {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
             </>
         </div>
     );

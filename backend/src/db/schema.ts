@@ -19,6 +19,7 @@ export const reportTable = pgTable("report", {
     serviceDescription: varchar("service_description", { length: 255 }),
     dataBackup: boolean("data_backup").notNull().default(false),
     charger: boolean("charger").notNull().default(false),
+    alerted: boolean("alerted").notNull().default(false),
     closed: boolean("closed").notNull().default(false),
     paymentMethod: varchar("payment_method", { length: 20 }).notNull().default("non_paid"),
     price: integer("price").notNull().default(0),

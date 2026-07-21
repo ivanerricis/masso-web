@@ -46,6 +46,7 @@ export type EditReportSubmitValues = {
     paymentMethod: PaymentMethod;
     dataBackup: boolean;
     charger: boolean;
+    alerted: boolean;
     closed: boolean;
     internalPrice: number;
 };
@@ -75,6 +76,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
         internalPrice: "0",
         dataBackup: false,
         charger: false,
+        alerted: false,
         closed: false,
     });
 
@@ -118,6 +120,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                     internalPrice: String(report.price),
                     dataBackup: report.dataBackup,
                     charger: report.charger,
+                    alerted: report.alerted,
                     closed: report.closed,
                 });
                 setLoadedReportId(report.id);
@@ -203,6 +206,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                 paymentMethod: formValues.paymentMethod,
                 dataBackup: formValues.dataBackup,
                 charger: formValues.charger,
+                alerted: formValues.alerted,
                 closed: formValues.closed,
                 internalPrice,
             });
@@ -223,6 +227,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                 onOpenChange={onOpenChange}
                 title="Modifica rapporto"
                 contentClassName="sm:max-w-4xl lg:max-w-6xl xl:max-w-[88rem]"
+                preventOutsideClose
                 confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
                 cancelLabel="Annulla"
                 onCancel={() => onOpenChange(false)}
@@ -331,8 +336,8 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                     <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
                                         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3 content-start">
                                             <div className="grid gap-1">
-                                                <Label htmlFor="serviceDescription" className="text-lg">Descrizione servizio</Label>
-                                                <Textarea id="serviceDescription" className="text-lg!" placeholder="Descrivi l'intervento" rows={4} value={formValues.serviceDescription} onChange={(event) => setFormValues((prev) => ({ ...prev, serviceDescription: event.target.value }))} />
+                                                <Label htmlFor="serviceDescription" className="text-lg">Descrizione intervento</Label>
+                                                <Textarea id="serviceDescription" className="text-lg! resize-none" placeholder="Descrivi l'intervento" rows={4} value={formValues.serviceDescription} onChange={(event) => setFormValues((prev) => ({ ...prev, serviceDescription: event.target.value }))} />
                                             </div>
 
                                             <div className="grid gap-1">
@@ -385,6 +390,11 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                             <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
                                                 <Checkbox id="charger" className="size-5" checked={formValues.charger} onCheckedChange={(checked) => setFormValues((prev) => ({ ...prev, charger: checked === true }))} />
                                                 <Label htmlFor="charger" className="cursor-pointer text-lg w-full">Alimentatore presente</Label>
+                                            </div>
+
+                                            <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">
+                                                <Checkbox id="alerted" className="size-5" checked={formValues.alerted} onCheckedChange={(checked) => setFormValues((prev) => ({ ...prev, alerted: checked === true }))} />
+                                                <Label htmlFor="alerted" className="cursor-pointer text-lg w-full">Avvisato</Label>
                                             </div>
 
                                             <div className="flex w-full items-center gap-3 rounded-md border border-primary/15 bg-background px-3 py-2">

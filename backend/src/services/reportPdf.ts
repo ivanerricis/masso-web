@@ -16,7 +16,34 @@ export type ReportPrintData = {
     password: string;
     dataBackup: boolean;
     charger: boolean;
+    alerted: boolean;
+    totalPrice: number;
     createdAtLabel: string;
+};
+
+export type CustomerReportSummaryItem = {
+    id: number;
+    createdAtLabel: string;
+    deviceName: string;
+    issueDescription: string;
+    closed: boolean;
+    alerted: boolean;
+    paymentMethod: "non_paid" | "cash" | "card";
+    totalPrice: number;
+};
+
+export type CustomerReportsPrintData = {
+    customerId: number;
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string;
+    labName: string;
+    labEmail: string;
+    labAddress: string;
+    labPhone: string;
+    labLogoUrl: string;
+    reportCount: number;
+    reports: CustomerReportSummaryItem[];
 };
 
 const pdfmakeRoot = path.dirname(require.resolve("pdfmake/package.json"));
@@ -34,6 +61,28 @@ pdfmake.addFonts(fontDescriptors);
 
 const yesNo = (value: boolean) => (value ? "Si" : "No");
 
+const formatPaymentMethod = (value: CustomerReportSummaryItem["paymentMethod"]) => {
+    if (value === "cash") {
+        return "Contanti";
+    }
+
+    if (value === "card") {
+        return "Carta";
+    }
+
+    return "Non pagato";
+};
+
+const formatEuro = (value: number) =>
+    new Intl.NumberFormat("it-IT", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(value);
+
+const formatOptionalEuro = (value: number) => (Number.isFinite(value) && value > 0 ? formatEuro(value) : "");
+
 const tableLayout = {
     hLineWidth: () => 1,
     vLineWidth: () => 1,
@@ -46,6 +95,13 @@ const tableLayout = {
 };
 
 const emptyCell = () => ({ text: "", margin: [0, 6, 0, 6] });
+
+const buildFilledCell = (value: string) => ({
+    text: value,
+    alignment: "center" as const,
+    bold: true,
+    margin: [0, 13, 0, 13],
+});
 
 const cashIconSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2A75B9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -61,13 +117,6 @@ const cardIconSvg = `
     <path d="M2 10h20" />
     <path d="M6 14h4" />
     <path d="M6 16h2.5" />
-</svg>`;
-
-const euroIconSvg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2A75B9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M17 7a6 6 0 1 0 0 10" />
-    <path d="M5 10h8" />
-    <path d="M5 14h8" />
 </svg>`;
 
 const pairRow = (label: string, value: string) => [
@@ -147,6 +196,151 @@ const buildHeader = (report: ReportPrintData, logoDataUrl: string | null, compac
     margin: [0, 0, 0, 8],
 });
 
+const buildCustomerSummaryMetaBlock = (customer: CustomerReportsPrintData) => ({
+    table: {
+        widths: [140],
+        body: [[
+            {
+                stack: [
+                    { text: `Cliente #${customer.customerId}`, style: "metaTitle", alignment: "right" },
+                    { text: `${customer.reportCount} report`, style: "metaDate", alignment: "right" },
+                ],
+            },
+        ]],
+    },
+    layout: {
+        hLineWidth: () => 1,
+        vLineWidth: () => 1,
+        hLineColor: () => "#2A75B9",
+        vLineColor: () => "#2A75B9",
+        paddingLeft: () => 8,
+        paddingRight: () => 8,
+        paddingTop: () => 4,
+        paddingBottom: () => 4,
+    },
+    margin: [0, 0, 0, 0],
+});
+
+const buildCustomerSummaryHeader = (customer: CustomerReportsPrintData, logoDataUrl: string | null, compact = false) => ({
+    columns: compact
+        ? [
+              {
+                  width: "*",
+                  text: "",
+              },
+              {
+                  width: "auto",
+                  ...buildCustomerSummaryMetaBlock(customer),
+              },
+          ]
+        : [
+              {
+                  width: "*",
+                  columns: [
+                      ...(logoDataUrl
+                          ? [{ width: 40, image: logoDataUrl, fit: [36, 36], margin: [0, 0, 0, 0] }]
+                          : [{ width: 40, text: "" }]),
+                      {
+                          width: "*",
+                          stack: [
+                              { text: customer.labName, style: "brandName" },
+                              { text: `${customer.labAddress}\n${customer.labEmail}\n${customer.labPhone}`, style: "brandInfo" },
+                          ],
+                          margin: [0, 0, 0, 0],
+                      },
+                  ],
+              },
+              {
+                  width: "auto",
+                  ...buildCustomerSummaryMetaBlock(customer),
+              },
+          ],
+    columnGap: 12,
+    margin: [0, 0, 0, 8],
+});
+
+const buildCustomerSummaryInfoSection = (customer: CustomerReportsPrintData, compact = false) => ({
+    stack: [
+        { text: "Cliente", style: "sectionTitle", margin: [0, 0, 0, 3] },
+        {
+            table: {
+                widths: [112, "*", 128, "*"],
+                body: [[
+                    { text: "Nome", style: "label" },
+                    { text: customer.customerName, style: "value" },
+                    { text: "Telefono", style: "label" },
+                    { text: customer.customerPhone, style: "value" },
+                ], [
+                    { text: "Email", style: "label" },
+                    { text: customer.customerEmail || "-", style: "value" },
+                    { text: "Report", style: "label" },
+                    { text: String(customer.reportCount), style: "value" },
+                ]],
+            },
+            layout: tableLayout,
+        },
+    ],
+    margin: compact ? [0, 0, 0, 6] : [0, 0, 0, 8],
+});
+
+const buildCustomerReportsTable = (reports: CustomerReportSummaryItem[]) => {
+    const body = [
+        [
+            { text: "#", style: "summaryHeader" },
+            { text: "Data", style: "summaryHeader" },
+            { text: "Dispositivo", style: "summaryHeader" },
+            { text: "Problema", style: "summaryHeader" },
+            { text: "Stato", style: "summaryHeader" },
+            { text: "Pagamento", style: "summaryHeader" },
+            { text: "Totale", style: "summaryHeader" },
+        ],
+    ];
+
+    if (reports.length === 0) {
+        body.push([
+            { text: "Nessun report disponibile", colSpan: 7, alignment: "center", italics: true, margin: [0, 8, 0, 8] },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+        ]);
+    } else {
+        for (const report of reports) {
+            body.push([
+                { text: String(report.id), alignment: "center", bold: true },
+                { text: report.createdAtLabel, alignment: "center" },
+                { text: report.deviceName, bold: true },
+                { text: report.issueDescription, fontSize: 8.5 },
+                { text: report.closed ? "Chiuso" : "Aperto", alignment: "center" },
+                { text: formatPaymentMethod(report.paymentMethod), alignment: "center" },
+                { text: formatEuro(report.totalPrice), alignment: "right", bold: true },
+            ]);
+        }
+
+        const totalAmount = reports.reduce((sum, report) => sum + report.totalPrice, 0);
+        body.push([
+            { text: "Totale complessivo", colSpan: 6, alignment: "right", bold: true, fillColor: "#F4F8FD" },
+            {},
+            {},
+            {},
+            {},
+            {},
+            { text: formatEuro(totalAmount), alignment: "right", bold: true, fillColor: "#F4F8FD" },
+        ]);
+    }
+
+    return {
+        table: {
+            headerRows: 1,
+            widths: [28, 56, 92, "*", 56, 68, 68],
+            body,
+        },
+        layout: tableLayout,
+    };
+};
+
 const buildSection = (title: string, rows: Array<[string, string]>, compact = false) => ({
     stack: [
         { text: title, style: "sectionTitle", margin: [0, 0, 0, 3] },
@@ -210,14 +404,14 @@ const buildWorkSection = () => ({
     margin: [0, 0, 0, 8],
 });
 
-const buildNotesAndPaymentSection = () => ({
+const buildNotesAndPaymentSection = (report: ReportPrintData) => ({
     columns: [
         {
             width: "33%",
             stack: [
                 { text: "Avvisato", style: "sectionTitle", margin: [0, 0, 0, 3] },
                 {
-                    table: { widths: ["*"], body: [[emptyCell()]] },
+                    table: { widths: ["*"], body: [[buildFilledCell(report.alerted ? yesNo(report.alerted) : "")]] },
                     layout: tableLayout,
                     heights: [46],
                 },
@@ -226,24 +420,8 @@ const buildNotesAndPaymentSection = () => ({
         {
             width: "33%",
             stack: [
-                { text: "Importo", style: "sectionTitle", margin: [0, 0, 0, 3] },
-                {
-                    table: {
-                        widths: [24, "*"],
-                        body: [[
-                            {
-                                svg: euroIconSvg,
-                                width: 18,
-                                height: 18,
-                                alignment: "left",
-                                margin: [0, 1, 2, 0],
-                            },
-                            emptyCell(),
-                        ]],
-                    },
-                    layout: tableLayout,
-                    heights: [46],
-                },
+                { text: "Importo totale", style: "sectionTitle", margin: [0, 0, 0, 3] },
+                { table: { widths: ["*"], body: [[buildFilledCell(formatOptionalEuro(report.totalPrice))]] }, layout: tableLayout, heights: [46] },
             ],
         },
         {
@@ -350,7 +528,7 @@ export const createReportPdfBuffer = async (report: ReportPrintData) => {
             },
             ...copyBlock(true),
             buildWorkSection(),
-            buildNotesAndPaymentSection(),
+            buildNotesAndPaymentSection(report),
         ],
         styles: {
             brandName: {
@@ -382,6 +560,90 @@ export const createReportPdfBuffer = async (report: ReportPrintData) => {
             value: {
                 fontSize: 11.75,
                 bold: true,
+            },
+            paymentLabel: {
+                fontSize: 9,
+                color: "#555555",
+            },
+        },
+    };
+
+    const pdfDocument = pdfmake.createPdf(documentDefinition);
+
+    return await pdfDocument.getBuffer();
+};
+
+export const createCustomerReportsPdfBuffer = async (customer: CustomerReportsPrintData) => {
+    const logoDataUrl = await loadImageDataUrl(customer.labLogoUrl);
+
+    const documentDefinition = {
+        pageSize: "A4",
+        pageMargins: [14, 14, 14, 14],
+        defaultStyle: {
+            font: "Roboto",
+            fontSize: 10,
+            color: "#111111",
+        },
+        content: [
+            buildCustomerSummaryHeader(customer, logoDataUrl, false),
+            {
+                canvas: [
+                    {
+                        type: "line",
+                        x1: 0,
+                        y1: 0,
+                        x2: 555,
+                        y2: 0,
+                        lineWidth: 1,
+                        dash: { length: 4, space: 3 },
+                    },
+                ],
+                margin: [0, 4, 0, 6],
+            },
+            buildCustomerSummaryHeader(customer, logoDataUrl, true),
+            buildCustomerSummaryInfoSection(customer),
+            {
+                stack: [
+                    { text: "Resoconto report", style: "sectionTitle", margin: [0, 0, 0, 3] },
+                    buildCustomerReportsTable(customer.reports),
+                ],
+            },
+        ],
+        styles: {
+            brandName: {
+                fontSize: 15,
+                bold: true,
+                color: "#2A75B9",
+            },
+            brandInfo: {
+                fontSize: 10.5,
+                lineHeight: 1.25,
+            },
+            metaTitle: {
+                fontSize: 13,
+                bold: true,
+                color: "#2A75B9",
+            },
+            metaDate: {
+                fontSize: 10.5,
+            },
+            sectionTitle: {
+                fontSize: 11,
+                bold: true,
+                color: "#2A75B9",
+            },
+            label: {
+                fontSize: 9,
+                color: "#555555",
+            },
+            value: {
+                fontSize: 11.75,
+                bold: true,
+            },
+            summaryHeader: {
+                fontSize: 9,
+                bold: true,
+                color: "#2A75B9",
             },
             paymentLabel: {
                 fontSize: 9,

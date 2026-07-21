@@ -101,7 +101,7 @@ const CollaboratorsPage = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="relative flex flex-col gap-4 w-full">
             <PageHeader
                 title="Collaboratori"
                 description="Gestisci i collaboratori del laboratorio."
@@ -147,26 +147,24 @@ const CollaboratorsPage = () => {
 
             <CollaboratorsFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            {isLoading && collaboratorRows.length === 0 ? (
-                <LoadingPage />
-            ) : (
-                <div className="flex flex-col gap-4">
-                    <CollaboratorsTable
-                        columns={collaboratorColumns}
-                        rows={collaboratorRows}
-                        onOpenCollaborator={handleOpenCollaborator}
-                        onEditCollaborator={handleOpenEditDialog}
-                        onDeleteCollaborator={handleOpenDeleteDialog}
-                    />
-                    <TablePagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                    />
-                </div>
-            )}
+            <div className="flex flex-col gap-4">
+                <CollaboratorsTable
+                    columns={collaboratorColumns}
+                    rows={collaboratorRows}
+                    onOpenCollaborator={handleOpenCollaborator}
+                    onEditCollaborator={handleOpenEditDialog}
+                    onDeleteCollaborator={handleOpenDeleteDialog}
+                />
+                <TablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                />
+            </div>
+
+            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
         </div>
     );
 }

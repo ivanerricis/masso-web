@@ -168,6 +168,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 title="Nuovo rapporto"
                 description="Inserisci i dati del rapporto e conferma per salvare."
                 contentClassName="sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl"
+                preventOutsideClose
                 confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
                 cancelLabel="Annulla"
                 onCancel={() => onOpenChange(false)}

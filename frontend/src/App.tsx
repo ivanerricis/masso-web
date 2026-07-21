@@ -21,6 +21,7 @@ const DevicesPage = lazy(() => import("@/pages/devices/DevicesPage"))
 const DevicePage = lazy(() => import("./pages/devices/DevicePage"))
 const IssuesPage = lazy(() => import("@/pages/issues/IssuesPage"))
 const IssuePage = lazy(() => import("./pages/issues/IssuePage"))
+const SettingsPage = lazy(() => import("./pages/settings/SettingsPage"))
 export function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
@@ -44,6 +45,7 @@ export function App() {
                   <Route path="devices/:id" element={<DevicePage />} />
                   <Route path="issues" element={<IssuesPage />} />
                   <Route path="issues/:id" element={<IssuePage />} />
+                  <Route path="settings" element={<SettingsPage />} />
                   <Route path="error" element={<UnhandledErrorPage />} />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Route>

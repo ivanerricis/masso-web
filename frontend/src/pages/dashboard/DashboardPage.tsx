@@ -3,7 +3,9 @@ import CardDashboard from "./components/cardDashboard";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
-import { useEffect, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect, useMemo, useState } from "react";
 import CreateEntityButton from "@/components/create-entity-button";
 import {
     createIssue,
@@ -14,48 +16,88 @@ import {
     listDevices,
     listIssues,
     listReports,
-    listReportTechnicians,
 } from "@/lib/api";
 import { formatEuro } from "@/lib/utils";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import type { ReportDto } from "@/types/dtos";
+
+const getMonthKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+
+    return `${year}-${month}`;
+};
+
+const getMonthLabel = (monthKey: string) => {
+    const [yearPart, monthPart] = monthKey.split("-");
+    const year = Number(yearPart);
+    const month = Number(monthPart);
+
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+        return monthKey;
+    }
+
+    return new Intl.DateTimeFormat("it-IT", {
+        month: "long",
+        year: "numeric",
+    }).format(new Date(year, month - 1, 1));
+};
+
+const isSameMonth = (dateValue: string, monthKey: string) => dateValue.slice(0, 7) === monthKey;
+
+const buildMonthOptions = (count: number) => {
+    const options: Array<{ value: string; label: string }> = [];
+    const now = new Date();
+
+    for (let offset = 0; offset < count; offset += 1) {
+        const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+        const value = getMonthKey(date);
+        const label = new Intl.DateTimeFormat("it-IT", {
+            month: "long",
+            year: "numeric",
+        }).format(date);
+
+        options.push({ value, label });
+    }
+
+    return options;
+};
 
 const DashboardPage = () => {
     const navigate = useNavigate();
     const [dialogCreateReportOpen, setDialogCreateReportOpen] = useState(false);
+    const [reports, setReports] = useState<ReportDto[]>([]);
+    const [selectedRevenueMonth, setSelectedRevenueMonth] = useState(() => getMonthKey(new Date()));
     const [openReports, setOpenReports] = useState(0);
     const [closedReports, setClosedReports] = useState(0);
-    const [totalRevenue, setTotalRevenue] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const monthlyRevenue = useMemo(
+        () =>
+            reports
+                .filter((report) => report.closed && isSameMonth(report.createdAt, selectedRevenueMonth))
+                .reduce((accumulator, report) => accumulator + report.totalPrice, 0),
+        [reports, selectedRevenueMonth]
+    );
+
+    const selectedRevenueLabel = useMemo(
+        () => getMonthLabel(selectedRevenueMonth),
+        [selectedRevenueMonth]
+    );
+
+    const monthOptions = useMemo(() => buildMonthOptions(12), []);
 
     const loadDashboardMetrics = async () => {
         setIsLoading(true);
         try {
-            const [reports, reportTechnicians] = await Promise.all([
-                listReports(),
-                listReportTechnicians(),
-            ]);
+            const reportsData = await listReports();
+            const openCount = reportsData.filter((report) => !report.closed).length;
+            const closedCount = reportsData.filter((report) => report.closed).length;
 
-            const techniciansPriceByReportId = new Map<number, number>();
-            for (const item of reportTechnicians) {
-                techniciansPriceByReportId.set(
-                    item.reportId,
-                    (techniciansPriceByReportId.get(item.reportId) ?? 0) + item.price
-                );
-            }
-
-            const openCount = reports.filter((report) => !report.closed).length;
-            const closedCount = reports.filter((report) => report.closed).length;
-            const revenue = reports
-                .filter((report) => report.closed)
-                .reduce(
-                    (acc, report) => acc + report.price + (techniciansPriceByReportId.get(report.id) ?? 0),
-                    0
-                );
-
+            setReports(reportsData);
             setOpenReports(openCount);
             setClosedReports(closedCount);
-            setTotalRevenue(revenue);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare i dati dashboard"));
         } finally {
@@ -167,7 +209,7 @@ const DashboardPage = () => {
     };
 
     return (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="relative flex flex-col gap-4 w-full">
             <PageHeader
                 title="Dashboard"
                 description="Panoramica del laboratorio e stato delle riparazioni."
@@ -177,33 +219,52 @@ const DashboardPage = () => {
             />
 
             <div className="flex flex-wrap gap-4">
-                {isLoading && openReports === 0 && closedReports === 0 && totalRevenue === 0 ? (
-                    <LoadingPage />
-                ) : (
-                    <>
-                        <CardDashboard
-                            text="Rapportini aperti"
-                            icon={CircleDashed}
-                            number={String(openReports)}
-                            iconColor="text-destructive"
-                            onClick={() => goToReportsPage("open")}
-                        />
-                        <CardDashboard
-                            text="Rapportini chiusi"
-                            icon={CircleCheck}
-                            number={String(closedReports)}
-                            iconColor="text-green-400"
-                            onClick={() => goToReportsPage("closed")}
-                        />
-                        <CardDashboard
-                            text="Incassi totali"
-                            icon={Euro}
-                            number={formatEuro(totalRevenue)}
-                            iconColor="text-yellow-400"
-                        />
-                    </>
-                )}
+                <CardDashboard
+                    text="Rapportini aperti"
+                    icon={CircleDashed}
+                    number={String(openReports)}
+                    iconColor="text-destructive"
+                    onClick={() => goToReportsPage("open")}
+                />
+                <CardDashboard
+                    text="Rapportini chiusi"
+                    icon={CircleCheck}
+                    number={String(closedReports)}
+                    iconColor="text-green-400"
+                    onClick={() => goToReportsPage("closed")}
+                />
+                <Card className="flex flex-col gap-2! border bg-card p-6 shadow w-58 rounded-lg border-primary/20">
+                    <CardHeader className="p-0 pb-2">
+                        <div className="flex items-center justify-between gap-3">
+                            <CardTitle className="text-primary">Incassi mese</CardTitle>
+                            <Euro className="size-6 text-yellow-400" />
+                        </div>
+                        <CardDescription>Seleziona un mese per confrontare i ricavi.</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="grid gap-3 p-0">
+                        <div>
+                            <div className="text-3xl font-bold">{formatEuro(monthlyRevenue)}</div>
+                            <div className="mt-1 text-sm text-muted-foreground">{selectedRevenueLabel}</div>
+                        </div>
+
+                        <Select value={selectedRevenueMonth} onValueChange={setSelectedRevenueMonth}>
+                            <SelectTrigger id="dashboardRevenueMonth" className="w-full">
+                                <SelectValue placeholder="Seleziona mese" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {monthOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </CardContent>
+                </Card>
             </div>
+
+            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
 
             <CreateReportDialog
                 open={dialogCreateReportOpen}

@@ -47,3 +47,6 @@ export const updateCustomer = async (id: number, payload: CustomerUpdateInput) =
 
 export const deleteCustomer = async (id: number) =>
     mapEntityTimestamps((await api.delete<EntityWithRawTimestamps<CustomerDto>>(`/customers/${id}`)).data);
+
+export const getCustomerReportsPrintUrl = (id: number) =>
+    api.getUri({ url: `/customers/${id}/reports/print` });

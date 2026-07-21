@@ -12,6 +12,7 @@ export type ReportDto = {
     serviceDescription: string | null;
     dataBackup: boolean;
     charger: boolean;
+    alerted: boolean;
     paymentMethod: PaymentMethod;
     price: number;
     customer: string;

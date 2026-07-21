@@ -74,6 +74,7 @@ const TechnicianPage = () => {
             password: values.password,
             dataBackup: values.dataBackup,
             charger: values.charger,
+            alerted: values.alerted,
             closed: values.closed,
             paymentMethod: values.paymentMethod,
             price: values.internalPrice,

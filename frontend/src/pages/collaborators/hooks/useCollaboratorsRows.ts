@@ -13,7 +13,7 @@ export const useCollaboratorsRows = ({ searchText, currentPage, pageSize }: UseC
     const [collaboratorRows, setCollaboratorRows] = useState<CollaboratorDto[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadCollaborators = useCallback(async () => {
         setIsLoading(true);

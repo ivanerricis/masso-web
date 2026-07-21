@@ -13,7 +13,7 @@ export const useTechniciansRows = ({ searchText, currentPage, pageSize }: UseTec
     const [technicianRows, setTechnicianRows] = useState<TechnicianDto[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadTechnicians = useCallback(async () => {
         setIsLoading(true);

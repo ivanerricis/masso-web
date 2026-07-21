@@ -13,7 +13,7 @@ export const useCustomersRows = ({ searchText, currentPage, pageSize }: UseCusto
     const [customerRows, setCustomerRows] = useState<CustomerDto[]>([]);
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadCustomers = useCallback(async () => {
         setIsLoading(true);

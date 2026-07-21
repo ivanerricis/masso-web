@@ -8,6 +8,14 @@ const escapeHtml = (value: string) =>
 
 const yesNo = (value: boolean) => (value ? "Si" : "No");
 
+const formatEuro = (value: number) =>
+  new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
 export type ReportPrintData = {
   id: number;
   labName: string;
@@ -23,6 +31,8 @@ export type ReportPrintData = {
   password: string;
   dataBackup: boolean;
   charger: boolean;
+  alerted: boolean;
+  totalPrice: number;
   createdAtLabel: string;
 };
 
@@ -253,6 +263,17 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
         width: 20mm;
         height: 20mm;
         border: 0.3mm solid var(--primary-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 10pt;
+        font-weight: 700;
+        padding: 1mm;
+      }
+
+      .price-box.empty {
+        font-weight: 400;
       }
     </style>
   </head>
@@ -305,6 +326,7 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
           <div class="grid">
             <div class="row"><span class="label">Backup dati</span><span class="value">${yesNo(report.dataBackup)}</span></div>
             <div class="row"><span class="label">Alimentatore</span><span class="value">${yesNo(report.charger)}</span></div>
+            <div class="row"><span class="label">Avvisato</span><span class="value">${report.alerted ? yesNo(report.alerted) : ""}</span></div>
           </div>
         </section>
       </section>
@@ -340,6 +362,7 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
           <div class="grid">
             <div class="row"><span class="label">Backup dati</span><span class="value">${yesNo(report.dataBackup)}</span></div>
             <div class="row"><span class="label">Alimentatore</span><span class="value">${yesNo(report.charger)}</span></div>
+            <div class="row"><span class="label">Avvisato</span><span class="value">${report.alerted ? yesNo(report.alerted) : ""}</span></div>
           </div>
         </section>
 
@@ -358,8 +381,8 @@ export const buildReportPrintHtml = (report: ReportPrintData) => `
             </div>
 
             <div class="price-container">
-              <p class="price-label">Importo</p>
-              <div class="price-box"></div>
+              <p class="price-label">Importo totale</p>
+              <div class="price-box ${report.totalPrice > 0 ? "" : "empty"}">${report.totalPrice > 0 ? formatEuro(report.totalPrice) : ""}</div>
             </div>
           </div>
         </section>

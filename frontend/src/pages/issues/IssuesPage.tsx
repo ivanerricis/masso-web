@@ -91,7 +91,7 @@ const IssuesPage = () => {
     }, [loadIssues]);
 
     return (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="relative flex flex-col gap-4 w-full">
             <PageHeader
                 title="Difetti"
                 description="Gestisci i difetti del laboratorio."
@@ -136,25 +136,23 @@ const IssuesPage = () => {
 
             <IssuesFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            {isLoading && issueRows.length === 0 ? (
-                <LoadingPage />
-            ) : (
-                <div className="flex flex-col gap-4">
-                    <IssuesTable
-                        columns={issueColumns}
-                        rows={issueRows}
-                        onEditIssue={handleOpenEditDialog}
-                        onDeleteIssue={handleOpenDeleteDialog}
-                    />
-                    <TablePagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                    />
-                </div>
-            )}
+            <div className="flex flex-col gap-4">
+                <IssuesTable
+                    columns={issueColumns}
+                    rows={issueRows}
+                    onEditIssue={handleOpenEditDialog}
+                    onDeleteIssue={handleOpenDeleteDialog}
+                />
+                <TablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                />
+            </div>
+
+            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
         </div>
     );
 }

@@ -23,8 +23,18 @@ export type ReportPrintData = {
   password: string;
   dataBackup: boolean;
   charger: boolean;
+  alerted: boolean;
+  totalPrice: number;
   createdAtLabel: string;
 };
+
+const formatEuro = (value: number) =>
+  new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 
 export const buildReportPrintHtml = (report: ReportPrintData) => `
 <!DOCTYPE html>
@@ -197,6 +207,17 @@ body {
   width: 35mm;
   height: 18mm;
   border: 1px solid #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 12pt;
+        font-weight: bold;
+        padding: 1mm;
+      }
+
+      .price-box.empty {
+        font-weight: normal;
 }
 
 .payment-methods {
@@ -287,12 +308,12 @@ body {
 
       <div class="price-container">
         <div class="section-title">Avvisato</div>
-        <div class="price-box"></div>
+        <div class="price-box ${report.alerted ? "" : "empty"}">${report.alerted ? "Si" : ""}</div>
       </div>
 
       <div class="price-container">
-        <div class="section-title">Importo</div>
-        <div class="price-box"></div>
+        <div class="section-title">Importo totale</div>
+        <div class="price-box ${report.totalPrice > 0 ? "" : "empty"}">${report.totalPrice > 0 ? formatEuro(report.totalPrice) : ""}</div>
       </div>
 
       <div>
