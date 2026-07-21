@@ -13,6 +13,8 @@ Sviluppo locale (Windows):
 
 Produzione (VM Proxmox): vedi [Installazione su Proxmox VM (prima volta)](#installazione-su-proxmox-vm-prima-volta).
 
+In alternativa, produzione su CT Proxmox: vedi [Installazione su Proxmox CT (LXC, alternativa alla VM)](#installazione-su-proxmox-ct-lxc-alternativa-alla-vm).
+
 ## Installazione su Proxmox VM (prima volta)
 
 1. **Crea la VM** su Proxmox: Debian 13 o Ubuntu Server (consigliato Debian 13), rete in bridge sulla LAN, risorse minime indicative 2 vCPU / 4 GB RAM / 20 GB disco.
@@ -59,6 +61,35 @@ Produzione (VM Proxmox): vedi [Installazione su Proxmox VM (prima volta)](#insta
 	```
 
 	Vedi [Aggiornamento applicazione](#aggiornamento-applicazione) per i dettagli.
+
+## Installazione su Proxmox CT (LXC, alternativa alla VM)
+
+In alternativa alla VM, puoi usare un **container LXC (CT)** Proxmox: meno overhead (nessuna virtualizzazione hardware, boot più rapido, meno RAM/disco), ma isolamento più debole (kernel condiviso con l'host) e la necessità di eseguire Docker "annidato" dentro il CT.
+
+1. **Crea il CT** su Proxmox:
+	- Template: Debian 13 (consigliato, come per la VM).
+	- **Unprivileged**: sì, lascia l'impostazione di default.
+	- **Opzioni avanzate → Features**: abilita `nesting=1` e `keyctl=1` (necessari per far girare Docker dentro il CT). Dalla shell del nodo Proxmox:
+
+		```bash
+		pct set <CTID> --features nesting=1,keyctl=1
+		```
+
+	- Rete in bridge sulla LAN, risorse minime indicative 2 vCPU / 4 GB RAM / 10-15 GB disco (un CT richiede meno disco della VM equivalente perché condivide il kernel dell'host).
+
+2. **Installa i prerequisiti sul CT** (stessi comandi della VM):
+
+	```bash
+	sudo apt update
+	sudo apt install -y git jq ca-certificates curl
+	curl -fsSL https://get.docker.com | sudo sh
+	```
+
+	Con `nesting=1,keyctl=1` su un host Proxmox con kernel recente (8.x+), Docker gira senza ulteriori modifiche (storage driver `overlay2`). Se `docker compose up` fallisce con errori di permessi/storage, verifica con `docker info` che il nesting sia effettivamente attivo sul CT.
+
+3. **Da qui in poi i passaggi sono identici alla VM**: clona il repo, configura `.env`, primo avvio, updater — vedi i punti 3-6 di [Installazione su Proxmox VM](#installazione-su-proxmox-vm-prima-volta). Anche [`configure-static-ip.sh`](scripts/configure-static-ip.sh) funziona invariato nel CT (rileva netplan/NetworkManager/ifupdown allo stesso modo).
+
+Nota: se preferisci non annidare Docker nel CT, l'alternativa è eseguire i processi Node/Postgres nativamente nel CT senza Docker — ma è un cambio di architettura più profondo, non supportato dagli script/Dockerfile attuali di questo repo.
 
 ## Configurazione ambiente
 
