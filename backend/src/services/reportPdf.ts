@@ -283,8 +283,20 @@ const buildCustomerSummaryInfoSection = (customer: CustomerReportsPrintData, com
     margin: compact ? [0, 0, 0, 6] : [0, 0, 0, 8],
 });
 
+type ReportsTableCell = {
+    text?: string;
+    style?: string;
+    colSpan?: number;
+    alignment?: "left" | "center" | "right";
+    italics?: boolean;
+    bold?: boolean;
+    fontSize?: number;
+    margin?: number[];
+    fillColor?: string;
+};
+
 const buildCustomerReportsTable = (reports: CustomerReportSummaryItem[]) => {
-    const body = [
+    const body: ReportsTableCell[][] = [
         [
             { text: "#", style: "summaryHeader" },
             { text: "Data", style: "summaryHeader" },

@@ -109,7 +109,8 @@ customersRouter.get("/:id/reports/print", validate({ params: customerIdParamsSch
     }
 
     const [customer] = customers;
-    const reports = await listReports({ customerId: id });
+    const reportsResult = await listReports({ customerId: id });
+    const reports = Array.isArray(reportsResult) ? reportsResult : reportsResult.items;
     const customerName = `${customer.firstName} ${customer.lastName ?? ""}`.trim();
     const customerPhonePrimary = customer.phoneNumber?.trim() ?? "";
     const customerPhoneSecondary = customer.phoneNumberSecondary?.trim() ?? "";
@@ -146,7 +147,7 @@ customersRouter.get("/:id/reports/print", validate({ params: customerIdParamsSch
             issueDescription: report.issue,
             closed: report.closed,
             alerted: report.alerted,
-            paymentMethod: report.paymentMethod,
+            paymentMethod: report.paymentMethod as "non_paid" | "cash" | "card",
             totalPrice: report.totalPrice,
         })),
     });
