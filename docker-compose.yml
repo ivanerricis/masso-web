@@ -32,6 +32,7 @@ services:
       - "3000:3000"
     volumes:
       - ${BACKUP_HOST_DIR}:/app/backups
+      - ./ops/update:/app/update-signal
     command: >-
       sh -c 'echo "DATABASE_URL=$$DATABASE_URL"; node migrate.js; if [ $$? -ne 0 ]; then exit 1; fi; npm run start'
     depends_on:

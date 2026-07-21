@@ -1,0 +1,7 @@
+[Unit]
+Description=Run masso-web update (git pull + docker compose rebuild)
+
+[Service]
+Type=oneshot
+WorkingDirectory=__REPO_ROOT__
+ExecStart=__REPO_ROOT__/scripts/update-server.sh

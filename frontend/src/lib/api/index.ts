@@ -9,3 +9,4 @@ export * from "./reports";
 export * from "./reportTechnicians";
 export * from "./technicians";
 export * from "./settings";
+export * from "./system";

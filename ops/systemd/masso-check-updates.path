@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for masso-web update-check trigger (on-demand from the UI)
+
+[Path]
+PathExists=__REPO_ROOT__/ops/update/check.trigger
+Unit=masso-check-updates.service
+
+[Install]
+WantedBy=multi-user.target

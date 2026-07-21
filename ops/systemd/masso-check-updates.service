@@ -1,0 +1,7 @@
+[Unit]
+Description=Check for masso-web updates (git fetch only, no changes applied)
+
+[Service]
+Type=oneshot
+WorkingDirectory=__REPO_ROOT__
+ExecStart=__REPO_ROOT__/scripts/check-updates.sh

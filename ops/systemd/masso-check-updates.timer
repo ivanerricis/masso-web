@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodically check for masso-web updates
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=30min
+Unit=masso-check-updates.service
+
+[Install]
+WantedBy=timers.target
