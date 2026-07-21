@@ -15,7 +15,7 @@ Produzione (VM Proxmox): vedi [Installazione su Proxmox VM (prima volta)](#insta
 
 ## Installazione su Proxmox VM (prima volta)
 
-1. **Crea la VM** su Proxmox: Debian 12 o Ubuntu Server (consigliato Debian 12), rete in bridge sulla LAN, risorse minime indicative 2 vCPU / 4 GB RAM / 20 GB disco.
+1. **Crea la VM** su Proxmox: Debian 13 o Ubuntu Server (consigliato Debian 13), rete in bridge sulla LAN, risorse minime indicative 2 vCPU / 4 GB RAM / 20 GB disco.
 
 2. **Installa i prerequisiti sulla VM** (fuori da qualunque container):
 
