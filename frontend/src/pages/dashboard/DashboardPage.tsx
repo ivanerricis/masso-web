@@ -17,7 +17,7 @@ import {
     listIssues,
     listReports,
 } from "@/lib/api";
-import { formatEuro } from "@/lib/utils";
+import { cn, formatEuro } from "@/lib/utils";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import type { ReportDto } from "@/types/dtos";
@@ -87,6 +87,29 @@ const DashboardPage = () => {
     );
 
     const monthOptions = useMemo(() => buildMonthOptions(12), []);
+
+    const monthlyRevenueSeries = useMemo(() => {
+        const now = new Date();
+
+        return Array.from({ length: 6 }, (_, index) => {
+            const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+            const monthKey = getMonthKey(date);
+            const value = reports
+                .filter((report) => report.closed && isSameMonth(report.createdAt, monthKey))
+                .reduce((accumulator, report) => accumulator + report.totalPrice, 0);
+
+            return {
+                monthKey,
+                shortLabel: new Intl.DateTimeFormat("it-IT", { month: "short" }).format(date),
+                value,
+            };
+        });
+    }, [reports]);
+
+    const maxMonthlyRevenue = useMemo(
+        () => monthlyRevenueSeries.reduce((max, point) => Math.max(max, point.value), 0),
+        [monthlyRevenueSeries]
+    );
 
     const loadDashboardMetrics = async () => {
         setIsLoading(true);
@@ -233,19 +256,62 @@ const DashboardPage = () => {
                     iconColor="text-green-400"
                     onClick={() => goToReportsPage("closed")}
                 />
-                <Card className="flex flex-col gap-2! border bg-card p-6 shadow w-58 rounded-lg border-primary/20">
-                    <CardHeader className="p-0 pb-2">
+                <Card className="flex flex-col gap-3! border bg-card p-6 shadow w-72 rounded-lg border-primary/20">
+                    <CardHeader className="p-0 pb-1">
                         <div className="flex items-center justify-between gap-3">
                             <CardTitle className="text-primary">Incassi mese</CardTitle>
                             <Euro className="size-6 text-yellow-400" />
                         </div>
-                        <CardDescription>Seleziona un mese per confrontare i ricavi.</CardDescription>
+                        <CardDescription>Andamento degli ultimi 6 mesi.</CardDescription>
                     </CardHeader>
 
                     <CardContent className="grid gap-3 p-0">
                         <div>
                             <div className="text-3xl font-bold">{formatEuro(monthlyRevenue)}</div>
                             <div className="mt-1 text-sm text-muted-foreground">{selectedRevenueLabel}</div>
+                        </div>
+
+                        <div className="flex h-16 items-end gap-1.5 border-b border-border">
+                            {monthlyRevenueSeries.map((point) => {
+                                const isSelected = point.monthKey === selectedRevenueMonth;
+                                const heightPercent =
+                                    maxMonthlyRevenue > 0 ? Math.max((point.value / maxMonthlyRevenue) * 100, 4) : 4;
+
+                                return (
+                                    <button
+                                        key={point.monthKey}
+                                        type="button"
+                                        onClick={() => setSelectedRevenueMonth(point.monthKey)}
+                                        title={`${point.shortLabel}: ${formatEuro(point.value)}`}
+                                        aria-label={`${point.shortLabel}: ${formatEuro(point.value)}`}
+                                        className="flex h-full flex-1 cursor-pointer flex-col items-end justify-end"
+                                    >
+                                        <div
+                                            className={cn(
+                                                "w-full rounded-t-[4px] transition-colors",
+                                                isSelected
+                                                    ? "bg-primary"
+                                                    : "bg-muted-foreground/25 hover:bg-muted-foreground/40"
+                                            )}
+                                            style={{ height: `${heightPercent}%` }}
+                                        />
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex gap-1.5 text-[10px] uppercase text-muted-foreground">
+                            {monthlyRevenueSeries.map((point) => (
+                                <span
+                                    key={point.monthKey}
+                                    className={cn(
+                                        "flex-1 text-center",
+                                        point.monthKey === selectedRevenueMonth && "font-semibold text-primary"
+                                    )}
+                                >
+                                    {point.shortLabel}
+                                </span>
+                            ))}
                         </div>
 
                         <Select value={selectedRevenueMonth} onValueChange={setSelectedRevenueMonth}>
