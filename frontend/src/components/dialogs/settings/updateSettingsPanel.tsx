@@ -147,19 +147,19 @@ const UpdateSettingsPanel = () => {
 
     return (
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="border-primary/15 shadow-sm">
+            <Card size="sm" className="border-primary/15 shadow-sm">
                 <CardHeader className="border-b border-primary/10 bg-muted/20">
                     <CardTitle>Aggiornamenti</CardTitle>
                     <CardDescription>Verifica e applica gli aggiornamenti dell'applicazione sul server.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 pt-6">
+                <CardContent className="grid gap-3 pt-4">
                     {isLoading && !status ? (
                         <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
                             Caricamento stato aggiornamento...
                         </div>
                     ) : (
                         <>
-                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-4 text-sm">
+                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-3 text-sm">
                                 <p>Versione corrente: {status?.currentCommit ?? "-"}</p>
                                 <p>Ultima verifica: {formatDateTime(status?.lastCheckedAt ?? null)}</p>
                                 {status?.updateAvailable ? (
@@ -180,7 +180,6 @@ const UpdateSettingsPanel = () => {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    size="lg"
                                     disabled={isBusy}
                                     onClick={() => void handleCheck()}
                                 >
@@ -188,7 +187,6 @@ const UpdateSettingsPanel = () => {
                                 </Button>
                                 <Button
                                     type="button"
-                                    size="lg"
                                     disabled={isBusy}
                                     onClick={() => setIsConfirmOpen(true)}
                                 >
@@ -196,7 +194,7 @@ const UpdateSettingsPanel = () => {
                                 </Button>
                             </div>
 
-                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-4 text-sm">
+                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-3 text-sm">
                                 <p>Ultimo aggiornamento: {formatDateTime(status?.lastUpdateAt ?? null)}</p>
                                 <p>Esito: {status?.lastUpdateStatus ?? "-"}</p>
                                 {status?.lastError ? <p className="text-destructive">Errore: {status.lastError}</p> : null}

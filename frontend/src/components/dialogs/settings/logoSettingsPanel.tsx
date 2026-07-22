@@ -85,22 +85,22 @@ const LogoSettingsPanel = () => {
 
     return (
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="border-primary/15 shadow-sm">
+            <Card size="sm" className="border-primary/15 shadow-sm">
                 <CardHeader className="border-b border-primary/10 bg-muted/20">
                     <CardTitle>Logo laboratorio</CardTitle>
                     <CardDescription>
                         Carica un&apos;immagine per sostituire il logo mostrato nell&apos;app e nei report PDF.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 pt-6">
+                <CardContent className="grid gap-3 pt-4">
                     {isLoading ? (
                         <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
                             Caricamento impostazioni...
                         </div>
                     ) : (
-                        <div className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
+                        <div className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-3">
                             <div className="flex items-center gap-4">
-                                <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-primary/15 bg-background">
+                                <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-primary/15 bg-background">
                                     <img src={previewSrc} alt="Logo attuale" className="size-full object-contain" />
                                 </div>
                                 <div className="grid gap-1 text-sm text-muted-foreground">
@@ -128,7 +128,6 @@ const LogoSettingsPanel = () => {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    size="lg"
                                     disabled={!hasCustomLogo || isResetting || isUploading}
                                     onClick={() => void handleReset()}
                                 >
