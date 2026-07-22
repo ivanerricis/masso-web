@@ -4,7 +4,7 @@ import path from "node:path";
 const dataDir = path.join(process.cwd(), "data");
 const logoDir = path.join(dataDir, "logo");
 const metaFilePath = path.join(logoDir, "meta.json");
-const defaultLogoPath = path.join(process.cwd(), "public", "logo.jpg");
+const defaultLogoPath = path.join(process.cwd(), "public", "logo-placeholder.png");
 const maxLogoSizeBytes = 5 * 1024 * 1024;
 
 const allowedMimeTypes: Record<string, string> = {
@@ -72,7 +72,7 @@ export const getLogoFile = async (): Promise<{ filePath: string; mimeType: strin
         }
     }
 
-    return { filePath: defaultLogoPath, mimeType: "image/jpeg" };
+    return { filePath: defaultLogoPath, mimeType: "image/png" };
 };
 
 export const saveLogo = async (buffer: Buffer, mimeType: string) => {
