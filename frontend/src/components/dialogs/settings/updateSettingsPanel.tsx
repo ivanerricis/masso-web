@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,8 +51,9 @@ const UpdateSettingsPanel = () => {
     };
 
     useEffect(() => {
-        void loadStatus();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        startTransition(() => {
+            void loadStatus();
+        });
     }, []);
 
     const handleCheck = async () => {

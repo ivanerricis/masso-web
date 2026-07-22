@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api";
 import type { DeviceDto } from "@/types/dtos";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type DeviceDialogMode = "create" | "edit";
@@ -22,7 +22,9 @@ const CreateDeviceDialog = ({ open, onOpenChange, onSubmit, mode = "create", ini
 
     useEffect(() => {
         if (open) {
-            setName(initialValues?.name ?? "");
+            startTransition(() => {
+                setName(initialValues?.name ?? "");
+            });
         }
     }, [open, initialValues]);
 

@@ -1,7 +1,8 @@
 import { getApiErrorMessage, listDevices } from "@/lib/api";
 import type { DeviceDto } from "@/types/dtos";
-import { useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type UseDevicesRowsParams = {
     searchText: string;
@@ -14,11 +15,12 @@ export const useDevicesRows = ({ searchText, currentPage, pageSize }: UseDevices
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
+    const debouncedSearchText = useDebouncedValue(searchText);
 
     const loadDevices = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await listDevices({ page: currentPage, pageSize, search: searchText });
+            const response = await listDevices({ page: currentPage, pageSize, search: debouncedSearchText });
             setDeviceRows(response.items);
             setTotalItems(response.totalItems);
             setTotalPages(response.totalPages);
@@ -27,10 +29,12 @@ export const useDevicesRows = ({ searchText, currentPage, pageSize }: UseDevices
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, searchText]);
+    }, [currentPage, pageSize, debouncedSearchText]);
 
     useEffect(() => {
-        void loadDevices();
+        startTransition(() => {
+            void loadDevices();
+        });
     }, [loadDevices]);
 
     return {

@@ -5,7 +5,7 @@ import CreateIssueDialog from "@/components/dialogs/create/createIssueDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { createCustomer, createDevice, createIssue, getApiErrorMessage, listCustomers, listDevices, listIssues } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 import InputWithAdd from "@/components/inputWithAdd";
 import { Input } from "@/components/ui/input";
@@ -43,10 +43,11 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
     const [isCreateCustomerDialogOpen, setIsCreateCustomerDialogOpen] = useState(false);
     const [isCreateDeviceDialogOpen, setIsCreateDeviceDialogOpen] = useState(false);
     const [isCreateIssueDialogOpen, setIsCreateIssueDialogOpen] = useState(false);
-    const [customerOptions, setCustomerOptions] = useState<string[]>([]);
     const [deviceOptions, setDeviceOptions] = useState<string[]>([]);
     const [issueOptions, setIssueOptions] = useState<string[]>([]);
     const [customerIdByOption, setCustomerIdByOption] = useState<Record<string, number>>({});
+    const [deviceIdByOption, setDeviceIdByOption] = useState<Record<string, number>>({});
+    const [issueIdByOption, setIssueIdByOption] = useState<Record<string, number>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({
         issueDescription: false,
@@ -56,46 +57,39 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
 
     useEffect(() => {
         if (open) {
-            setFormValues({
-                customer: "",
-                deviceType: "",
-                issueDescription: "",
-                password: "",
-                charger: "unset",
-                dataBackup: "unset",
-                notes: "",
+            startTransition(() => {
+                setFormValues({
+                    customer: "",
+                    deviceType: "",
+                    issueDescription: "",
+                    password: "",
+                    charger: "unset",
+                    dataBackup: "unset",
+                    notes: "",
+                });
+                setFieldErrors({
+                    issueDescription: false,
+                    charger: false,
+                    dataBackup: false,
+                });
+                setCustomerIdByOption({});
+                setDeviceIdByOption({});
+                setIssueIdByOption({});
             });
-            setFieldErrors({
-                issueDescription: false,
-                charger: false,
-                dataBackup: false,
-            });
-            setCustomerIdByOption({});
 
             const loadOptions = async () => {
                 try {
-                    const [customers, devices, issues] = await Promise.all([
-                        listCustomers(),
+                    const [devices, issues] = await Promise.all([
                         listDevices(),
                         listIssues(),
                     ]);
 
-                    const options = customers.map((customer) => ({
-                        id: customer.id,
-                        label: formatCustomerOption(
-                            customer.firstName,
-                            customer.lastName,
-                            customer.phoneNumber,
-                            customer.phoneNumberSecondary
-                        ),
-                    }));
-
-                    setCustomerOptions(options.map((item) => item.label));
-                    setCustomerIdByOption(
-                        Object.fromEntries(options.map((item) => [item.label, item.id]))
-                    );
                     setDeviceOptions(devices.map((device) => device.name));
+                    setDeviceIdByOption(Object.fromEntries(devices.map((device) => [device.name, device.id])));
                     setIssueOptions(issues.map((issue) => issue.description));
+                    setIssueIdByOption(
+                        Object.fromEntries(issues.map((issue) => [issue.description, issue.id]))
+                    );
                 } catch (error) {
                     toast.error(getApiErrorMessage(error, "Impossibile caricare i suggerimenti"));
                 }
@@ -104,6 +98,26 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             void loadOptions();
         }
     }, [open]);
+
+    const searchCustomers = async (query: string) => {
+        const customers = await listCustomers({ pageSize: 8, search: query || undefined });
+        const options = customers.items.map((customer) => ({
+            id: customer.id,
+            label: formatCustomerOption(
+                customer.firstName,
+                customer.lastName,
+                customer.phoneNumber,
+                customer.phoneNumberSecondary
+            ),
+        }));
+
+        setCustomerIdByOption((prev) => ({
+            ...prev,
+            ...Object.fromEntries(options.map((item) => [item.label, item.id])),
+        }));
+
+        return options.map((item) => item.label);
+    };
 
     const handleConfirm = async () => {
         if (isSubmitting) {
@@ -148,6 +162,8 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             await onSubmit({
                 ...formValues,
                 customerId: customerIdByOption[formValues.customer] ?? null,
+                deviceId: deviceIdByOption[formValues.deviceType] ?? null,
+                issueId: issueIdByOption[formValues.issueDescription] ?? null,
                 charger: formValues.charger === "yes",
                 dataBackup: formValues.dataBackup === "yes",
             });
@@ -190,7 +206,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             placeholder="Cliente"
                                             inputClassName="rounded-r-none"
                                             value={formValues.customer}
-                                            options={customerOptions}
+                                            onSearch={searchCustomers}
                                             onChange={(value: string) => {
                                                 setFormValues((prev) => ({ ...prev, customer: value }));
                                             }}
@@ -218,8 +234,9 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             value={formValues.deviceType}
                                             options={deviceOptions}
                                             onCreate={async (value: string) => {
-                                                await createDevice({ name: value });
+                                                const createdDevice = await createDevice({ name: value });
                                                 setDeviceOptions((prev) => Array.from(new Set([...prev, value])));
+                                                setDeviceIdByOption((prev) => ({ ...prev, [createdDevice.name]: createdDevice.id }));
                                             }}
                                             onChange={(value: string) => setFormValues((prev) => ({ ...prev, deviceType: value }))}
                                             required
@@ -253,8 +270,9 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             value={formValues.issueDescription}
                                             options={issueOptions}
                                             onCreate={async (value: string) => {
-                                                await createIssue({ description: value });
+                                                const createdIssue = await createIssue({ description: value });
                                                 setIssueOptions((prev) => Array.from(new Set([...prev, value])));
+                                                setIssueIdByOption((prev) => ({ ...prev, [createdIssue.description]: createdIssue.id }));
                                             }}
                                             onChange={(value: string) => {
                                                 setFormValues((prev) => ({ ...prev, issueDescription: value }));
@@ -388,7 +406,6 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         createdCustomer.phoneNumber,
                         createdCustomer.phoneNumberSecondary
                     );
-                    setCustomerOptions((prev) => Array.from(new Set([...prev, customerOption])));
                     setCustomerIdByOption((prev) => ({
                         ...prev,
                         [customerOption]: createdCustomer.id,
@@ -406,6 +423,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                     });
 
                     setDeviceOptions((prev) => Array.from(new Set([...prev, createdDevice.name])));
+                    setDeviceIdByOption((prev) => ({ ...prev, [createdDevice.name]: createdDevice.id }));
                     setFormValues((prev) => ({ ...prev, deviceType: createdDevice.name }));
                 }}
             />
@@ -419,6 +437,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                     });
 
                     setIssueOptions((prev) => Array.from(new Set([...prev, createdIssue.description])));
+                    setIssueIdByOption((prev) => ({ ...prev, [createdIssue.description]: createdIssue.id }));
                     setFormValues((prev) => ({ ...prev, issueDescription: createdIssue.description }));
                 }}
             />

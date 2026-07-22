@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api";
 import type { CollaboratorDto } from "@/types/dtos";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type CollaboratorDialogMode = "create" | "edit";
@@ -32,10 +32,12 @@ const CreateCollaboratorDialog = ({
 
     useEffect(() => {
         if (open) {
-            setFormValues({
-                firstName: initialValues?.firstName ?? "",
-                lastName: initialValues?.lastName ?? "",
-                phoneNumber: initialValues?.phoneNumber ?? "",
+            startTransition(() => {
+                setFormValues({
+                    firstName: initialValues?.firstName ?? "",
+                    lastName: initialValues?.lastName ?? "",
+                    phoneNumber: initialValues?.phoneNumber ?? "",
+                });
             });
         }
     }, [open, initialValues]);

@@ -1,7 +1,8 @@
 import { getApiErrorMessage, listReports } from "@/lib/api";
 import type { ReportDto } from "@/types/dtos";
-import { useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import type { ReportVisibilityFilter } from "../components/types";
 
 type UseReportsRowsParams = {
@@ -25,6 +26,7 @@ export const useReportsRows = ({
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
+    const debouncedSearchText = useDebouncedValue(searchText);
 
     const loadReports = useCallback(async () => {
         setIsLoading(true);
@@ -32,7 +34,7 @@ export const useReportsRows = ({
             const response = await listReports({
                 page: currentPage,
                 pageSize,
-                search: searchText,
+                search: debouncedSearchText,
                 visibility: visibilityFilter,
                 date: selectedDate ? formatDateForQuery(selectedDate) : undefined,
             });
@@ -45,10 +47,12 @@ export const useReportsRows = ({
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, searchText, selectedDate, visibilityFilter]);
+    }, [currentPage, pageSize, debouncedSearchText, selectedDate, visibilityFilter]);
 
     useEffect(() => {
-        void loadReports();
+        startTransition(() => {
+            void loadReports();
+        });
     }, [loadReports]);
 
     const updateReportRow = useCallback(

@@ -106,3 +106,13 @@ export const printReportPdf = async (id: number) =>
 
 export const getReportPrintUrl = (id: number) =>
     api.getUri({ url: `/reports/${id}/print` });
+
+export type ReportStatsDto = {
+    openCount: number;
+    closedCount: number;
+    monthlyRevenue: number;
+    series: { monthKey: string; value: number }[];
+};
+
+export const getReportStats = async (month?: string) =>
+    (await api.get<ReportStatsDto>("/reports/stats", { params: { month } })).data;

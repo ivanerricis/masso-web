@@ -1,7 +1,8 @@
 import { getApiErrorMessage, listCollaborators } from "@/lib/api";
 import type { CollaboratorDto } from "@/types/dtos";
-import { useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type UseCollaboratorsRowsParams = {
     searchText: string;
@@ -14,11 +15,12 @@ export const useCollaboratorsRows = ({ searchText, currentPage, pageSize }: UseC
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
+    const debouncedSearchText = useDebouncedValue(searchText);
 
     const loadCollaborators = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await listCollaborators({ page: currentPage, pageSize, search: searchText });
+            const response = await listCollaborators({ page: currentPage, pageSize, search: debouncedSearchText });
             setCollaboratorRows(response.items);
             setTotalItems(response.totalItems);
             setTotalPages(response.totalPages);
@@ -27,10 +29,12 @@ export const useCollaboratorsRows = ({ searchText, currentPage, pageSize }: UseC
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, searchText]);
+    }, [currentPage, pageSize, debouncedSearchText]);
 
     useEffect(() => {
-        void loadCollaborators();
+        startTransition(() => {
+            void loadCollaborators();
+        });
     }, [loadCollaborators]);
 
     return {

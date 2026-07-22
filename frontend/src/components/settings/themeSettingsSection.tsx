@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Computer, Moon, Palette, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/use-theme";
 import {
     applyThemeAccentPreset,
     getStoredThemeAccentPreset,

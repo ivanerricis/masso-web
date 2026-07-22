@@ -18,7 +18,7 @@ import {
     updateReport,
     updateReportTechnician,
 } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CustomerDto, ReportDto } from "@/types/dtos";
 import { toast } from "sonner";
 import LoadingPage from "@/components/loadingPage";
@@ -111,6 +111,13 @@ const ReportsPage = () => {
     const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>(() =>
         parseVisibilityFilter(searchParams.get("visibility"))
     );
+    const [previousSearchParams, setPreviousSearchParams] = useState(searchParams);
+
+    if (previousSearchParams !== searchParams) {
+        setPreviousSearchParams(searchParams);
+        setVisibilityFilter(parseVisibilityFilter(searchParams.get("visibility")));
+    }
+
     const [searchText, setSearchText] = useState("");
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const pageSize = 10;
@@ -127,58 +134,71 @@ const ReportsPage = () => {
 
     const handleCreateReport = async (values: Record<string, string | boolean | number | null>) => {
         try {
-            const [customers, devices, issues] = await Promise.all([
-                listCustomers(),
-                listDevices(),
-                listIssues(),
-            ]);
-
-            const selectedCustomerFromId = typeof values.customerId === "number"
-                ? customers.find((customer) => customer.id === values.customerId)
-                : null;
-            const selectedCustomer = selectedCustomerFromId ?? resolveSelectedCustomer(customers, String(values.customer));
-
-            const selectedDevice = devices.find(
-                (device) => device.name.toLowerCase() === String(values.deviceType).trim().toLowerCase()
-            );
-
             const issueDescription = String(values.issueDescription).trim();
-
-            if (!selectedCustomer) {
-                throw new Error("Seleziona un cliente esistente o creane uno nuovo.");
-            }
-
-            if (!selectedDevice) {
-                throw new Error("Seleziona una tipologia dispositivo esistente o creane una nuova.");
-            }
 
             if (issueDescription === "") {
                 throw new Error("La descrizione difetto e obbligatoria.");
             }
 
-            let selectedIssue = issues.find(
-                (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
-            );
+            // The dialog already resolves customer/device/issue ids from the catalogs it
+            // loaded on open, so the common path needs no extra network round trip. These
+            // fetches only run as a fallback for values the dialog couldn't map to an id.
+            let customerId = typeof values.customerId === "number" ? values.customerId : null;
+            let deviceId = typeof values.deviceId === "number" ? values.deviceId : null;
+            let issueId = typeof values.issueId === "number" ? values.issueId : null;
 
-            if (!selectedIssue) {
-                try {
-                    selectedIssue = await createIssue({ description: issueDescription });
-                } catch {
-                    const refreshedIssues = await listIssues();
-                    selectedIssue = refreshedIssues.find(
-                        (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
-                    );
+            if (customerId == null) {
+                const customers = await listCustomers();
+                const selectedCustomer = resolveSelectedCustomer(customers, String(values.customer));
+
+                if (!selectedCustomer) {
+                    throw new Error("Seleziona un cliente esistente o creane uno nuovo.");
                 }
+
+                customerId = selectedCustomer.id;
             }
 
-            if (!selectedIssue) {
-                throw new Error("Impossibile risolvere il difetto di riferimento.");
+            if (deviceId == null) {
+                const devices = await listDevices();
+                const selectedDevice = devices.find(
+                    (device) => device.name.toLowerCase() === String(values.deviceType).trim().toLowerCase()
+                );
+
+                if (!selectedDevice) {
+                    throw new Error("Seleziona una tipologia dispositivo esistente o creane una nuova.");
+                }
+
+                deviceId = selectedDevice.id;
+            }
+
+            if (issueId == null) {
+                const issues = await listIssues();
+                let selectedIssue = issues.find(
+                    (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
+                );
+
+                if (!selectedIssue) {
+                    try {
+                        selectedIssue = await createIssue({ description: issueDescription });
+                    } catch {
+                        const refreshedIssues = await listIssues();
+                        selectedIssue = refreshedIssues.find(
+                            (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
+                        );
+                    }
+                }
+
+                if (!selectedIssue) {
+                    throw new Error("Impossibile risolvere il difetto di riferimento.");
+                }
+
+                issueId = selectedIssue.id;
             }
 
             const createdReport = await createReport({
-                deviceId: selectedDevice.id,
-                issueId: selectedIssue.id,
-                customerId: selectedCustomer.id,
+                deviceId,
+                issueId,
+                customerId,
                 note: String(values.notes).trim() === "" ? null : String(values.notes).trim(),
                 password: String(values.password).trim() === "" ? null : String(values.password).trim(),
                 issueDescription,
@@ -306,10 +326,6 @@ const ReportsPage = () => {
             toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
         }
     };
-
-    useEffect(() => {
-        setVisibilityFilter(parseVisibilityFilter(searchParams.get("visibility")));
-    }, [searchParams]);
 
     return (
         <div className="relative flex flex-col gap-4 w-full h-full">

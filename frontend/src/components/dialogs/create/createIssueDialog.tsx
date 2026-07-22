@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage } from "@/lib/api";
 import type { IssueDto } from "@/types/dtos";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type IssueDialogMode = "create" | "edit";
@@ -22,7 +22,9 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit, mode = "create", init
 
     useEffect(() => {
         if (open) {
-            setDescription(initialValues?.description ?? "");
+            startTransition(() => {
+                setDescription(initialValues?.description ?? "");
+            });
         }
     }, [open, initialValues]);
 

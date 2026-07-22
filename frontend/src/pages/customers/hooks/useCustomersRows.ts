@@ -1,7 +1,8 @@
 import { getApiErrorMessage, listCustomers } from "@/lib/api";
 import type { CustomerDto } from "@/types/dtos";
-import { useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type UseCustomersRowsParams = {
     searchText: string;
@@ -14,11 +15,12 @@ export const useCustomersRows = ({ searchText, currentPage, pageSize }: UseCusto
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
+    const debouncedSearchText = useDebouncedValue(searchText);
 
     const loadCustomers = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await listCustomers({ page: currentPage, pageSize, search: searchText });
+            const response = await listCustomers({ page: currentPage, pageSize, search: debouncedSearchText });
             setCustomerRows(response.items);
             setTotalItems(response.totalItems);
             setTotalPages(response.totalPages);
@@ -27,10 +29,12 @@ export const useCustomersRows = ({ searchText, currentPage, pageSize }: UseCusto
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, searchText]);
+    }, [currentPage, pageSize, debouncedSearchText]);
 
     useEffect(() => {
-        void loadCustomers();
+        startTransition(() => {
+            void loadCustomers();
+        });
     }, [loadCustomers]);
 
     return {

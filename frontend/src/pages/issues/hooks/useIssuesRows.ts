@@ -1,7 +1,8 @@
 import { getApiErrorMessage, listIssues } from "@/lib/api";
 import type { IssueDto } from "@/types/dtos";
-import { useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type UseIssuesRowsParams = {
     searchText: string;
@@ -14,11 +15,12 @@ export const useIssuesRows = ({ searchText, currentPage, pageSize }: UseIssuesRo
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
+    const debouncedSearchText = useDebouncedValue(searchText);
 
     const loadIssues = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await listIssues({ page: currentPage, pageSize, search: searchText });
+            const response = await listIssues({ page: currentPage, pageSize, search: debouncedSearchText });
             setIssueRows(response.items);
             setTotalItems(response.totalItems);
             setTotalPages(response.totalPages);
@@ -27,10 +29,12 @@ export const useIssuesRows = ({ searchText, currentPage, pageSize }: UseIssuesRo
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, searchText]);
+    }, [currentPage, pageSize, debouncedSearchText]);
 
     useEffect(() => {
-        void loadIssues();
+        startTransition(() => {
+            void loadIssues();
+        });
     }, [loadIssues]);
 
     return {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -65,7 +65,9 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     };
 
     useEffect(() => {
-        void loadSettings();
+        startTransition(() => {
+            void loadSettings();
+        });
     }, []);
 
     const handleSave = async () => {

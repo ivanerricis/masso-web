@@ -5,22 +5,21 @@ import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import CreateEntityButton from "@/components/create-entity-button";
 import {
     createIssue,
     createReport,
     getReportPrintUrl,
     getApiErrorMessage,
+    getReportStats,
     listCustomers,
     listDevices,
     listIssues,
-    listReports,
 } from "@/lib/api";
 import { cn, formatEuro } from "@/lib/utils";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import type { ReportDto } from "@/types/dtos";
 
 const getMonthKey = (date: Date) => {
     const year = date.getFullYear();
@@ -44,7 +43,13 @@ const getMonthLabel = (monthKey: string) => {
     }).format(new Date(year, month - 1, 1));
 };
 
-const isSameMonth = (dateValue: string, monthKey: string) => dateValue.slice(0, 7) === monthKey;
+const getMonthShortLabel = (monthKey: string) => {
+    const [yearPart, monthPart] = monthKey.split("-");
+
+    return new Intl.DateTimeFormat("it-IT", { month: "short" }).format(
+        new Date(Number(yearPart), Number(monthPart) - 1, 1)
+    );
+};
 
 const shiftMonthKey = (monthKey: string, deltaMonths: number) => {
     const [yearPart, monthPart] = monthKey.split("-");
@@ -56,19 +61,12 @@ const shiftMonthKey = (monthKey: string, deltaMonths: number) => {
 const DashboardPage = () => {
     const navigate = useNavigate();
     const [dialogCreateReportOpen, setDialogCreateReportOpen] = useState(false);
-    const [reports, setReports] = useState<ReportDto[]>([]);
     const [selectedRevenueMonth, setSelectedRevenueMonth] = useState(() => getMonthKey(new Date()));
     const [openReports, setOpenReports] = useState(0);
     const [closedReports, setClosedReports] = useState(0);
+    const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+    const [monthlyRevenueSeries, setMonthlyRevenueSeries] = useState<{ monthKey: string; value: number }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-
-    const monthlyRevenue = useMemo(
-        () =>
-            reports
-                .filter((report) => report.closed && isSameMonth(report.createdAt, selectedRevenueMonth))
-                .reduce((accumulator, report) => accumulator + report.totalPrice, 0),
-        [reports, selectedRevenueMonth]
-    );
 
     const selectedRevenueLabel = useMemo(
         () => getMonthLabel(selectedRevenueMonth),
@@ -85,39 +83,20 @@ const DashboardPage = () => {
         setSelectedRevenueMonth((prev) => shiftMonthKey(prev, 1));
     };
 
-    const monthlyRevenueSeries = useMemo(() => {
-        const now = new Date();
-
-        return Array.from({ length: 6 }, (_, index) => {
-            const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
-            const monthKey = getMonthKey(date);
-            const value = reports
-                .filter((report) => report.closed && isSameMonth(report.createdAt, monthKey))
-                .reduce((accumulator, report) => accumulator + report.totalPrice, 0);
-
-            return {
-                monthKey,
-                shortLabel: new Intl.DateTimeFormat("it-IT", { month: "short" }).format(date),
-                value,
-            };
-        });
-    }, [reports]);
-
     const maxMonthlyRevenue = useMemo(
         () => monthlyRevenueSeries.reduce((max, point) => Math.max(max, point.value), 0),
         [monthlyRevenueSeries]
     );
 
-    const loadDashboardMetrics = async () => {
+    const loadDashboardMetrics = async (month: string) => {
         setIsLoading(true);
         try {
-            const reportsData = await listReports();
-            const openCount = reportsData.filter((report) => !report.closed).length;
-            const closedCount = reportsData.filter((report) => report.closed).length;
+            const stats = await getReportStats(month);
 
-            setReports(reportsData);
-            setOpenReports(openCount);
-            setClosedReports(closedCount);
+            setOpenReports(stats.openCount);
+            setClosedReports(stats.closedCount);
+            setMonthlyRevenue(stats.monthlyRevenue);
+            setMonthlyRevenueSeries(stats.series);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare i dati dashboard"));
         } finally {
@@ -136,73 +115,85 @@ const DashboardPage = () => {
     };
 
     const handleCreateReport = async (values: Record<string, string | boolean | number | null>) => {
-        const [customers, devices, issues] = await Promise.all([
-            listCustomers(),
-            listDevices(),
-            listIssues(),
-        ]);
-
-        const selectedCustomerFromId = typeof values.customerId === "number"
-            ? customers.find((customer) => customer.id === values.customerId)
-            : null;
-
-        const selectedCustomer = selectedCustomerFromId ?? customers.find(
-            (customer) =>
-                formatCustomerOption(
-                    customer.firstName,
-                    customer.lastName,
-                    customer.phoneNumber,
-                    customer.phoneNumberSecondary
-                ) === String(values.customer)
-        );
-
-        const selectedDevice = devices.find(
-            (device) => device.name.toLowerCase() === String(values.deviceType).trim().toLowerCase()
-        );
-
         const issueDescription = String(values.issueDescription).trim();
-
-        if (!selectedCustomer) {
-            throw new Error("Seleziona un cliente esistente o creane uno nuovo.");
-        }
-
-        if (!selectedDevice) {
-            throw new Error("Seleziona una tipologia dispositivo esistente o creane una nuova.");
-        }
 
         if (issueDescription === "") {
             throw new Error("La descrizione difetto e obbligatoria.");
         }
 
-        let selectedIssue = issues.find(
-            (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
-        );
+        // The dialog already resolves customer/device/issue ids from the catalogs it
+        // loaded on open, so the common path needs no extra network round trip. These
+        // fetches only run as a fallback for values the dialog couldn't map to an id.
+        let customerId = typeof values.customerId === "number" ? values.customerId : null;
+        let deviceId = typeof values.deviceId === "number" ? values.deviceId : null;
+        let issueId = typeof values.issueId === "number" ? values.issueId : null;
 
-        if (!selectedIssue && Boolean(values.saveIssueInCatalog)) {
-            selectedIssue = await createIssue({ description: issueDescription });
+        if (customerId == null) {
+            const customers = await listCustomers();
+            const selectedCustomer = customers.find(
+                (customer) =>
+                    formatCustomerOption(
+                        customer.firstName,
+                        customer.lastName,
+                        customer.phoneNumber,
+                        customer.phoneNumberSecondary
+                    ) === String(values.customer)
+            );
+
+            if (!selectedCustomer) {
+                throw new Error("Seleziona un cliente esistente o creane uno nuovo.");
+            }
+
+            customerId = selectedCustomer.id;
         }
 
-        if (!selectedIssue) {
-            selectedIssue = issues.find((issue) => issue.description.toLowerCase() === "altro");
+        if (deviceId == null) {
+            const devices = await listDevices();
+            const selectedDevice = devices.find(
+                (device) => device.name.toLowerCase() === String(values.deviceType).trim().toLowerCase()
+            );
+
+            if (!selectedDevice) {
+                throw new Error("Seleziona una tipologia dispositivo esistente o creane una nuova.");
+            }
+
+            deviceId = selectedDevice.id;
+        }
+
+        if (issueId == null) {
+            const issues = await listIssues();
+            let selectedIssue = issues.find(
+                (issue) => issue.description.toLowerCase() === issueDescription.toLowerCase()
+            );
+
+            if (!selectedIssue && Boolean(values.saveIssueInCatalog)) {
+                selectedIssue = await createIssue({ description: issueDescription });
+            }
 
             if (!selectedIssue) {
-                try {
-                    selectedIssue = await createIssue({ description: "Altro" });
-                } catch {
-                    const refreshedIssues = await listIssues();
-                    selectedIssue = refreshedIssues.find((issue) => issue.description.toLowerCase() === "altro");
+                selectedIssue = issues.find((issue) => issue.description.toLowerCase() === "altro");
+
+                if (!selectedIssue) {
+                    try {
+                        selectedIssue = await createIssue({ description: "Altro" });
+                    } catch {
+                        const refreshedIssues = await listIssues();
+                        selectedIssue = refreshedIssues.find((issue) => issue.description.toLowerCase() === "altro");
+                    }
                 }
             }
-        }
 
-        if (!selectedIssue) {
-            throw new Error("Impossibile risolvere il difetto di riferimento.");
+            if (!selectedIssue) {
+                throw new Error("Impossibile risolvere il difetto di riferimento.");
+            }
+
+            issueId = selectedIssue.id;
         }
 
         const createdReport = await createReport({
-            deviceId: selectedDevice.id,
-            issueId: selectedIssue.id,
-            customerId: selectedCustomer.id,
+            deviceId,
+            issueId,
+            customerId,
             note: String(values.notes).trim() === "" ? null : String(values.notes).trim(),
             password: String(values.password).trim() === "" ? null : String(values.password).trim(),
             issueDescription,
@@ -210,7 +201,7 @@ const DashboardPage = () => {
             charger: Boolean(values.charger),
         });
 
-        await loadDashboardMetrics();
+        await loadDashboardMetrics(selectedRevenueMonth);
 
         if (window.confirm("Rapporto creato. Vuoi stamparlo adesso?")) {
             const printWindow = window.open(getReportPrintUrl(createdReport.id), "_blank", "noopener,noreferrer");
@@ -221,8 +212,10 @@ const DashboardPage = () => {
     };
 
     useEffect(() => {
-        void loadDashboardMetrics();
-    }, []);
+        startTransition(() => {
+            void loadDashboardMetrics(selectedRevenueMonth);
+        });
+    }, [selectedRevenueMonth]);
 
     const goToReportsPage = (visibilityFilter: "open" | "closed") => {
         navigate(`/reports?visibility=${visibilityFilter}`);
@@ -294,6 +287,7 @@ const DashboardPage = () => {
                         <div className="flex h-16 items-end gap-1.5 border-b border-border">
                             {monthlyRevenueSeries.map((point) => {
                                 const isSelected = point.monthKey === selectedRevenueMonth;
+                                const shortLabel = getMonthShortLabel(point.monthKey);
                                 const heightPercent =
                                     maxMonthlyRevenue > 0 ? Math.max((point.value / maxMonthlyRevenue) * 100, 4) : 4;
 
@@ -302,8 +296,8 @@ const DashboardPage = () => {
                                         key={point.monthKey}
                                         type="button"
                                         onClick={() => setSelectedRevenueMonth(point.monthKey)}
-                                        title={`${point.shortLabel}: ${formatEuro(point.value)}`}
-                                        aria-label={`${point.shortLabel}: ${formatEuro(point.value)}`}
+                                        title={`${shortLabel}: ${formatEuro(point.value)}`}
+                                        aria-label={`${shortLabel}: ${formatEuro(point.value)}`}
                                         className="flex h-full flex-1 cursor-pointer flex-col items-end justify-end"
                                     >
                                         <div
@@ -329,7 +323,7 @@ const DashboardPage = () => {
                                         point.monthKey === selectedRevenueMonth && "font-semibold text-primary"
                                     )}
                                 >
-                                    {point.shortLabel}
+                                    {getMonthShortLabel(point.monthKey)}
                                 </span>
                             ))}
                         </div>

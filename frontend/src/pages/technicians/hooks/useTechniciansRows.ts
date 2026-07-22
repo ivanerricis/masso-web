@@ -1,7 +1,8 @@
 import { getApiErrorMessage, listTechnicians } from "@/lib/api";
 import type { TechnicianDto } from "@/types/dtos";
-import { useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type UseTechniciansRowsParams = {
     searchText: string;
@@ -14,11 +15,12 @@ export const useTechniciansRows = ({ searchText, currentPage, pageSize }: UseTec
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
+    const debouncedSearchText = useDebouncedValue(searchText);
 
     const loadTechnicians = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await listTechnicians({ page: currentPage, pageSize, search: searchText });
+            const response = await listTechnicians({ page: currentPage, pageSize, search: debouncedSearchText });
             setTechnicianRows(response.items);
             setTotalItems(response.totalItems);
             setTotalPages(response.totalPages);
@@ -27,10 +29,12 @@ export const useTechniciansRows = ({ searchText, currentPage, pageSize }: UseTec
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, searchText]);
+    }, [currentPage, pageSize, debouncedSearchText]);
 
     useEffect(() => {
-        void loadTechnicians();
+        startTransition(() => {
+            void loadTechnicians();
+        });
     }, [loadTechnicians]);
 
     return {

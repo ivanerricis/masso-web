@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,9 @@ const LogoSettingsPanel = () => {
     };
 
     useEffect(() => {
-        void loadStatus();
+        startTransition(() => {
+            void loadStatus();
+        });
     }, []);
 
     const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {

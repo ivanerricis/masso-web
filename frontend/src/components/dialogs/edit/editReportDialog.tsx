@@ -18,7 +18,7 @@ import {
     listTechnicians,
 } from "@/lib/api";
 import type { CollaboratorDto, DeviceDto, IssueDto, PaymentMethod, TechnicianDto } from "@/types/dtos";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const formatPersonName = (firstName: string, lastName: string | null) => `${firstName} ${lastName ?? ""}`.trim();
@@ -85,7 +85,9 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
             return;
         }
 
-        setLoadedReportId(null);
+        startTransition(() => {
+            setLoadedReportId(null);
+        });
 
         const loadData = async () => {
             setIsLoading(true);
@@ -132,7 +134,9 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
             }
         };
 
-        void loadData();
+        startTransition(() => {
+            void loadData();
+        });
     }, [open, reportId, onOpenChange]);
 
     const handleCreateCollaborator = async (values: Record<string, string | boolean>) => {

@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api";
 import type { TechnicianDto } from "@/types/dtos";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type TechnicianDialogMode = "create" | "edit";
@@ -27,11 +27,13 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit, mode = "create",
 
     useEffect(() => {
         if (open) {
-            setFormValues({
-                firstName: initialValues?.firstName ?? "",
-                lastName: initialValues?.lastName ?? "",
-                phoneNumber: initialValues?.phoneNumber ?? "",
-                vatNumber: initialValues?.vatNumber ?? "",
+            startTransition(() => {
+                setFormValues({
+                    firstName: initialValues?.firstName ?? "",
+                    lastName: initialValues?.lastName ?? "",
+                    phoneNumber: initialValues?.phoneNumber ?? "",
+                    vatNumber: initialValues?.vatNumber ?? "",
+                });
             });
         }
     }, [open, initialValues]);
