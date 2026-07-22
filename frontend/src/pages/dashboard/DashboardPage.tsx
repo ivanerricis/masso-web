@@ -1,10 +1,10 @@
-import { CircleCheck, CircleDashed, Euro } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import CreateEntityButton from "@/components/create-entity-button";
 import {
@@ -46,22 +46,11 @@ const getMonthLabel = (monthKey: string) => {
 
 const isSameMonth = (dateValue: string, monthKey: string) => dateValue.slice(0, 7) === monthKey;
 
-const buildMonthOptions = (count: number) => {
-    const options: Array<{ value: string; label: string }> = [];
-    const now = new Date();
+const shiftMonthKey = (monthKey: string, deltaMonths: number) => {
+    const [yearPart, monthPart] = monthKey.split("-");
+    const date = new Date(Number(yearPart), Number(monthPart) - 1 + deltaMonths, 1);
 
-    for (let offset = 0; offset < count; offset += 1) {
-        const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-        const value = getMonthKey(date);
-        const label = new Intl.DateTimeFormat("it-IT", {
-            month: "long",
-            year: "numeric",
-        }).format(date);
-
-        options.push({ value, label });
-    }
-
-    return options;
+    return getMonthKey(date);
 };
 
 const DashboardPage = () => {
@@ -86,7 +75,15 @@ const DashboardPage = () => {
         [selectedRevenueMonth]
     );
 
-    const monthOptions = useMemo(() => buildMonthOptions(12), []);
+    const isCurrentRevenueMonth = selectedRevenueMonth === getMonthKey(new Date());
+
+    const handlePreviousRevenueMonth = () => setSelectedRevenueMonth((prev) => shiftMonthKey(prev, -1));
+    const handleNextRevenueMonth = () => {
+        if (isCurrentRevenueMonth) {
+            return;
+        }
+        setSelectedRevenueMonth((prev) => shiftMonthKey(prev, 1));
+    };
 
     const monthlyRevenueSeries = useMemo(() => {
         const now = new Date();
@@ -266,9 +263,32 @@ const DashboardPage = () => {
                     </CardHeader>
 
                     <CardContent className="grid gap-3 p-0">
-                        <div>
-                            <div className="text-3xl font-bold">{formatEuro(monthlyRevenue)}</div>
-                            <div className="mt-1 text-sm text-muted-foreground">{selectedRevenueLabel}</div>
+                        <div className="flex items-center justify-between gap-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={handlePreviousRevenueMonth}
+                                aria-label="Mese precedente"
+                            >
+                                <ChevronLeft className="size-4" />
+                            </Button>
+
+                            <div className="text-center">
+                                <div className="text-3xl font-bold">{formatEuro(monthlyRevenue)}</div>
+                                <div className="mt-1 text-sm text-muted-foreground">{selectedRevenueLabel}</div>
+                            </div>
+
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={handleNextRevenueMonth}
+                                disabled={isCurrentRevenueMonth}
+                                aria-label="Mese successivo"
+                            >
+                                <ChevronRight className="size-4" />
+                            </Button>
                         </div>
 
                         <div className="flex h-16 items-end gap-1.5 border-b border-border">
@@ -313,19 +333,6 @@ const DashboardPage = () => {
                                 </span>
                             ))}
                         </div>
-
-                        <Select value={selectedRevenueMonth} onValueChange={setSelectedRevenueMonth}>
-                            <SelectTrigger id="dashboardRevenueMonth" className="w-full">
-                                <SelectValue placeholder="Seleziona mese" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {monthOptions.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
                     </CardContent>
                 </Card>
             </div>
