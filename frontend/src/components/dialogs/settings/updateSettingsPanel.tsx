@@ -77,9 +77,11 @@ const UpdateSettingsPanel = () => {
                     const result = await getUpdateStatus();
                     if (result.lastCheckedAt && result.lastCheckedAt !== previousCheckedAt) {
                         setStatus(result);
-                        toast.success(
-                            result.updateAvailable ? "È disponibile un aggiornamento" : "Applicazione già aggiornata"
-                        );
+                        if (result.updateAvailable) {
+                            toast.warning("È disponibile un aggiornamento", { richColors: true });
+                        } else {
+                            toast.success("Applicazione già aggiornata");
+                        }
                         return;
                     }
                 } catch {
