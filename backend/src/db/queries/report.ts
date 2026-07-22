@@ -123,6 +123,57 @@ export const listReports = async ({ page, pageSize, search, visibility = "all", 
     };
 };
 
+const getTrailingMonthKeys = (monthsCount: number) => {
+    const now = new Date();
+
+    return Array.from({ length: monthsCount }, (_, index) => {
+        const date = new Date(now.getFullYear(), now.getMonth() - (monthsCount - 1 - index), 1);
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    });
+};
+
+export const getReportStats = async (month?: string) => {
+    const seriesMonthKeys = getTrailingMonthKeys(6);
+    const targetMonthKey = month ?? seriesMonthKeys[seriesMonthKeys.length - 1];
+    const earliestMonthKey = [...seriesMonthKeys, targetMonthKey].sort()[0];
+    const rangeStartDate = `${earliestMonthKey}-01`;
+
+    const technicianPriceSubquery = db
+        .select({
+            reportId: reportTechnicianTable.reportId,
+            technicianPrice: sql<number>`coalesce(sum(${reportTechnicianTable.price}), 0)::int`.as("technicianPrice"),
+        })
+        .from(reportTechnicianTable)
+        .groupBy(reportTechnicianTable.reportId)
+        .as("technician_prices");
+
+    const [statusCountRows, revenueRows] = await Promise.all([
+        db.select({ closed: reportTable.closed, count: sql<number>`count(*)::int` })
+            .from(reportTable)
+            .groupBy(reportTable.closed),
+        db.select({
+            month: sql<string>`to_char(${reportTable.created_at}, 'YYYY-MM')`,
+            revenue: sql<number>`coalesce(sum(${reportTable.price} + coalesce(${technicianPriceSubquery.technicianPrice}, 0)), 0)::int`,
+        })
+            .from(reportTable)
+            .leftJoin(technicianPriceSubquery, eq(technicianPriceSubquery.reportId, reportTable.id))
+            .where(and(eq(reportTable.closed, true), sql`${reportTable.created_at} >= ${rangeStartDate}`))
+            .groupBy(sql`to_char(${reportTable.created_at}, 'YYYY-MM')`),
+    ]);
+
+    const revenueByMonth = new Map(revenueRows.map((row) => [row.month, Number(row.revenue)]));
+
+    return {
+        openCount: Number(statusCountRows.find((row) => !row.closed)?.count ?? 0),
+        closedCount: Number(statusCountRows.find((row) => row.closed)?.count ?? 0),
+        monthlyRevenue: revenueByMonth.get(targetMonthKey) ?? 0,
+        series: seriesMonthKeys.map((monthKey) => ({
+            monthKey,
+            value: revenueByMonth.get(monthKey) ?? 0,
+        })),
+    };
+};
+
 export const getReportById = (id: number) =>
     db.select().from(reportTable).where(eq(reportTable.id, id));
 

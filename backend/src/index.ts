@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import path from "node:path";
 import reportsRouter from "./routes/reports";
 import customersRouter from "./routes/customers";
@@ -18,6 +19,7 @@ const app = express();
 
 app.set("trust proxy", true);
 app.use(cors());
+app.use(compression());
 app.use(express.json());
 app.get("/assets/logo.jpg", async (_req, res) => {
     const { filePath, mimeType } = await getLogoFile();

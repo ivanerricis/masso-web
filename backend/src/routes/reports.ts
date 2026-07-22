@@ -5,6 +5,7 @@ import {
     createReport,
     deleteReportById,
     getReportById,
+    getReportStats,
     listReports,
     updateReportById,
 } from "../db/queries/report";
@@ -107,6 +108,17 @@ reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, r
         pageSize,
         totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
     });
+});
+
+const reportStatsQuerySchema = z.object({
+    month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+});
+
+reportsRouter.get("/stats", validate({ query: reportStatsQuerySchema }), async (req, res) => {
+    const { month } = req.query as unknown as { month?: string };
+    const stats = await getReportStats(month);
+
+    res.json(stats);
 });
 
 reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), async (req, res) => {
