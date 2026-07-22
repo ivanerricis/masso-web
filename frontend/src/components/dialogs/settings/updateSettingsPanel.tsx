@@ -107,6 +107,7 @@ const UpdateSettingsPanel = () => {
         setIsConfirmOpen(false);
         const previousCommit = status?.currentCommit ?? null;
         setIsUpdating(true);
+        const toastId = toast.loading("Aggiornamento in corso...");
 
         try {
             await runUpdateNow();
@@ -114,6 +115,7 @@ const UpdateSettingsPanel = () => {
             for (let attempt = 0; attempt < UPDATE_MAX_ATTEMPTS; attempt += 1) {
                 await sleep(POLL_INTERVAL_MS);
                 if (cancelledRef.current) {
+                    toast.dismiss(toastId);
                     return;
                 }
 
@@ -122,13 +124,13 @@ const UpdateSettingsPanel = () => {
 
                     if (result.state === "failed") {
                         setStatus(result);
-                        toast.error(result.lastError ?? "Aggiornamento non riuscito");
+                        toast.error(result.lastError ?? "Aggiornamento non riuscito", { id: toastId });
                         return;
                     }
 
                     if (result.state === "success" && result.currentCommit !== previousCommit) {
                         setStatus(result);
-                        toast.success("Aggiornamento completato. Ricarica la pagina.");
+                        toast.success("Aggiornamento completato. Ricarica la pagina.", { id: toastId });
                         return;
                     }
                 } catch {
@@ -136,9 +138,9 @@ const UpdateSettingsPanel = () => {
                 }
             }
 
-            toast.error("Aggiornamento in corso da troppo tempo, controlla lo stato del server");
+            toast.error("Aggiornamento in corso da troppo tempo, controlla lo stato del server", { id: toastId });
         } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile avviare l'aggiornamento"));
+            toast.error(getApiErrorMessage(error, "Impossibile avviare l'aggiornamento"), { id: toastId });
         } finally {
             if (!cancelledRef.current) {
                 setIsUpdating(false);

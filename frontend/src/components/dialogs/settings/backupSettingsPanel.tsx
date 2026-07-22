@@ -5,15 +5,30 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     getApiErrorMessage,
-    getBackupDownloadUrl,
+    getBackupDumpDownloadUrl,
     getBackupSettings,
+    listBackupDumps,
     runBackupNow,
     updateBackupSettings,
+    type BackupDumpFileDto,
     type BackupSettingsInput,
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
+
+const formatFileSize = (sizeBytes: number) => {
+    if (sizeBytes < 1024) {
+        return `${sizeBytes} B`;
+    }
+
+    if (sizeBytes < 1024 * 1024) {
+        return `${(sizeBytes / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 type BackupSettingsPanelProps = {
     onSaveSuccess?: () => void;
@@ -38,6 +53,9 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     const [lastError, setLastError] = useState<string | null>(null);
     const [nextRunAt, setNextRunAt] = useState<string | null>(null);
     const [lastDumpPath, setLastDumpPath] = useState<string | null>(null);
+    const [dumpFiles, setDumpFiles] = useState<BackupDumpFileDto[]>([]);
+    const [isLoadingDumps, setIsLoadingDumps] = useState(false);
+    const [selectedDumpFileName, setSelectedDumpFileName] = useState<string>("");
 
     const loadSettings = async () => {
         setIsLoading(true);
@@ -64,9 +82,26 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         }
     };
 
+    const loadDumpFiles = async () => {
+        setIsLoadingDumps(true);
+
+        try {
+            const dumps = await listBackupDumps();
+            setDumpFiles(dumps);
+            setSelectedDumpFileName((current) =>
+                current && dumps.some((dump) => dump.fileName === current) ? current : dumps[0]?.fileName ?? ""
+            );
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile caricare l'elenco dei dump"));
+        } finally {
+            setIsLoadingDumps(false);
+        }
+    };
+
     useEffect(() => {
         startTransition(() => {
             void loadSettings();
+            void loadDumpFiles();
         });
     }, []);
 
@@ -116,8 +151,12 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         }
     };
 
-    const handleDownloadLastBackup = () => {
-        window.location.href = getBackupDownloadUrl();
+    const handleDownloadSelectedDump = () => {
+        if (!selectedDumpFileName) {
+            return;
+        }
+
+        window.location.href = getBackupDumpDownloadUrl(selectedDumpFileName);
     };
 
     const handleRunBackup = async () => {
@@ -134,6 +173,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             setNextRunAt(result.nextRunAt);
             setLastDumpPath(result.lastDumpPath);
             toast.success(result.message);
+            void loadDumpFiles();
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Dump database non riuscito"));
         } finally {
@@ -269,14 +309,6 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        disabled={!lastDumpPath}
-                                        onClick={handleDownloadLastBackup}
-                                    >
-                                        Scarica ultimo dump
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
                                         disabled={isRunningBackup || isSaving}
                                         onClick={() => void handleRunBackup()}
                                     >
@@ -298,6 +330,38 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                 <p>Prossima esecuzione: {formatDateTime(nextRunAt)}</p>
                                 <p>Percorso ultimo dump: {lastDumpPath ?? "-"}</p>
                                 {lastError ? <p className="text-destructive">Ultimo errore: {lastError}</p> : null}
+                            </div>
+
+                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-3">
+                                <Label htmlFor="dumpFileSelect">Dump disponibili</Label>
+                                {isLoadingDumps ? (
+                                    <p className="text-sm text-muted-foreground">Caricamento elenco dump...</p>
+                                ) : dumpFiles.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">Nessun dump disponibile sul server.</p>
+                                ) : (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Select value={selectedDumpFileName} onValueChange={setSelectedDumpFileName}>
+                                            <SelectTrigger id="dumpFileSelect" className="w-full sm:w-auto sm:min-w-[320px]">
+                                                <SelectValue placeholder="Seleziona un dump" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {dumpFiles.map((dump) => (
+                                                    <SelectItem key={dump.fileName} value={dump.fileName}>
+                                                        {`${dump.fileName} — ${formatDateTime(dump.createdAt)} — ${formatFileSize(dump.sizeBytes)}`}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled={!selectedDumpFileName}
+                                            onClick={handleDownloadSelectedDump}
+                                        >
+                                            Scarica dump selezionato
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </>
                     )}

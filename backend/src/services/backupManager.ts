@@ -305,6 +305,52 @@ export const updateBackupSettings = async (
     return { ...current };
 };
 
+export type BackupDumpFile = {
+    fileName: string;
+    sizeBytes: number;
+    createdAt: string;
+};
+
+export const listBackupDumps = async (): Promise<BackupDumpFile[]> => {
+    const absoluteOutputDir = toAbsoluteOutputDir(getConfiguredOutputDir());
+
+    let entries: string[];
+
+    try {
+        entries = await fs.promises.readdir(absoluteOutputDir);
+    } catch {
+        return [];
+    }
+
+    const dumpFiles = entries.filter((name) => dumpFileNamePattern.test(name));
+
+    const stats = await Promise.all(
+        dumpFiles.map(async (fileName) => {
+            const stat = await fs.promises.stat(path.join(absoluteOutputDir, fileName));
+            return { fileName, sizeBytes: stat.size, createdAt: stat.mtime.toISOString() };
+        })
+    );
+
+    return stats.sort((a, b) => b.fileName.localeCompare(a.fileName));
+};
+
+export const getBackupDumpPath = async (fileName: string) => {
+    if (!dumpFileNamePattern.test(fileName)) {
+        throw new BackupManagerError("Nome file dump non valido", 400);
+    }
+
+    const absoluteOutputDir = toAbsoluteOutputDir(getConfiguredOutputDir());
+    const filePath = path.join(absoluteOutputDir, fileName);
+
+    try {
+        await fs.promises.access(filePath);
+    } catch {
+        throw new BackupManagerError("File di dump non trovato", 404);
+    }
+
+    return filePath;
+};
+
 export const runBackupNow = async (origin: "manual" | "auto") => {
     const state = await loadState();
 

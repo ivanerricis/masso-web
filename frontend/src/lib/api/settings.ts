@@ -28,7 +28,17 @@ export const updateBackupSettings = async (payload: BackupSettingsInput) =>
 export const runBackupNow = async () =>
     (await api.post<BackupSettingsDto & { message: string }>("/settings/backup/run")).data;
 
-export const getBackupDownloadUrl = () => api.getUri({ url: "/settings/backup/download" });
+export type BackupDumpFileDto = {
+    fileName: string;
+    sizeBytes: number;
+    createdAt: string;
+};
+
+export const listBackupDumps = async () =>
+    (await api.get<BackupDumpFileDto[]>("/settings/backup/list")).data;
+
+export const getBackupDumpDownloadUrl = (fileName: string) =>
+    api.getUri({ url: `/settings/backup/download/${encodeURIComponent(fileName)}` });
 
 export type LogoStatusDto = {
     hasCustomLogo: boolean;

@@ -5,7 +5,9 @@ import { z } from "zod";
 import { validate } from "./validation";
 import {
     BackupManagerError,
+    getBackupDumpPath,
     getBackupSettings,
+    listBackupDumps,
     runBackupNow,
     updateBackupSettings,
 } from "../services/backupManager";
@@ -91,28 +93,6 @@ settingsRouter.post("/backup/run", async (_req, res, next) => {
     }
 });
 
-settingsRouter.get("/backup/download", async (_req, res, next) => {
-    try {
-        const settings = await getBackupSettings();
-
-        if (!settings.lastDumpPath) {
-            res.status(404).json({ message: "Nessun dump disponibile" });
-            return;
-        }
-
-        res.download(settings.lastDumpPath, path.basename(settings.lastDumpPath), (error) => {
-            if (error && !res.headersSent) {
-                res.status(404).json({ message: "File di dump non trovato" });
-            }
-        });
-    } catch (error) {
-        if (handleBackupError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
 settingsRouter.get("/logo", async (_req, res, next) => {
     try {
         const status = await getLogoStatus();
@@ -148,6 +128,35 @@ settingsRouter.delete("/logo", async (_req, res, next) => {
         res.json(status);
     } catch (error) {
         if (handleLogoError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.get("/backup/list", async (_req, res, next) => {
+    try {
+        const dumps = await listBackupDumps();
+        res.json(dumps);
+    } catch (error) {
+        if (handleBackupError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.get("/backup/download/:fileName", async (req, res, next) => {
+    try {
+        const filePath = await getBackupDumpPath(req.params.fileName);
+
+        res.download(filePath, path.basename(filePath), (error) => {
+            if (error && !res.headersSent) {
+                res.status(404).json({ message: "File di dump non trovato" });
+            }
+        });
+    } catch (error) {
+        if (handleBackupError(error, res)) {
             return;
         }
         next(error);
