@@ -1,16 +1,22 @@
 import CustomDialog from "@/components/dialogs/customDialog";
 import CreateCustomerDialog from "@/components/dialogs/create/createCustomerDialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import InputWithAdd from "@/components/inputWithAdd";
+import DatePickerField from "@/components/date-picker-field";
 import { createCustomer, getApiErrorMessage, listCustomers, listTechnicians } from "@/lib/api";
-import { interventionDescriptionLabel, interventionStatusOptions, interventionTypeOptions, isOnSiteInterventionType } from "@/lib/interventions";
+import {
+    interventionDescriptionLabel,
+    interventionStatusOptions,
+    interventionTimeOptions,
+    interventionTypeOptions,
+    isOnSiteInterventionType,
+} from "@/lib/interventions";
 import type { InterventionStatus, InterventionType, TechnicianDto } from "@/types/dtos";
 import { Plus } from "lucide-react";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const formatCustomerOption = (
@@ -92,7 +98,7 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         void loadTechnicians();
     }, [open]);
 
-    const searchCustomers = async (query: string) => {
+    const searchCustomers = useCallback(async (query: string) => {
         const customers = await listCustomers({ pageSize: 8, search: query || undefined });
         const options = customers.items.map((customer) => ({
             id: customer.id,
@@ -105,7 +111,7 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         }));
 
         return options.map((item) => item.label);
-    };
+    }, []);
 
     const handleConfirm = async () => {
         if (isSubmitting) {
@@ -287,36 +293,50 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                     <>
                                         <div className="grid gap-1">
                                             <Label htmlFor="interventionDate" className="text-lg">Data intervento</Label>
-                                            <Input
+                                            <DatePickerField
                                                 id="interventionDate"
-                                                type="date"
-                                                className="text-lg!"
                                                 value={formValues.interventionDate}
-                                                onChange={(event) => setFormValues((prev) => ({ ...prev, interventionDate: event.target.value }))}
+                                                onValueChange={(value) => setFormValues((prev) => ({ ...prev, interventionDate: value }))}
                                             />
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-1">
                                                 <Label htmlFor="startTime" className="text-lg">Ora inizio</Label>
-                                                <Input
-                                                    id="startTime"
-                                                    type="time"
-                                                    className="text-lg!"
+                                                <Select
                                                     value={formValues.startTime}
-                                                    onChange={(event) => setFormValues((prev) => ({ ...prev, startTime: event.target.value }))}
-                                                />
+                                                    onValueChange={(value) => setFormValues((prev) => ({ ...prev, startTime: value }))}
+                                                >
+                                                    <SelectTrigger id="startTime" className="w-full">
+                                                        <SelectValue placeholder="Seleziona ora" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="max-h-64">
+                                                        {interventionTimeOptions.map((time) => (
+                                                            <SelectItem key={time} value={time}>
+                                                                {time}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
 
                                             <div className="grid gap-1">
                                                 <Label htmlFor="endTime" className="text-lg">Ora fine</Label>
-                                                <Input
-                                                    id="endTime"
-                                                    type="time"
-                                                    className="text-lg!"
+                                                <Select
                                                     value={formValues.endTime}
-                                                    onChange={(event) => setFormValues((prev) => ({ ...prev, endTime: event.target.value }))}
-                                                />
+                                                    onValueChange={(value) => setFormValues((prev) => ({ ...prev, endTime: value }))}
+                                                >
+                                                    <SelectTrigger id="endTime" className="w-full">
+                                                        <SelectValue placeholder="Seleziona ora" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="max-h-64">
+                                                        {interventionTimeOptions.map((time) => (
+                                                            <SelectItem key={time} value={time}>
+                                                                {time}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </div>
                                     </>

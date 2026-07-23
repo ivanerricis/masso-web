@@ -1,13 +1,22 @@
 import CustomDialog from "@/components/dialogs/customDialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import DatePickerField from "@/components/date-picker-field";
 import { getApiErrorMessage, getIntervention, listTechnicians } from "@/lib/api";
-import { interventionDescriptionLabel, interventionStatusOptions, interventionTypeOptions, isOnSiteInterventionType } from "@/lib/interventions";
+import {
+    interventionDescriptionLabel,
+    interventionStatusOptions,
+    interventionTimeOptions,
+    interventionTypeOptions,
+    isOnSiteInterventionType,
+} from "@/lib/interventions";
 import type { InterventionStatus, InterventionType, TechnicianDto } from "@/types/dtos";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+const withCurrentTimeOption = (value: string) =>
+    value && !interventionTimeOptions.includes(value) ? [value, ...interventionTimeOptions] : interventionTimeOptions;
 
 const formatPersonName = (firstName: string, lastName: string | null) => `${firstName} ${lastName ?? ""}`.trim();
 
@@ -47,6 +56,8 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
     });
 
     const isOnSite = isOnSiteInterventionType(formValues.type);
+    const startTimeOptions = useMemo(() => withCurrentTimeOption(formValues.startTime), [formValues.startTime]);
+    const endTimeOptions = useMemo(() => withCurrentTimeOption(formValues.endTime), [formValues.endTime]);
 
     useEffect(() => {
         if (!open || !interventionId) {
@@ -253,36 +264,50 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                                         <>
                                             <div className="grid gap-1">
                                                 <Label htmlFor="interventionDate" className="text-lg">Data intervento</Label>
-                                                <Input
+                                                <DatePickerField
                                                     id="interventionDate"
-                                                    type="date"
-                                                    className="text-lg!"
                                                     value={formValues.interventionDate}
-                                                    onChange={(event) => setFormValues((prev) => ({ ...prev, interventionDate: event.target.value }))}
+                                                    onValueChange={(value) => setFormValues((prev) => ({ ...prev, interventionDate: value }))}
                                                 />
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="grid gap-1">
                                                     <Label htmlFor="startTime" className="text-lg">Ora inizio</Label>
-                                                    <Input
-                                                        id="startTime"
-                                                        type="time"
-                                                        className="text-lg!"
+                                                    <Select
                                                         value={formValues.startTime}
-                                                        onChange={(event) => setFormValues((prev) => ({ ...prev, startTime: event.target.value }))}
-                                                    />
+                                                        onValueChange={(value) => setFormValues((prev) => ({ ...prev, startTime: value }))}
+                                                    >
+                                                        <SelectTrigger id="startTime" className="w-full">
+                                                            <SelectValue placeholder="Seleziona ora" />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="max-h-64">
+                                                            {startTimeOptions.map((time) => (
+                                                                <SelectItem key={time} value={time}>
+                                                                    {time}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                 </div>
 
                                                 <div className="grid gap-1">
                                                     <Label htmlFor="endTime" className="text-lg">Ora fine</Label>
-                                                    <Input
-                                                        id="endTime"
-                                                        type="time"
-                                                        className="text-lg!"
+                                                    <Select
                                                         value={formValues.endTime}
-                                                        onChange={(event) => setFormValues((prev) => ({ ...prev, endTime: event.target.value }))}
-                                                    />
+                                                        onValueChange={(value) => setFormValues((prev) => ({ ...prev, endTime: value }))}
+                                                    >
+                                                        <SelectTrigger id="endTime" className="w-full">
+                                                            <SelectValue placeholder="Seleziona ora" />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="max-h-64">
+                                                            {endTimeOptions.map((time) => (
+                                                                <SelectItem key={time} value={time}>
+                                                                    {time}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                 </div>
                                             </div>
                                         </>

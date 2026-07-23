@@ -5,7 +5,7 @@ import CreateIssueDialog from "@/components/dialogs/create/createIssueDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { createCustomer, createDevice, createIssue, getApiErrorMessage, listCustomers, listDevices, listIssues } from "@/lib/api";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import InputWithAdd from "@/components/inputWithAdd";
 import { Input } from "@/components/ui/input";
@@ -99,7 +99,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         }
     }, [open]);
 
-    const searchCustomers = async (query: string) => {
+    const searchCustomers = useCallback(async (query: string) => {
         const customers = await listCustomers({ pageSize: 8, search: query || undefined });
         const options = customers.items.map((customer) => ({
             id: customer.id,
@@ -117,7 +117,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         }));
 
         return options.map((item) => item.label);
-    };
+    }, []);
 
     const handleConfirm = async () => {
         if (isSubmitting) {
