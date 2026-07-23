@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Database, Image, Palette, RefreshCw } from "lucide-react";
+import { Database, Image, Palette, RefreshCw, ScrollText } from "lucide-react";
 import BackupSettingsPanel from "@/components/dialogs/settings/backupSettingsPanel";
 import LogoSettingsPanel from "@/components/dialogs/settings/logoSettingsPanel";
+import LogsSettingsPanel from "@/components/dialogs/settings/logsSettingsPanel";
 import UpdateSettingsPanel from "@/components/dialogs/settings/updateSettingsPanel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
 
-type SettingsSectionKey = "theme" | "logo" | "backup" | "update";
+type SettingsSectionKey = "theme" | "logo" | "backup" | "update" | "logs";
 
 const settingsSections: Array<{
     key: SettingsSectionKey;
@@ -39,6 +40,12 @@ const settingsSections: Array<{
         label: "Aggiornamenti",
         description: "Verifica e aggiorna l'applicazione",
         icon: RefreshCw,
+    },
+    {
+        key: "logs",
+        label: "Log",
+        description: "Registro delle azioni eseguite",
+        icon: ScrollText,
     },
 ];
 
@@ -93,8 +100,10 @@ const SettingsPage = () => {
                     <LogoSettingsPanel />
                 ) : activeSection === "backup" ? (
                     <BackupSettingsPanel />
-                ) : (
+                ) : activeSection === "update" ? (
                     <UpdateSettingsPanel />
+                ) : (
+                    <LogsSettingsPanel />
                 )}
             </section>
         </div>

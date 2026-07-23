@@ -1,4 +1,5 @@
 import { api } from "./client";
+import type { PaginatedResponse } from "./client";
 
 export type BackupSettingsDto = {
     dumpEnabled: boolean;
@@ -91,3 +92,39 @@ export const uploadLogo = async (file: File) => {
 };
 
 export const resetLogo = async () => (await api.delete<LogoStatusDto>("/settings/logo")).data;
+
+export type LogFileDto = {
+    dayKey: string;
+    sizeBytes: number;
+    updatedAt: string;
+};
+
+export type LogEntryDto = {
+    timestamp: string;
+    ip: string;
+    action: string;
+    status: number;
+    error: string | null;
+};
+
+export const listLogFiles = async () => (await api.get<LogFileDto[]>("/settings/logs")).data;
+
+export type ListLogEntriesParams = {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+};
+
+export const listLogEntries = async (dayKey: string, params: ListLogEntriesParams = {}) =>
+    (
+        await api.get<PaginatedResponse<LogEntryDto>>(`/settings/logs/${encodeURIComponent(dayKey)}`, {
+            params: {
+                page: params.page ?? 1,
+                pageSize: params.pageSize ?? 50,
+                search: params.search?.trim() || undefined,
+            },
+        })
+    ).data;
+
+export const getLogDownloadUrl = (dayKey: string) =>
+    api.getUri({ url: `/settings/logs/${encodeURIComponent(dayKey)}/download` });

@@ -13,6 +13,7 @@ import {
     updateBackupSettings,
 } from "../services/backupManager";
 import { LogoManagerError, getLogoStatus, resetLogo, saveLogo } from "../services/logoManager";
+import { LogManagerError, getLogFilePath, listLogFiles, readLogEntries } from "../services/logManager";
 import { UpdateManagerError, getUpdateStatus, requestUpdate, requestUpdateCheck } from "../services/updateManager";
 
 const settingsRouter = Router();
@@ -48,6 +49,16 @@ const handleUpdateError = (error: unknown, res: Response) => {
     return false;
 };
 
+const handleLogError = (error: unknown, res: Response) => {
+    if (error instanceof LogManagerError) {
+        res.locals.apiErrorMessage = error.message;
+        res.status(error.statusCode).json({ message: error.message });
+        return true;
+    }
+
+    return false;
+};
+
 const backupSettingsSchema = z.object({
     dumpEnabled: z.boolean(),
     autoEnabled: z.boolean(),
@@ -74,6 +85,86 @@ const smbTestSchema = z.object({
     username: z.string().trim().min(1).max(255),
     password: z.string().min(1).max(512),
 }).strict();
+
+const logDayKeyParamsSchema = z.object({
+    dayKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+}).strict();
+
+const logEntriesQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
+    search: z.string().trim().max(255).optional(),
+}).strict();
+
+settingsRouter.get("/logs", async (_req, res, next) => {
+    try {
+        const files = await listLogFiles();
+        res.json(files);
+    } catch (error) {
+        if (handleLogError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.get(
+    "/logs/:dayKey",
+    validate({ params: logDayKeyParamsSchema, query: logEntriesQuerySchema }),
+    async (req, res, next) => {
+        try {
+            const { dayKey } = req.params as { dayKey: string };
+            const { page = 1, pageSize = 50, search } = req.query as {
+                page?: number;
+                pageSize?: number;
+                search?: string;
+            };
+
+            const allEntries = await readLogEntries(dayKey);
+            const normalizedSearch = search?.toLowerCase();
+            const filteredEntries = normalizedSearch
+                ? allEntries.filter((entry) =>
+                    `${entry.action} ${entry.ip} ${entry.error ?? ""}`.toLowerCase().includes(normalizedSearch)
+                )
+                : allEntries;
+
+            const totalItems = filteredEntries.length;
+            const startIndex = (page - 1) * pageSize;
+            const items = filteredEntries.slice(startIndex, startIndex + pageSize);
+
+            res.json({
+                items,
+                totalItems,
+                page,
+                pageSize,
+                totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+            });
+        } catch (error) {
+            if (handleLogError(error, res)) {
+                return;
+            }
+            next(error);
+        }
+    }
+);
+
+settingsRouter.get("/logs/:dayKey/download", validate({ params: logDayKeyParamsSchema }), async (req, res, next) => {
+    try {
+        const { dayKey } = req.params as { dayKey: string };
+        const filePath = getLogFilePath(dayKey);
+
+        res.download(filePath, path.basename(filePath), (error) => {
+            if (error && !res.headersSent) {
+                res.status(404).json({ message: "Log non trovato" });
+            }
+        });
+    } catch (error) {
+        if (handleLogError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
 
 settingsRouter.get("/backup", async (_req, res, next) => {
     try {

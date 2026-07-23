@@ -1,12 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import fs from "node:fs";
-import path from "node:path";
-
-const logDir = path.join(process.cwd(), "logs");
-const logFilePrefix = "user-actions-";
-const logFileExtension = ".log";
-const maxLogFiles = 7;
-let lastCleanupDay = "";
+import { appendUserActionLog, getDayKey } from "../services/logManager";
 
 const actionVerbByMethod: Record<string, string> = {
     POST: "creato",
@@ -36,40 +29,6 @@ const getClientIp = (request: Request) => {
     }
 
     return request.ip;
-};
-
-const getDayKey = (date: Date) => date.toISOString().slice(0, 10);
-
-const getDailyLogFilePath = (dayKey: string) =>
-    path.join(logDir, `${logFilePrefix}${dayKey}${logFileExtension}`);
-
-const isDailyLogFile = (fileName: string) => {
-    return /^user-actions-\d{4}-\d{2}-\d{2}\.log$/.test(fileName);
-};
-
-const cleanupOldDailyLogs = async () => {
-    const dirEntries = await fs.promises.readdir(logDir, { withFileTypes: true });
-    const logFiles = dirEntries
-        .filter((entry) => entry.isFile() && isDailyLogFile(entry.name))
-        .map((entry) => entry.name)
-        .sort();
-
-    if (logFiles.length <= maxLogFiles) {
-        return;
-    }
-
-    const filesToDelete = logFiles.slice(0, logFiles.length - maxLogFiles);
-    await Promise.all(filesToDelete.map((fileName) => fs.promises.unlink(path.join(logDir, fileName))));
-};
-
-const appendUserActionLog = async (logLine: string, dayKey: string) => {
-    await fs.promises.mkdir(logDir, { recursive: true });
-    await fs.promises.appendFile(getDailyLogFilePath(dayKey), logLine);
-
-    if (lastCleanupDay !== dayKey) {
-        await cleanupOldDailyLogs();
-        lastCleanupDay = dayKey;
-    }
 };
 
 export const userActionLogger = (request: Request, _response: Response, next: NextFunction) => {
