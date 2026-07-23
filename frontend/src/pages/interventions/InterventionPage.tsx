@@ -6,8 +6,8 @@ import {
     getApiErrorMessage,
     getIntervention,
     getInterventionPrintUrl,
+    listCollaborators,
     listCustomers,
-    listTechnicians,
     type InterventionEntityDto,
     updateIntervention,
 } from "@/lib/api";
@@ -22,7 +22,7 @@ type InterventionPageDetails = {
     intervention: InterventionEntityDto;
     customerName: string;
     customerPhone: string | null;
-    technicianName: string;
+    collaboratorName: string;
 };
 
 const statusBadgeClass = (status: InterventionEntityDto["status"]) => {
@@ -70,20 +70,20 @@ const InterventionPage = () => {
     };
 
     const loadDetails = useCallback(async () => {
-        const [intervention, customers, technicians] = await Promise.all([
+        const [intervention, customers, collaborators] = await Promise.all([
             getIntervention(interventionId),
             listCustomers(),
-            listTechnicians(),
+            listCollaborators(),
         ]);
 
         const customer = customers.find((item) => item.id === intervention.customerId);
-        const technician = technicians.find((item) => item.id === intervention.technicianId);
+        const collaborator = collaborators.find((item) => item.id === intervention.collaboratorId);
 
         setDetails({
             intervention,
             customerName: customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "Cliente sconosciuto",
             customerPhone: customer?.phoneNumber ?? customer?.phoneNumberSecondary ?? null,
-            technicianName: technician ? `${technician.firstName} ${technician.lastName ?? ""}`.trim() : "Tecnico sconosciuto",
+            collaboratorName: collaborator ? `${collaborator.firstName} ${collaborator.lastName ?? ""}`.trim() : "Collaboratore sconosciuto",
         });
     }, [interventionId]);
 
@@ -92,7 +92,7 @@ const InterventionPage = () => {
             type: values.type,
             status: values.status,
             description: values.description,
-            technicianId: values.technicianId,
+            collaboratorId: values.collaboratorId,
             interventionDate: values.interventionDate,
             startTime: values.startTime,
             endTime: values.endTime,
@@ -233,7 +233,7 @@ const InterventionPage = () => {
                     <CardContent className="grid gap-2 sm:grid-cols-2">
                         <DetailItem label="Cliente" value={details.customerName} />
                         <DetailItem label="Telefono" value={details.customerPhone ?? "-"} />
-                        <DetailItem label="Tecnico" value={details.technicianName} />
+                        <DetailItem label="Collaboratore" value={details.collaboratorName} />
                         <DetailItem label="Stato" value={formatInterventionStatus(details.intervention.status)} />
                     </CardContent>
                 </Card>

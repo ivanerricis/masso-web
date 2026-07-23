@@ -9,7 +9,7 @@ import {
     updateInterventionById,
 } from "../db/queries/intervention";
 import { db } from "../db";
-import { customerTable, interventionTable, technicianTable } from "../db/schema";
+import { collaboratorTable, customerTable, interventionTable } from "../db/schema";
 import { createInterventionPdfBuffer } from "../services/interventionPdf";
 import { validate } from "./validation";
 
@@ -43,7 +43,7 @@ const interventionBodySchema = z
         description: z.string().trim().min(1).max(4000),
         status: z.enum(interventionStatuses).optional(),
         customerId: z.coerce.number().int().positive(),
-        technicianId: z.coerce.number().int().positive(),
+        collaboratorId: z.coerce.number().int().positive(),
         interventionDate: z.string().regex(dateRegex).nullable().optional(),
         startTime: z.string().regex(timeRegex).nullable().optional(),
         endTime: z.string().regex(timeRegex).nullable().optional(),
@@ -133,12 +133,12 @@ interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSch
             customerLastName: customerTable.lastName,
             customerPhone: customerTable.phoneNumber,
             customerPhoneSecondary: customerTable.phoneNumberSecondary,
-            technicianFirstName: technicianTable.firstName,
-            technicianLastName: technicianTable.lastName,
+            collaboratorFirstName: collaboratorTable.firstName,
+            collaboratorLastName: collaboratorTable.lastName,
         })
         .from(interventionTable)
         .innerJoin(customerTable, eq(customerTable.id, interventionTable.customerId))
-        .innerJoin(technicianTable, eq(technicianTable.id, interventionTable.technicianId))
+        .innerJoin(collaboratorTable, eq(collaboratorTable.id, interventionTable.collaboratorId))
         .where(eq(interventionTable.id, id));
 
     if (interventionRows.length === 0) {
@@ -148,7 +148,7 @@ interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSch
 
     const intervention = interventionRows[0];
     const customerName = `${intervention.customerFirstName} ${intervention.customerLastName ?? ""}`.trim();
-    const technicianName = `${intervention.technicianFirstName} ${intervention.technicianLastName ?? ""}`.trim();
+    const collaboratorName = `${intervention.collaboratorFirstName} ${intervention.collaboratorLastName ?? ""}`.trim();
     const labName = process.env.LAB_NAME ?? "Masso";
     const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
     const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
@@ -172,7 +172,7 @@ interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSch
         labLogoUrl,
         customerName,
         customerPhone: customerPhoneLabel,
-        technicianName,
+        collaboratorName,
         type: intervention.type as InterventionType,
         status: intervention.status as (typeof interventionStatuses)[number],
         description: intervention.description,
@@ -209,7 +209,7 @@ interventionsRouter.post("/", validate({ body: interventionCreateBodySchema }), 
         description: req.body.description,
         status: req.body.status ?? "programmato",
         customerId: req.body.customerId,
-        technicianId: req.body.technicianId,
+        collaboratorId: req.body.collaboratorId,
         interventionDate: isOnSite ? req.body.interventionDate ?? null : null,
         startTime: isOnSite ? req.body.startTime ?? null : null,
         endTime: isOnSite ? req.body.endTime ?? null : null,

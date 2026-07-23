@@ -115,10 +115,10 @@ export const interventionTable = pgTable("intervention", {
     endTime: time("end_time"),
     ...timestamps,
     customerId: integer("customer_id").notNull().references(() => customerTable.id),
-    technicianId: integer("technician_id").notNull().references(() => technicianTable.id),
+    collaboratorId: integer("collaborator_id").notNull().references(() => collaboratorTable.id),
 }, (table) => [
     index("intervention_customer_id_idx").on(table.customerId),
-    index("intervention_technician_id_idx").on(table.technicianId),
+    index("intervention_collaborator_id_idx").on(table.collaboratorId),
     index("intervention_type_idx").on(table.type),
     index("intervention_status_idx").on(table.status),
     index("intervention_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`),

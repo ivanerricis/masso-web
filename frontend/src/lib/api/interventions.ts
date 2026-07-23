@@ -11,7 +11,7 @@ export type InterventionEntityDto = {
     startTime: string | null;
     endTime: string | null;
     customerId: number;
-    technicianId: number;
+    collaboratorId: number;
     created_at: string;
     updated_at: string | null;
 };
@@ -21,7 +21,7 @@ export type InterventionCreateInput = {
     description: string;
     status?: InterventionStatus;
     customerId: number;
-    technicianId: number;
+    collaboratorId: number;
     interventionDate?: string | null;
     startTime?: string | null;
     endTime?: string | null;

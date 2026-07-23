@@ -1,6 +1,6 @@
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
-import { customerTable, interventionTable, technicianTable } from "../schema";
+import { collaboratorTable, customerTable, interventionTable } from "../schema";
 import type { NewIntervention, UpdateIntervention } from "../types";
 
 type ListInterventionsParams = {
@@ -36,9 +36,9 @@ export const listInterventions = async ({
               sql`${customerTable.lastName}::text ILIKE ${searchPattern}`,
               sql`${customerTable.phoneNumber}::text ILIKE ${searchPattern}`,
               sql`${customerTable.phoneNumberSecondary}::text ILIKE ${searchPattern}`,
-              sql`${technicianTable.id}::text ILIKE ${searchPattern}`,
-              sql`${technicianTable.firstName}::text ILIKE ${searchPattern}`,
-              sql`${technicianTable.lastName}::text ILIKE ${searchPattern}`,
+              sql`${collaboratorTable.id}::text ILIKE ${searchPattern}`,
+              sql`${collaboratorTable.firstName}::text ILIKE ${searchPattern}`,
+              sql`${collaboratorTable.lastName}::text ILIKE ${searchPattern}`,
           ]
         : [];
     const statusCondition = status !== "all" ? eq(interventionTable.status, status) : undefined;
@@ -61,16 +61,16 @@ export const listInterventions = async ({
             startTime: interventionTable.startTime,
             endTime: interventionTable.endTime,
             customerId: interventionTable.customerId,
-            technicianId: interventionTable.technicianId,
+            collaboratorId: interventionTable.collaboratorId,
             customer: sql<string>`coalesce(nullif(concat_ws(' ', ${customerTable.firstName}, ${customerTable.lastName}), ''), '-')`,
             customerPhone: sql<string | null>`coalesce(${customerTable.phoneNumber}, ${customerTable.phoneNumberSecondary})`,
-            technician: sql<string>`coalesce(nullif(concat_ws(' ', ${technicianTable.firstName}, ${technicianTable.lastName}), ''), '-')`,
+            collaborator: sql<string>`coalesce(nullif(concat_ws(' ', ${collaboratorTable.firstName}, ${collaboratorTable.lastName}), ''), '-')`,
             createdAt: interventionTable.created_at,
             updatedAt: interventionTable.updated_at,
         })
         .from(interventionTable)
         .innerJoin(customerTable, eq(customerTable.id, interventionTable.customerId))
-        .innerJoin(technicianTable, eq(technicianTable.id, interventionTable.technicianId));
+        .innerJoin(collaboratorTable, eq(collaboratorTable.id, interventionTable.collaboratorId));
 
     if (page == null || pageSize == null) {
         return baseQuery.where(whereClause).orderBy(desc(interventionTable.created_at));
@@ -81,7 +81,7 @@ export const listInterventions = async ({
         db.select({ total: sql<number>`count(*)` })
             .from(interventionTable)
             .innerJoin(customerTable, eq(customerTable.id, interventionTable.customerId))
-            .innerJoin(technicianTable, eq(technicianTable.id, interventionTable.technicianId))
+            .innerJoin(collaboratorTable, eq(collaboratorTable.id, interventionTable.collaboratorId))
             .where(whereClause),
     ]);
 

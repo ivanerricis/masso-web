@@ -27,9 +27,9 @@ export const interventionColumns: InterventionColumn[] = [
         render: (row) => row.customerPhone ?? "-",
     },
     {
-        key: "technician",
-        header: "Tecnico",
-        render: (row) => row.technician,
+        key: "collaborator",
+        header: "Collaboratore",
+        render: (row) => row.collaborator,
     },
     {
         key: "type",

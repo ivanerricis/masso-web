@@ -13,7 +13,7 @@ export type InterventionPrintData = {
     labLogoUrl: string;
     customerName: string;
     customerPhone: string;
-    technicianName: string;
+    collaboratorName: string;
     type: InterventionType;
     status: InterventionStatus;
     description: string;
@@ -175,7 +175,7 @@ const buildHeader = (intervention: InterventionPrintData, logoDataUrl: string | 
 
 const buildCustomerSection = (intervention: InterventionPrintData) => ({
     stack: [
-        { text: "Cliente e tecnico", style: "sectionTitle", margin: [0, 0, 0, 3] },
+        { text: "Cliente e collaboratore", style: "sectionTitle", margin: [0, 0, 0, 3] },
         {
             table: {
                 widths: [112, "*", 112, "*"],
@@ -185,8 +185,8 @@ const buildCustomerSection = (intervention: InterventionPrintData) => ({
                     { text: "Telefono", style: "label" },
                     { text: intervention.customerPhone, style: "value" },
                 ], [
-                    { text: "Tecnico", style: "label" },
-                    { text: intervention.technicianName, style: "value" },
+                    { text: "Collaboratore", style: "label" },
+                    { text: intervention.collaboratorName, style: "value" },
                     { text: "Tipo intervento", style: "label" },
                     { text: formatInterventionType(intervention.type), style: "value" },
                 ]],

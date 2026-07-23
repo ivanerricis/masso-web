@@ -91,10 +91,10 @@ export type InterventionDto = {
     startTime: string | null;
     endTime: string | null;
     customerId: number;
-    technicianId: number;
+    collaboratorId: number;
     customer: string;
     customerPhone: string | null;
-    technician: string;
+    collaborator: string;
     createdAt: string;
     updatedAt: string | null;
 };

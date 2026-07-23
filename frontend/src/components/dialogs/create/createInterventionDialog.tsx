@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import InputWithAdd from "@/components/inputWithAdd";
 import DatePickerField from "@/components/date-picker-field";
-import { createCustomer, getApiErrorMessage, listCustomers, listTechnicians } from "@/lib/api";
+import { createCustomer, getApiErrorMessage, listCollaborators, listCustomers } from "@/lib/api";
 import {
     interventionDescriptionLabel,
     interventionStatusOptions,
@@ -14,7 +14,7 @@ import {
     interventionTypeOptions,
     isOnSiteInterventionType,
 } from "@/lib/interventions";
-import type { InterventionStatus, InterventionType, TechnicianDto } from "@/types/dtos";
+import type { CollaboratorDto, InterventionStatus, InterventionType } from "@/types/dtos";
 import { Plus } from "lucide-react";
 import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -37,7 +37,7 @@ export type CreateInterventionSubmitValues = {
     description: string;
     customer: string;
     customerId: number | null;
-    technicianId: number;
+    collaboratorId: number;
     interventionDate: string | null;
     startTime: string | null;
     endTime: string | null;
@@ -55,12 +55,12 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         status: "programmato" as InterventionStatus,
         description: "",
         customer: "",
-        technicianId: "",
+        collaboratorId: "",
         interventionDate: "",
         startTime: "",
         endTime: "",
     });
-    const [technicians, setTechnicians] = useState<TechnicianDto[]>([]);
+    const [collaborators, setCollaborators] = useState<CollaboratorDto[]>([]);
     const [customerIdByOption, setCustomerIdByOption] = useState<Record<string, number>>({});
     const [isCreateCustomerDialogOpen, setIsCreateCustomerDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,7 +78,7 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 status: "programmato",
                 description: "",
                 customer: "",
-                technicianId: "",
+                collaboratorId: "",
                 interventionDate: "",
                 startTime: "",
                 endTime: "",
@@ -86,16 +86,16 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             setCustomerIdByOption({});
         });
 
-        const loadTechnicians = async () => {
+        const loadCollaborators = async () => {
             try {
-                const techniciansData = await listTechnicians();
-                setTechnicians(techniciansData);
+                const collaboratorsData = await listCollaborators();
+                setCollaborators(collaboratorsData);
             } catch (error) {
-                toast.error(getApiErrorMessage(error, "Impossibile caricare i tecnici"));
+                toast.error(getApiErrorMessage(error, "Impossibile caricare i collaboratori"));
             }
         };
 
-        void loadTechnicians();
+        void loadCollaborators();
     }, [open]);
 
     const searchCustomers = useCallback(async (query: string) => {
@@ -123,8 +123,8 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             return;
         }
 
-        if (formValues.technicianId === "") {
-            toast.error("Seleziona un tecnico");
+        if (formValues.collaboratorId === "") {
+            toast.error("Seleziona un collaboratore");
             return;
         }
 
@@ -167,7 +167,7 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 description: formValues.description.trim(),
                 customer: formValues.customer,
                 customerId: customerIdByOption[formValues.customer] ?? null,
-                technicianId: Number(formValues.technicianId),
+                collaboratorId: Number(formValues.collaboratorId),
                 interventionDate: isOnSite ? formValues.interventionDate : null,
                 startTime: isOnSite ? formValues.startTime : null,
                 endTime: isOnSite ? formValues.endTime : null,
@@ -227,18 +227,18 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                 </div>
 
                                 <div className="grid gap-1">
-                                    <Label htmlFor="technicianId" className="text-lg">Tecnico</Label>
+                                    <Label htmlFor="collaboratorId" className="text-lg">Collaboratore</Label>
                                     <Select
-                                        value={formValues.technicianId}
-                                        onValueChange={(value) => setFormValues((prev) => ({ ...prev, technicianId: value }))}
+                                        value={formValues.collaboratorId}
+                                        onValueChange={(value) => setFormValues((prev) => ({ ...prev, collaboratorId: value }))}
                                     >
-                                        <SelectTrigger id="technicianId" className="w-full">
-                                            <SelectValue placeholder="Seleziona tecnico" />
+                                        <SelectTrigger id="collaboratorId" className="w-full">
+                                            <SelectValue placeholder="Seleziona collaboratore" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {technicians.map((technician) => (
-                                                <SelectItem key={technician.id} value={String(technician.id)}>
-                                                    {formatPersonName(technician.firstName, technician.lastName)}
+                                            {collaborators.map((collaborator) => (
+                                                <SelectItem key={collaborator.id} value={String(collaborator.id)}>
+                                                    {formatPersonName(collaborator.firstName, collaborator.lastName)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
