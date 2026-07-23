@@ -2,6 +2,7 @@ import CustomDialog from "@/components/dialogs/customDialog";
 import CreateCustomerDialog from "@/components/dialogs/create/createCustomerDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import InputWithAdd from "@/components/inputWithAdd";
@@ -214,15 +215,21 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             onChange={(value) => setFormValues((prev) => ({ ...prev, customer: value }))}
                                             required
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon-lg"
-                                            className="border-l-0! rounded-l-none"
-                                            onClick={() => setIsCreateCustomerDialogOpen(true)}
-                                        >
-                                            <Plus className="size-5" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon-lg"
+                                                    className="border-l-0! rounded-l-none"
+                                                    onClick={() => setIsCreateCustomerDialogOpen(true)}
+                                                    aria-label="Crea nuovo cliente"
+                                                >
+                                                    <Plus className="size-5" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Crea nuovo cliente</TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </div>
 

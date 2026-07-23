@@ -1,5 +1,5 @@
 import OpenEntityButton from "@/components/open-entity-button";
-import { Button } from "@/components/ui/button";
+import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ReportDto } from "@/types/dtos";
 import { Pencil, Printer, Trash2 } from "lucide-react";
@@ -61,7 +61,7 @@ const ReportsTable = ({
                                                 size="icon-lg"
                                                 onClick={() => onOpenReport(row.id)}
                                                 aria-label={`Apri rapporto ${row.id}`} />
-                                            <Button
+                                            <TableActionButton
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-primary/10 hover:bg-primary/20"
@@ -69,8 +69,8 @@ const ReportsTable = ({
                                                 aria-label={`Modifica rapporto ${row.id}`}
                                             >
                                                 <Pencil className="size-5 text-primary" />
-                                            </Button>
-                                            <Button
+                                            </TableActionButton>
+                                            <TableActionButton
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-yellow-400/20 hover:bg-yellow-400/30"
@@ -78,15 +78,15 @@ const ReportsTable = ({
                                                 aria-label={`Stampa rapporto ${row.id}`}
                                             >
                                                 <Printer className="size-5 text-yellow-400" />
-                                            </Button>
-                                            <Button
+                                            </TableActionButton>
+                                            <TableActionButton
                                                 variant="destructive"
                                                 size="icon-lg"
                                                 onClick={() => onDeleteReport(row)}
                                                 aria-label={`Elimina rapporto ${row.id}`}
                                             >
                                                 <Trash2 className="size-5" />
-                                            </Button>
+                                            </TableActionButton>
                                         </div>
                                     ) : (
                                         column.render(row)

@@ -3,6 +3,7 @@ import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import SearchInput from "@/components/search-input";
@@ -149,16 +150,21 @@ const LogsSettingsPanel = () => {
 
                             <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca nel log..." />
 
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                disabled={isLoadingEntries || isLoadingFiles}
-                                onClick={handleRefresh}
-                                aria-label="Aggiorna"
-                            >
-                                <RefreshCw className={cn("size-4", (isLoadingEntries || isLoadingFiles) && "animate-spin")} />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        disabled={isLoadingEntries || isLoadingFiles}
+                                        onClick={handleRefresh}
+                                        aria-label="Aggiorna"
+                                    >
+                                        <RefreshCw className={cn("size-4", (isLoadingEntries || isLoadingFiles) && "animate-spin")} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Aggiorna</TooltipContent>
+                            </Tooltip>
 
                             <Button
                                 type="button"

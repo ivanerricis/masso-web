@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { IssueDto } from "@/types/dtos";
 import { Pencil, Trash2 } from "lucide-react";
@@ -37,7 +37,7 @@ const IssuesTable = ({ columns, rows, onEditIssue, onDeleteIssue }: IssuesTableP
                                 <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button
+                                            <TableActionButton
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-primary/10 hover:bg-primary/20"
@@ -45,15 +45,15 @@ const IssuesTable = ({ columns, rows, onEditIssue, onDeleteIssue }: IssuesTableP
                                                 aria-label={`Modifica difetto ${row.id}`}
                                             >
                                                 <Pencil className="size-5 text-primary" />
-                                            </Button>
-                                            <Button
+                                            </TableActionButton>
+                                            <TableActionButton
                                                 variant="destructive"
                                                 size="icon-lg"
                                                 onClick={() => onDeleteIssue(row)}
                                                 aria-label={`Elimina difetto ${row.id}`}
                                             >
                                                 <Trash2 className="size-5" />
-                                            </Button>
+                                            </TableActionButton>
                                         </div>
                                     ) : (
                                         column.render(row)

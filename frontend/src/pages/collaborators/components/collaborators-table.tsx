@@ -1,5 +1,5 @@
 import OpenEntityButton from "@/components/open-entity-button";
-import { Button } from "@/components/ui/button";
+import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { CollaboratorDto } from "@/types/dtos";
 import { Pencil, Trash2 } from "lucide-react";
@@ -46,7 +46,7 @@ const CollaboratorsTable = ({
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
                                             <OpenEntityButton size="lg" onClick={() => onOpenCollaborator(row.id)} aria-label={`Apri collaboratore ${row.id}`} />
-                                            <Button
+                                            <TableActionButton
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-primary/10 hover:bg-primary/20"
@@ -54,15 +54,15 @@ const CollaboratorsTable = ({
                                                 aria-label={`Modifica collaboratore ${row.id}`}
                                             >
                                                 <Pencil className="size-5 text-primary" />
-                                            </Button>
-                                            <Button
+                                            </TableActionButton>
+                                            <TableActionButton
                                                 variant="destructive"
                                                 size="icon-lg"
                                                 onClick={() => onDeleteCollaborator(row)}
                                                 aria-label={`Elimina collaboratore ${row.id}`}
                                             >
                                                 <Trash2 className="size-5" />
-                                            </Button>
+                                            </TableActionButton>
                                         </div>
                                     ) : (
                                         column.render(row)

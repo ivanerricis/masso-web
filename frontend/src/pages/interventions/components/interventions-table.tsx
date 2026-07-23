@@ -1,5 +1,5 @@
 import OpenEntityButton from "@/components/open-entity-button";
-import { Button } from "@/components/ui/button";
+import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { InterventionDto } from "@/types/dtos";
 import { Pencil, Printer, Trash2 } from "lucide-react";
@@ -60,7 +60,7 @@ const InterventionsTable = ({
                                                 size="icon-lg"
                                                 onClick={() => onOpenIntervention(row.id)}
                                                 aria-label={`Apri intervento ${row.id}`} />
-                                            <Button
+                                            <TableActionButton
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-primary/10 hover:bg-primary/20"
@@ -68,8 +68,8 @@ const InterventionsTable = ({
                                                 aria-label={`Modifica intervento ${row.id}`}
                                             >
                                                 <Pencil className="size-5 text-primary" />
-                                            </Button>
-                                            <Button
+                                            </TableActionButton>
+                                            <TableActionButton
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-yellow-400/20 hover:bg-yellow-400/30"
@@ -77,15 +77,15 @@ const InterventionsTable = ({
                                                 aria-label={`Stampa intervento ${row.id}`}
                                             >
                                                 <Printer className="size-5 text-yellow-400" />
-                                            </Button>
-                                            <Button
+                                            </TableActionButton>
+                                            <TableActionButton
                                                 variant="destructive"
                                                 size="icon-lg"
                                                 onClick={() => onDeleteIntervention(row)}
                                                 aria-label={`Elimina intervento ${row.id}`}
                                             >
                                                 <Trash2 className="size-5" />
-                                            </Button>
+                                            </TableActionButton>
                                         </div>
                                     ) : (
                                         column.render(row)

@@ -1,5 +1,5 @@
 import OpenEntityButton from "@/components/open-entity-button";
-import { Button } from "@/components/ui/button";
+import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { TechnicianDto } from "@/types/dtos";
 import { Pencil, Trash2 } from "lucide-react";
@@ -46,7 +46,7 @@ const TechniciansTable = ({
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
                                             <OpenEntityButton size="lg" onClick={() => onOpenTechnician(row.id)} aria-label={`Apri tecnico ${row.id}`} />
-                                            <Button
+                                            <TableActionButton
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-primary/10 hover:bg-primary/20"
@@ -54,15 +54,15 @@ const TechniciansTable = ({
                                                 aria-label={`Modifica tecnico ${row.id}`}
                                             >
                                                 <Pencil className="size-5 text-primary" />
-                                            </Button>
-                                            <Button
+                                            </TableActionButton>
+                                            <TableActionButton
                                                 variant="destructive"
                                                 size="icon-lg"
                                                 onClick={() => onDeleteTechnician(row)}
                                                 aria-label={`Elimina tecnico ${row.id}`}
                                             >
                                                 <Trash2 className="size-5" />
-                                            </Button>
+                                            </TableActionButton>
                                         </div>
                                     ) : (
                                         column.render(row)

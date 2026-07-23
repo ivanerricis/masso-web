@@ -1,5 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type CardReportProps = {
@@ -25,9 +26,14 @@ const CardReport = ({ customerName, isClosed, deviceName, onOpen }: CardReportPr
             </div>
             <div className="flex items-end justify-between gap-4">
                 <p className="p-2 text-lg font-semibold text-yellow-500">{deviceName}</p>
-                <Button size={"icon-lg"} onClick={onOpen} aria-label="Apri report">
-                    <ExternalLink className="size-5" />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button size={"icon-lg"} onClick={onOpen} aria-label="Apri report">
+                            <ExternalLink className="size-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Apri report</TooltipContent>
+                </Tooltip>
             </div>
         </div>
     );

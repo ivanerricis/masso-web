@@ -1,6 +1,7 @@
 import CardReport from "@/components/cardReport";
 import LoadingPage from "@/components/loadingPage";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import TablePagination from "@/components/table-pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getApiErrorMessage, listCollaborators, listCustomers, listDevices, listReports } from "@/lib/api";
@@ -114,9 +115,14 @@ const CollaboratorPage = () => {
     return (
         <div className="flex flex-col w-full h-full gap-4">
             <div className="flex items-center gap-2">
-                <Button size="icon-lg" variant="ghost" onClick={handleBack}>
-                    <ArrowLeft className="size-6" />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button size="icon-lg" variant="ghost" onClick={handleBack} aria-label="Torna indietro">
+                            <ArrowLeft className="size-6" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Torna indietro</TooltipContent>
+                </Tooltip>
                 <h1 className="text-2xl font-bold">{collaboratorName}</h1>
             </div>
             <p className="ml-12">Rapporti del collaboratore</p>

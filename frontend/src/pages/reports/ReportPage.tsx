@@ -2,6 +2,7 @@ import LoadingPage from "@/components/loadingPage";
 import EditReportDialog, { type EditReportSubmitValues } from "@/components/dialogs/edit/editReportDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
     createReportTechnician,
     deleteReportTechnician,
@@ -231,9 +232,20 @@ const ReportPage = () => {
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex min-w-0 items-start gap-3">
-                            <Button size={"icon-lg"} variant={"ghost"} onClick={handleBack} className="shrink-0">
-                                <ArrowLeft className="size-6" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        size={"icon-lg"}
+                                        variant={"ghost"}
+                                        onClick={handleBack}
+                                        className="shrink-0"
+                                        aria-label="Torna indietro"
+                                    >
+                                        <ArrowLeft className="size-6" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Torna indietro</TooltipContent>
+                            </Tooltip>
 
                             <div className="min-w-0">
                                 <h1 className="text-xl font-bold tracking-tight sm:text-2xl wrap-break-word">
@@ -243,15 +255,25 @@ const ReportPage = () => {
                         </div>
 
                         <div className="flex shrink-0 items-center gap-2 self-end lg:self-auto">
-                            <Button variant="outline" size={"lg"} onClick={() => setIsEditDialogOpen(true)}>
-                                <Pencil className="size-5" />
-                                <Label className="hidden lg:inline text-lg">Modifica</Label>
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size={"lg"} onClick={() => setIsEditDialogOpen(true)} aria-label="Modifica rapporto">
+                                        <Pencil className="size-5" />
+                                        <Label className="hidden lg:inline text-lg">Modifica</Label>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Modifica rapporto</TooltipContent>
+                            </Tooltip>
 
-                            <Button size={"lg"} onClick={handlePrintReport}>
-                                <Printer className="size-5" />
-                                <Label className="hidden lg:inline text-lg">Stampa</Label>
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button size={"lg"} onClick={handlePrintReport} aria-label="Stampa rapporto">
+                                        <Printer className="size-5" />
+                                        <Label className="hidden lg:inline text-lg">Stampa</Label>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Stampa rapporto</TooltipContent>
+                            </Tooltip>
                         </div>
                     </div>
 

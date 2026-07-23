@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { DeviceDto } from "@/types/dtos";
 import { Pencil, Trash2 } from "lucide-react";
@@ -37,7 +37,7 @@ const DevicesTable = ({ columns, rows, onEditDevice, onDeleteDevice }: DevicesTa
                                 <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button
+                                            <TableActionButton
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-primary/10 hover:bg-primary/20"
@@ -45,15 +45,15 @@ const DevicesTable = ({ columns, rows, onEditDevice, onDeleteDevice }: DevicesTa
                                                 aria-label={`Modifica dispositivo ${row.id}`}
                                             >
                                                 <Pencil className="size-5 text-primary" />
-                                            </Button>
-                                            <Button
+                                            </TableActionButton>
+                                            <TableActionButton
                                                 variant="destructive"
                                                 size="icon-lg"
                                                 onClick={() => onDeleteDevice(row)}
                                                 aria-label={`Elimina dispositivo ${row.id}`}
                                             >
                                                 <Trash2 className="size-5" />
-                                            </Button>
+                                            </TableActionButton>
                                         </div>
                                     ) : (
                                         column.render(row)

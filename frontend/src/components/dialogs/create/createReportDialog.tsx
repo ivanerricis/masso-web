@@ -4,6 +4,7 @@ import CreateDeviceDialog from "@/components/dialogs/create/createDeviceDialog";
 import CreateIssueDialog from "@/components/dialogs/create/createIssueDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { createCustomer, createDevice, createIssue, getApiErrorMessage, listCustomers, listDevices, listIssues } from "@/lib/api";
 import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -212,15 +213,21 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             }}
                                             required
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size={"icon-lg"}
-                                            className="border-l-0! rounded-l-none"
-                                            onClick={() => setIsCreateCustomerDialogOpen(true)}
-                                        >
-                                            <Plus className="size-5" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size={"icon-lg"}
+                                                    className="border-l-0! rounded-l-none"
+                                                    onClick={() => setIsCreateCustomerDialogOpen(true)}
+                                                    aria-label="Crea nuovo cliente"
+                                                >
+                                                    <Plus className="size-5" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Crea nuovo cliente</TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </div>
 
@@ -241,15 +248,21 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             onChange={(value: string) => setFormValues((prev) => ({ ...prev, deviceType: value }))}
                                             required
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size={"icon-lg"}
-                                            className="border-l-0! rounded-l-none"
-                                            onClick={() => setIsCreateDeviceDialogOpen(true)}
-                                        >
-                                            <Plus className="size-5" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size={"icon-lg"}
+                                                    className="border-l-0! rounded-l-none"
+                                                    onClick={() => setIsCreateDeviceDialogOpen(true)}
+                                                    aria-label="Crea nuovo dispositivo"
+                                                >
+                                                    <Plus className="size-5" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Crea nuovo dispositivo</TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </div>
                             </div>
@@ -282,15 +295,21 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             }}
                                             required
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size={"icon-lg"}
-                                            className="border-l-0! rounded-l-none"
-                                            onClick={() => setIsCreateIssueDialogOpen(true)}
-                                        >
-                                            <Plus className="size-5" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size={"icon-lg"}
+                                                    className="border-l-0! rounded-l-none"
+                                                    onClick={() => setIsCreateIssueDialogOpen(true)}
+                                                    aria-label="Crea nuovo difetto"
+                                                >
+                                                    <Plus className="size-5" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Crea nuovo difetto</TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </div>
 

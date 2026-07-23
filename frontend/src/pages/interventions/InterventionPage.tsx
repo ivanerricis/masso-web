@@ -2,6 +2,7 @@ import LoadingPage from "@/components/loadingPage";
 import EditInterventionDialog, { type EditInterventionSubmitValues } from "@/components/dialogs/edit/editInterventionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
     getApiErrorMessage,
     getIntervention,
@@ -143,9 +144,20 @@ const InterventionPage = () => {
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex min-w-0 items-start gap-3">
-                            <Button size="icon-lg" variant="ghost" onClick={handleBack} className="shrink-0">
-                                <ArrowLeft className="size-6" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        size="icon-lg"
+                                        variant="ghost"
+                                        onClick={handleBack}
+                                        className="shrink-0"
+                                        aria-label="Torna indietro"
+                                    >
+                                        <ArrowLeft className="size-6" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Torna indietro</TooltipContent>
+                            </Tooltip>
 
                             <div className="min-w-0">
                                 <h1 className="text-xl font-bold tracking-tight sm:text-2xl wrap-break-word">
@@ -155,15 +167,25 @@ const InterventionPage = () => {
                         </div>
 
                         <div className="flex shrink-0 items-center gap-2 self-end lg:self-auto">
-                            <Button variant="outline" size="lg" onClick={() => setIsEditDialogOpen(true)}>
-                                <Pencil className="size-5" />
-                                <span className="hidden lg:inline text-lg">Modifica</span>
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size="lg" onClick={() => setIsEditDialogOpen(true)} aria-label="Modifica intervento">
+                                        <Pencil className="size-5" />
+                                        <span className="hidden lg:inline text-lg">Modifica</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Modifica intervento</TooltipContent>
+                            </Tooltip>
 
-                            <Button size="lg" onClick={handlePrintIntervention}>
-                                <Printer className="size-5" />
-                                <span className="hidden lg:inline text-lg">Stampa</span>
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button size="lg" onClick={handlePrintIntervention} aria-label="Stampa intervento">
+                                        <Printer className="size-5" />
+                                        <span className="hidden lg:inline text-lg">Stampa</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Stampa intervento</TooltipContent>
+                            </Tooltip>
                         </div>
                     </div>
 

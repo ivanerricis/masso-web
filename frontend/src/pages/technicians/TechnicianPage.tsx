@@ -1,5 +1,6 @@
 import LoadingPage from "@/components/loadingPage";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import EditReportDialog, { type EditReportSubmitValues } from "@/components/dialogs/edit/editReportDialog";
 import TablePagination from "@/components/table-pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +22,7 @@ import type { ReportVisibilityFilter } from "../reports/components/types";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import OpenEntityButton from "@/components/open-entity-button";
+import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTablePagination } from "@/hooks/useTablePagination";
 
@@ -187,9 +189,14 @@ const TechnicianPage = () => {
     return (
         <div className="flex flex-col w-full h-full gap-4">
             <div className="flex items-center gap-2">
-                <Button size="icon-lg" variant="ghost" onClick={handleBack}>
-                    <ArrowLeft className="size-6" />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button size="icon-lg" variant="ghost" onClick={handleBack} aria-label="Torna indietro">
+                            <ArrowLeft className="size-6" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Torna indietro</TooltipContent>
+                </Tooltip>
                 <h1 className="text-2xl font-bold">{technicianName}</h1>
             </div>
 
@@ -242,7 +249,7 @@ const TechnicianPage = () => {
                                                     onClick={() => handleOpenReport(report.id)}
                                                     aria-label={`Apri report ${report.id}`}
                                                 />
-                                                <Button
+                                                <TableActionButton
                                                     variant="default"
                                                     size="icon-lg"
                                                     className="bg-primary/10 hover:bg-primary/20"
@@ -250,7 +257,7 @@ const TechnicianPage = () => {
                                                     aria-label={`Modifica report ${report.id}`}
                                                 >
                                                     <Pencil className="size-5 text-primary" />
-                                                </Button>
+                                                </TableActionButton>
                                             </div>
                                         </TableCell>
                                     </TableRow>

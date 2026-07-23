@@ -5,6 +5,7 @@ import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import CreateEntityButton from "@/components/create-entity-button";
 import {
@@ -257,31 +258,41 @@ const DashboardPage = () => {
 
                     <CardContent className="grid gap-3 p-0">
                         <div className="flex items-center justify-between gap-2">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={handlePreviousRevenueMonth}
-                                aria-label="Mese precedente"
-                            >
-                                <ChevronLeft className="size-4" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={handlePreviousRevenueMonth}
+                                        aria-label="Mese precedente"
+                                    >
+                                        <ChevronLeft className="size-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Mese precedente</TooltipContent>
+                            </Tooltip>
 
                             <div className="text-center">
                                 <div className="text-3xl font-bold">{formatEuro(monthlyRevenue)}</div>
                                 <div className="mt-1 text-sm text-muted-foreground">{selectedRevenueLabel}</div>
                             </div>
 
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={handleNextRevenueMonth}
-                                disabled={isCurrentRevenueMonth}
-                                aria-label="Mese successivo"
-                            >
-                                <ChevronRight className="size-4" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={handleNextRevenueMonth}
+                                        disabled={isCurrentRevenueMonth}
+                                        aria-label="Mese successivo"
+                                    >
+                                        <ChevronRight className="size-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Mese successivo</TooltipContent>
+                            </Tooltip>
                         </div>
 
                         <div className="flex h-16 items-end gap-1.5 border-b border-border">
