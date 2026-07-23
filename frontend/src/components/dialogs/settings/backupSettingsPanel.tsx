@@ -12,6 +12,7 @@ import {
     getBackupSettings,
     listBackupDumps,
     runBackupNow,
+    testSmbConnection,
     updateBackupSettings,
     type BackupDumpFileDto,
     type BackupSettingsInput,
@@ -41,6 +42,14 @@ const defaultForm: BackupSettingsInput = {
     runAt: "02:00",
     outputDir: "backups",
     maxBackupsToKeep: 14,
+    smbEnabled: false,
+    smbHost: "",
+    smbShare: "",
+    smbPath: "",
+    smbDomain: "",
+    smbPort: 445,
+    smbUsername: "",
+    smbPassword: "",
 };
 
 const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
@@ -56,6 +65,11 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     const [dumpFiles, setDumpFiles] = useState<BackupDumpFileDto[]>([]);
     const [isLoadingDumps, setIsLoadingDumps] = useState(false);
     const [selectedDumpFileName, setSelectedDumpFileName] = useState<string>("");
+    const [smbPasswordSet, setSmbPasswordSet] = useState(false);
+    const [smbLastRunAt, setSmbLastRunAt] = useState<string | null>(null);
+    const [smbLastStatus, setSmbLastStatus] = useState<"idle" | "success" | "failed">("idle");
+    const [smbLastError, setSmbLastError] = useState<string | null>(null);
+    const [isTestingSmb, setIsTestingSmb] = useState(false);
 
     const loadSettings = async () => {
         setIsLoading(true);
@@ -69,12 +83,24 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                 runAt: settings.runAt,
                 outputDir: settings.outputDir,
                 maxBackupsToKeep: settings.maxBackupsToKeep,
+                smbEnabled: settings.smbEnabled,
+                smbHost: settings.smbHost,
+                smbShare: settings.smbShare,
+                smbPath: settings.smbPath,
+                smbDomain: settings.smbDomain,
+                smbPort: settings.smbPort,
+                smbUsername: settings.smbUsername,
+                smbPassword: "",
             });
             setLastRunAt(settings.lastRunAt);
             setLastRunStatus(settings.lastRunStatus);
             setLastError(settings.lastError);
             setNextRunAt(settings.nextRunAt);
             setLastDumpPath(settings.lastDumpPath);
+            setSmbPasswordSet(settings.smbPasswordSet);
+            setSmbLastRunAt(settings.smbLastRunAt);
+            setSmbLastStatus(settings.smbLastStatus);
+            setSmbLastError(settings.smbLastError);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare le impostazioni backup"));
         } finally {
@@ -130,11 +156,33 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             return;
         }
 
+        if (formValues.smbEnabled) {
+            if (!formValues.smbHost.trim() || !formValues.smbShare.trim() || !formValues.smbUsername.trim()) {
+                toast.error("Per il NAS specifica almeno host, condivisione e utente");
+                return;
+            }
+
+            if (!smbPasswordSet && !formValues.smbPassword?.trim()) {
+                toast.error("Specifica una password per la connessione al NAS");
+                return;
+            }
+
+            if (!Number.isInteger(formValues.smbPort) || formValues.smbPort <= 0 || formValues.smbPort > 65535) {
+                toast.error("La porta SMB deve essere un numero valido");
+                return;
+            }
+        }
+
         try {
             setIsSaving(true);
             const settings = await updateBackupSettings({
                 ...formValues,
                 outputDir: formValues.outputDir.trim(),
+                smbHost: formValues.smbHost.trim(),
+                smbShare: formValues.smbShare.trim(),
+                smbPath: formValues.smbPath.trim(),
+                smbDomain: formValues.smbDomain.trim(),
+                smbUsername: formValues.smbUsername.trim(),
             });
 
             setLastRunAt(settings.lastRunAt);
@@ -142,12 +190,53 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             setLastError(settings.lastError);
             setNextRunAt(settings.nextRunAt);
             setLastDumpPath(settings.lastDumpPath);
+            setSmbPasswordSet(settings.smbPasswordSet);
+            setSmbLastRunAt(settings.smbLastRunAt);
+            setSmbLastStatus(settings.smbLastStatus);
+            setSmbLastError(settings.smbLastError);
+            setFormValues((prev) => ({ ...prev, smbPassword: "" }));
             toast.success("Impostazioni backup salvate");
             onSaveSuccess?.();
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare le impostazioni backup"));
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleTestSmbConnection = async () => {
+        if (isTestingSmb) {
+            return;
+        }
+
+        if (!formValues.smbHost.trim() || !formValues.smbShare.trim() || !formValues.smbUsername.trim()) {
+            toast.error("Per testare la connessione specifica almeno host, condivisione e utente");
+            return;
+        }
+
+        const password = formValues.smbPassword?.trim();
+
+        if (!password) {
+            toast.error("Inserisci la password nel campo qui sopra per testare la connessione");
+            return;
+        }
+
+        try {
+            setIsTestingSmb(true);
+            const result = await testSmbConnection({
+                host: formValues.smbHost.trim(),
+                share: formValues.smbShare.trim(),
+                path: formValues.smbPath.trim(),
+                domain: formValues.smbDomain.trim(),
+                port: formValues.smbPort,
+                username: formValues.smbUsername.trim(),
+                password,
+            });
+            toast.success(result.message);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Connessione al NAS non riuscita"));
+        } finally {
+            setIsTestingSmb(false);
         }
     };
 
@@ -172,7 +261,16 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             setLastError(result.lastError);
             setNextRunAt(result.nextRunAt);
             setLastDumpPath(result.lastDumpPath);
-            toast.success(result.message);
+            setSmbLastRunAt(result.smbLastRunAt);
+            setSmbLastStatus(result.smbLastStatus);
+            setSmbLastError(result.smbLastError);
+
+            if (result.smbEnabled && result.smbLastStatus === "failed") {
+                toast.warning(result.message, { richColors: true });
+            } else {
+                toast.success(result.message);
+            }
+
             void loadDumpFiles();
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Dump database non riuscito"));
@@ -362,6 +460,167 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                         </Button>
                                     </div>
                                 )}
+                            </div>
+                        </>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card size="sm" className="border-primary/15 shadow-sm">
+                <CardHeader className="border-b border-primary/10 bg-muted/20">
+                    <CardTitle>Destinazione di rete (NAS)</CardTitle>
+                    <CardDescription>
+                        Copia automaticamente ogni backup anche su una condivisione SMB/CIFS (es. una cartella di un NAS).
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 pt-4">
+                    {isLoading ? (
+                        <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
+                            Caricamento impostazioni...
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-3">
+                                <div className="flex items-center gap-3">
+                                    <Checkbox
+                                        id="smbEnabled"
+                                        checked={formValues.smbEnabled}
+                                        onCheckedChange={(checked) =>
+                                            setFormValues((prev) => ({
+                                                ...prev,
+                                                smbEnabled: Boolean(checked),
+                                            }))
+                                        }
+                                    />
+                                    <Label htmlFor="smbEnabled" className="cursor-pointer">
+                                        Copia i backup anche sul NAS
+                                    </Label>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="smbHost">Host / IP del NAS</Label>
+                                        <Input
+                                            id="smbHost"
+                                            placeholder="es: 192.168.1.10"
+                                            disabled={!formValues.smbEnabled}
+                                            value={formValues.smbHost}
+                                            onChange={(event) =>
+                                                setFormValues((prev) => ({ ...prev, smbHost: event.target.value }))
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="smbShare">Nome condivisione</Label>
+                                        <Input
+                                            id="smbShare"
+                                            placeholder="es: backup"
+                                            disabled={!formValues.smbEnabled}
+                                            value={formValues.smbShare}
+                                            onChange={(event) =>
+                                                setFormValues((prev) => ({ ...prev, smbShare: event.target.value }))
+                                            }
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="smbPath">Sottocartella (opzionale)</Label>
+                                        <Input
+                                            id="smbPath"
+                                            placeholder="es: masso-web"
+                                            disabled={!formValues.smbEnabled}
+                                            value={formValues.smbPath}
+                                            onChange={(event) =>
+                                                setFormValues((prev) => ({ ...prev, smbPath: event.target.value }))
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="smbPort">Porta</Label>
+                                        <Input
+                                            id="smbPort"
+                                            type="number"
+                                            min={1}
+                                            max={65535}
+                                            disabled={!formValues.smbEnabled}
+                                            value={formValues.smbPort}
+                                            onChange={(event) =>
+                                                setFormValues((prev) => ({
+                                                    ...prev,
+                                                    smbPort: Number(event.target.value),
+                                                }))
+                                            }
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="smbDomain">Dominio/Workgroup (opzionale)</Label>
+                                        <Input
+                                            id="smbDomain"
+                                            placeholder="es: WORKGROUP"
+                                            disabled={!formValues.smbEnabled}
+                                            value={formValues.smbDomain}
+                                            onChange={(event) =>
+                                                setFormValues((prev) => ({ ...prev, smbDomain: event.target.value }))
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="smbUsername">Utente</Label>
+                                        <Input
+                                            id="smbUsername"
+                                            disabled={!formValues.smbEnabled}
+                                            value={formValues.smbUsername}
+                                            onChange={(event) =>
+                                                setFormValues((prev) => ({ ...prev, smbUsername: event.target.value }))
+                                            }
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="smbPassword">Password</Label>
+                                    <Input
+                                        id="smbPassword"
+                                        type="password"
+                                        autoComplete="new-password"
+                                        placeholder={smbPasswordSet ? "•••• (invariata, lascia vuoto)" : ""}
+                                        disabled={!formValues.smbEnabled}
+                                        value={formValues.smbPassword ?? ""}
+                                        onChange={(event) =>
+                                            setFormValues((prev) => ({ ...prev, smbPassword: event.target.value }))
+                                        }
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        La password viene salvata cifrata. Lasciala vuota al salvataggio per mantenere quella già impostata.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={!formValues.smbEnabled || isTestingSmb}
+                                        onClick={() => void handleTestSmbConnection()}
+                                    >
+                                        {isTestingSmb ? "Test in corso..." : "Testa connessione"}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-3 text-sm">
+                                <p>Ultima copia su NAS: {formatDateTime(smbLastRunAt)}</p>
+                                <p>Stato ultima copia su NAS: {smbLastStatus}</p>
+                                {smbLastError ? (
+                                    <p className="text-destructive">Ultimo errore NAS: {smbLastError}</p>
+                                ) : null}
                             </div>
                         </>
                     )}

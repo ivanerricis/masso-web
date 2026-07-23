@@ -1,12 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { decryptSecret, encryptSecret } from "./secretCrypto";
 
 const settingsDir = path.join(process.cwd(), "data");
 const settingsFilePath = path.join(settingsDir, "backup-settings.json");
 const defaultOutputDir = "backups";
 const defaultMaxBackupsToKeep = 14;
 const dumpFileNamePattern = /^db-dump-\d{8}-\d{6}\.sql$/;
+const defaultSmbPort = 445;
+const smbTestTimeoutMs = 15_000;
+const smbMkdirTimeoutMs = 15_000;
+const smbPutTimeoutMs = 30 * 60 * 1000;
 
 export type BackupSettingsState = {
     dumpEnabled: boolean;
@@ -20,6 +25,27 @@ export type BackupSettingsState = {
     lastRunStatus: "idle" | "success" | "failed";
     lastError: string | null;
     lastDumpPath: string | null;
+    smbEnabled: boolean;
+    smbHost: string;
+    smbShare: string;
+    smbPath: string;
+    smbDomain: string;
+    smbPort: number;
+    smbUsername: string;
+    smbPasswordEncrypted: string | null;
+    smbLastRunAt: string | null;
+    smbLastStatus: "idle" | "success" | "failed";
+    smbLastError: string | null;
+};
+
+export type SmbConnectionConfig = {
+    host: string;
+    share: string;
+    path: string;
+    domain: string;
+    port: number;
+    username: string;
+    password: string;
 };
 
 export class BackupManagerError extends Error {
@@ -43,6 +69,17 @@ const defaultState: BackupSettingsState = {
     lastRunStatus: "idle",
     lastError: null,
     lastDumpPath: null,
+    smbEnabled: false,
+    smbHost: "",
+    smbShare: "",
+    smbPath: "",
+    smbDomain: "",
+    smbPort: defaultSmbPort,
+    smbUsername: "",
+    smbPasswordEncrypted: null,
+    smbLastRunAt: null,
+    smbLastStatus: "idle",
+    smbLastError: null,
 };
 
 let cachedState: BackupSettingsState | null = null;
@@ -115,6 +152,7 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
     const frequencyDays = Number(input.frequencyDays ?? defaultState.frequencyDays);
     const runAt = typeof input.runAt === "string" ? input.runAt : defaultState.runAt;
     const maxBackupsToKeep = Number(input.maxBackupsToKeep ?? defaultState.maxBackupsToKeep);
+    const smbPort = Number(input.smbPort ?? defaultState.smbPort);
 
     if (!Number.isInteger(frequencyDays) || frequencyDays <= 0 || frequencyDays > 365) {
         throw new BackupManagerError("La frequenza deve essere tra 1 e 365 giorni", 400);
@@ -122,6 +160,10 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
 
     if (!Number.isInteger(maxBackupsToKeep) || maxBackupsToKeep <= 0 || maxBackupsToKeep > 365) {
         throw new BackupManagerError("Il numero di backup da mantenere deve essere tra 1 e 365", 400);
+    }
+
+    if (!Number.isInteger(smbPort) || smbPort <= 0 || smbPort > 65535) {
+        throw new BackupManagerError("La porta SMB deve essere un numero valido", 400);
     }
 
     parseRunTime(runAt);
@@ -141,6 +183,21 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
                 : defaultState.lastRunStatus,
         lastError: typeof input.lastError === "string" ? input.lastError : null,
         lastDumpPath: typeof input.lastDumpPath === "string" ? input.lastDumpPath : null,
+        smbEnabled: Boolean(input.smbEnabled ?? defaultState.smbEnabled),
+        smbHost: typeof input.smbHost === "string" ? input.smbHost.trim() : defaultState.smbHost,
+        smbShare: typeof input.smbShare === "string" ? input.smbShare.trim() : defaultState.smbShare,
+        smbPath: typeof input.smbPath === "string" ? input.smbPath.trim() : defaultState.smbPath,
+        smbDomain: typeof input.smbDomain === "string" ? input.smbDomain.trim() : defaultState.smbDomain,
+        smbPort,
+        smbUsername: typeof input.smbUsername === "string" ? input.smbUsername.trim() : defaultState.smbUsername,
+        smbPasswordEncrypted:
+            typeof input.smbPasswordEncrypted === "string" ? input.smbPasswordEncrypted : null,
+        smbLastRunAt: typeof input.smbLastRunAt === "string" ? input.smbLastRunAt : null,
+        smbLastStatus:
+            input.smbLastStatus === "success" || input.smbLastStatus === "failed" || input.smbLastStatus === "idle"
+                ? input.smbLastStatus
+                : defaultState.smbLastStatus,
+        smbLastError: typeof input.smbLastError === "string" ? input.smbLastError : null,
     };
 };
 
@@ -249,6 +306,108 @@ const runPgDump = async (outputPath: string) => {
     });
 };
 
+const smbTarget = (config: SmbConnectionConfig) => `//${config.host}/${config.share}`;
+
+const runSmbClient = async (config: SmbConnectionConfig, command: string, timeoutMs: number) => {
+    const args = [smbTarget(config), "-U", config.username, "-p", String(config.port)];
+
+    if (config.domain) {
+        args.push("-W", config.domain);
+    }
+
+    args.push("-c", command);
+
+    const env = {
+        ...process.env,
+        PASSWD: config.password,
+    };
+
+    await new Promise<void>((resolve, reject) => {
+        const child = spawn("smbclient", args, { env });
+        let stderr = "";
+        let timedOut = false;
+
+        const timer = setTimeout(() => {
+            timedOut = true;
+            child.kill();
+        }, timeoutMs);
+
+        child.stdin?.end();
+
+        child.stderr.on("data", (chunk) => {
+            stderr += chunk.toString();
+        });
+
+        child.on("error", (error: NodeJS.ErrnoException) => {
+            clearTimeout(timer);
+
+            if (error.code === "ENOENT") {
+                reject(new BackupManagerError("smbclient non trovato. Installa samba-client nel backend", 500));
+                return;
+            }
+
+            reject(new BackupManagerError(`Errore avvio smbclient: ${error.message}`, 500));
+        });
+
+        child.on("close", (code) => {
+            clearTimeout(timer);
+
+            if (timedOut) {
+                reject(new BackupManagerError("Timeout durante la comunicazione con il NAS", 504));
+                return;
+            }
+
+            if (code === 0) {
+                resolve();
+                return;
+            }
+
+            const message = stderr.trim() || `smbclient terminato con codice ${code}`;
+            reject(new BackupManagerError(message, 502));
+        });
+    });
+};
+
+const quoteSmbPathSegment = (value: string) => value.replace(/"/g, "");
+
+const ensureSmbRemoteDir = async (config: SmbConnectionConfig) => {
+    const remotePath = config.path.trim();
+
+    if (!remotePath) {
+        return;
+    }
+
+    try {
+        await runSmbClient(config, `mkdir "${quoteSmbPathSegment(remotePath)}"`, smbMkdirTimeoutMs);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+
+        if (message.includes("NT_STATUS_OBJECT_NAME_COLLISION")) {
+            return;
+        }
+
+        throw error;
+    }
+};
+
+export const testSmbConnection = async (config: SmbConnectionConfig) => {
+    const remotePath = config.path.trim();
+    const command = remotePath ? `cd "${quoteSmbPathSegment(remotePath)}"; ls` : "ls";
+
+    await runSmbClient(config, command, smbTestTimeoutMs);
+};
+
+const uploadDumpToSmb = async (config: SmbConnectionConfig, localFilePath: string) => {
+    await ensureSmbRemoteDir(config);
+
+    const remotePath = config.path.trim();
+    const fileName = path.basename(localFilePath);
+    const putCommand = `put "${localFilePath}" "${fileName}"`;
+    const command = remotePath ? `cd "${quoteSmbPathSegment(remotePath)}"; ${putCommand}` : putCommand;
+
+    await runSmbClient(config, command, smbPutTimeoutMs);
+};
+
 const pruneOldBackups = async (outputDir: string, keep: number) => {
     const absoluteOutputDir = toAbsoluteOutputDir(outputDir);
 
@@ -279,17 +438,38 @@ const setNextRunIfNeeded = (state: BackupSettingsState, reference: Date) => {
     state.nextRunAt = null;
 };
 
-export const getBackupSettings = async () => {
-    const state = await loadState();
-    return { ...state };
+export type BackupSettingsPublic = Omit<BackupSettingsState, "smbPasswordEncrypted"> & {
+    smbPasswordSet: boolean;
 };
 
-export const updateBackupSettings = async (
-    input: Pick<
-        BackupSettingsState,
-        "dumpEnabled" | "autoEnabled" | "frequencyDays" | "runAt" | "outputDir" | "maxBackupsToKeep"
-    >
-) => {
+const toPublicState = (state: BackupSettingsState): BackupSettingsPublic => {
+    const { smbPasswordEncrypted, ...rest } = state;
+    return { ...rest, smbPasswordSet: Boolean(smbPasswordEncrypted) };
+};
+
+export const getBackupSettings = async (): Promise<BackupSettingsPublic> => {
+    const state = await loadState();
+    return toPublicState(state);
+};
+
+export type BackupSettingsInput = Pick<
+    BackupSettingsState,
+    | "dumpEnabled"
+    | "autoEnabled"
+    | "frequencyDays"
+    | "runAt"
+    | "outputDir"
+    | "maxBackupsToKeep"
+    | "smbEnabled"
+    | "smbHost"
+    | "smbShare"
+    | "smbPath"
+    | "smbDomain"
+    | "smbPort"
+    | "smbUsername"
+> & { smbPassword?: string };
+
+export const updateBackupSettings = async (input: BackupSettingsInput) => {
     const current = await loadState();
 
     current.dumpEnabled = input.dumpEnabled;
@@ -299,10 +479,33 @@ export const updateBackupSettings = async (
     current.outputDir = getConfiguredOutputDir();
     current.maxBackupsToKeep = input.maxBackupsToKeep;
 
+    current.smbEnabled = input.smbEnabled;
+    current.smbHost = input.smbHost.trim();
+    current.smbShare = input.smbShare.trim();
+    current.smbPath = input.smbPath.trim();
+    current.smbDomain = input.smbDomain.trim();
+    current.smbPort = input.smbPort;
+    current.smbUsername = input.smbUsername.trim();
+
+    if (input.smbPassword) {
+        current.smbPasswordEncrypted = await encryptSecret(input.smbPassword);
+    }
+
+    if (current.smbEnabled && (!current.smbHost || !current.smbShare || !current.smbUsername)) {
+        throw new BackupManagerError(
+            "Per abilitare la destinazione NAS specifica host, condivisione e utente",
+            400
+        );
+    }
+
+    if (current.smbEnabled && !current.smbPasswordEncrypted) {
+        throw new BackupManagerError("Specifica una password per la connessione al NAS", 400);
+    }
+
     setNextRunIfNeeded(current, new Date());
     await persistState(current);
 
-    return { ...current };
+    return toPublicState(current);
 };
 
 export type BackupDumpFile = {
@@ -375,12 +578,42 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
         state.lastRunStatus = "success";
         state.lastError = null;
         state.lastDumpPath = outputPath;
+
+        let message = origin === "manual" ? "Dump completato con successo" : "Dump automatico completato";
+
+        if (state.smbEnabled && state.smbPasswordEncrypted) {
+            try {
+                const smbConfig: SmbConnectionConfig = {
+                    host: state.smbHost,
+                    share: state.smbShare,
+                    path: state.smbPath,
+                    domain: state.smbDomain,
+                    port: state.smbPort,
+                    username: state.smbUsername,
+                    password: await decryptSecret(state.smbPasswordEncrypted),
+                };
+
+                await uploadDumpToSmb(smbConfig, outputPath);
+
+                state.smbLastRunAt = now.toISOString();
+                state.smbLastStatus = "success";
+                state.smbLastError = null;
+            } catch (smbError) {
+                const smbMessage =
+                    smbError instanceof Error ? smbError.message : "Errore durante la copia su NAS";
+                state.smbLastRunAt = now.toISOString();
+                state.smbLastStatus = "failed";
+                state.smbLastError = smbMessage;
+                message = `${message}, ma la copia su NAS non e riuscita: ${smbMessage}`;
+            }
+        }
+
         setNextRunIfNeeded(state, now);
         await persistState(state);
 
         return {
-            ...state,
-            message: origin === "manual" ? "Dump completato con successo" : "Dump automatico completato",
+            ...toPublicState(state),
+            message,
         };
     } catch (error) {
         const message = error instanceof Error ? error.message : "Errore durante il dump database";

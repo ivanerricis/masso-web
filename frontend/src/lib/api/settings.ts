@@ -12,12 +12,35 @@ export type BackupSettingsDto = {
     lastRunStatus: "idle" | "success" | "failed";
     lastError: string | null;
     lastDumpPath: string | null;
+    smbEnabled: boolean;
+    smbHost: string;
+    smbShare: string;
+    smbPath: string;
+    smbDomain: string;
+    smbPort: number;
+    smbUsername: string;
+    smbPasswordSet: boolean;
+    smbLastRunAt: string | null;
+    smbLastStatus: "idle" | "success" | "failed";
+    smbLastError: string | null;
 };
 
 export type BackupSettingsInput = Pick<
     BackupSettingsDto,
-    "dumpEnabled" | "autoEnabled" | "frequencyDays" | "runAt" | "outputDir" | "maxBackupsToKeep"
->;
+    | "dumpEnabled"
+    | "autoEnabled"
+    | "frequencyDays"
+    | "runAt"
+    | "outputDir"
+    | "maxBackupsToKeep"
+    | "smbEnabled"
+    | "smbHost"
+    | "smbShare"
+    | "smbPath"
+    | "smbDomain"
+    | "smbPort"
+    | "smbUsername"
+> & { smbPassword?: string };
 
 export const getBackupSettings = async () =>
     (await api.get<BackupSettingsDto>("/settings/backup")).data;
@@ -27,6 +50,19 @@ export const updateBackupSettings = async (payload: BackupSettingsInput) =>
 
 export const runBackupNow = async () =>
     (await api.post<BackupSettingsDto & { message: string }>("/settings/backup/run")).data;
+
+export type SmbConnectionTestInput = {
+    host: string;
+    share: string;
+    path: string;
+    domain: string;
+    port: number;
+    username: string;
+    password: string;
+};
+
+export const testSmbConnection = async (payload: SmbConnectionTestInput) =>
+    (await api.post<{ message: string }>("/settings/backup/smb/test", payload)).data;
 
 export type BackupDumpFileDto = {
     fileName: string;

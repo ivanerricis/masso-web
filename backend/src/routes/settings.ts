@@ -9,6 +9,7 @@ import {
     getBackupSettings,
     listBackupDumps,
     runBackupNow,
+    testSmbConnection,
     updateBackupSettings,
 } from "../services/backupManager";
 import { LogoManagerError, getLogoStatus, resetLogo, saveLogo } from "../services/logoManager";
@@ -54,6 +55,24 @@ const backupSettingsSchema = z.object({
     runAt: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
     outputDir: z.string().trim().min(1).max(512),
     maxBackupsToKeep: z.coerce.number().int().min(1).max(365),
+    smbEnabled: z.boolean(),
+    smbHost: z.string().trim().max(255),
+    smbShare: z.string().trim().max(255),
+    smbPath: z.string().trim().max(512),
+    smbDomain: z.string().trim().max(255),
+    smbPort: z.coerce.number().int().min(1).max(65535),
+    smbUsername: z.string().trim().max(255),
+    smbPassword: z.string().max(512).optional(),
+}).strict();
+
+const smbTestSchema = z.object({
+    host: z.string().trim().min(1).max(255),
+    share: z.string().trim().min(1).max(255),
+    path: z.string().trim().max(512),
+    domain: z.string().trim().max(255),
+    port: z.coerce.number().int().min(1).max(65535),
+    username: z.string().trim().min(1).max(255),
+    password: z.string().min(1).max(512),
 }).strict();
 
 settingsRouter.get("/backup", async (_req, res, next) => {
@@ -84,6 +103,19 @@ settingsRouter.post("/backup/run", async (_req, res, next) => {
     try {
         const result = await runBackupNow("manual");
         res.status(201).json(result);
+    } catch (error) {
+        if (handleBackupError(error, res)) {
+            return;
+        }
+
+        next(error);
+    }
+});
+
+settingsRouter.post("/backup/smb/test", validate({ body: smbTestSchema }), async (req, res, next) => {
+    try {
+        await testSmbConnection(req.body);
+        res.json({ message: "Connessione al NAS riuscita" });
     } catch (error) {
         if (handleBackupError(error, res)) {
             return;

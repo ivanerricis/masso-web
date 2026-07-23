@@ -17,7 +17,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN apk add --no-cache postgresql16-client
+RUN apk add --no-cache postgresql16-client samba-client
 
 COPY package*.json ./
 RUN npm ci --omit=dev
