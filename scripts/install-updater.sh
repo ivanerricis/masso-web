@@ -9,6 +9,14 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+read -r -p "Vuoi attivare gli aggiornamenti automatici? [S/n] " answer
+case "${answer,,}" in
+    n|no)
+        echo "Aggiornamenti automatici non attivati. Rilancia questo script in qualsiasi momento per attivarli."
+        exit 0
+        ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 UNIT_SRC_DIR="$REPO_ROOT/ops/systemd"
