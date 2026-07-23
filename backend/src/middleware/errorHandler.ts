@@ -42,47 +42,48 @@ const findPgError = (error: unknown): PgError => {
 // <childTable>_<column>_<parentTable>_<parentColumn>_fk
 // Kept as an explicit map (rather than parsed from the name) so wording stays
 // natural in Italian and independent of Postgres' own error text/locale.
-const FK_MESSAGES: Record<string, { parentTable: string; onDeleteParent: string; onInvalidReference: string }> = {
+const FK_MESSAGES: Record<string, { onDeleteParent: string; onInvalidReference: string }> = {
     report_device_id_device_id_fk: {
-        parentTable: "device",
         onDeleteParent: "Impossibile eliminare il dispositivo: è ancora associato a uno o più rapporti.",
         onInvalidReference: "Il dispositivo selezionato non esiste.",
     },
     report_issue_id_issue_id_fk: {
-        parentTable: "issue",
         onDeleteParent: "Impossibile eliminare il guasto: è ancora associato a uno o più rapporti.",
         onInvalidReference: "Il guasto selezionato non esiste.",
     },
     report_collaborator_id_collaborator_id_fk: {
-        parentTable: "collaborator",
         onDeleteParent: "Impossibile eliminare il collaboratore: è ancora associato a uno o più rapporti.",
         onInvalidReference: "Il collaboratore selezionato non esiste.",
     },
     report_customer_id_customer_id_fk: {
-        parentTable: "customer",
         onDeleteParent: "Impossibile eliminare il cliente: è ancora associato a uno o più rapporti.",
         onInvalidReference: "Il cliente selezionato non esiste.",
     },
     report_technician_report_id_report_id_fk: {
-        parentTable: "report",
         onDeleteParent: "Impossibile eliminare il rapporto: è ancora assegnato a uno o più tecnici.",
         onInvalidReference: "Il rapporto selezionato non esiste.",
     },
     report_technician_technician_id_technician_id_fk: {
-        parentTable: "technician",
         onDeleteParent: "Impossibile eliminare il tecnico: è ancora assegnato a uno o più rapporti.",
         onInvalidReference: "Il tecnico selezionato non esiste.",
     },
 };
 
-const foreignKeyViolationMessage = ({ constraint, table, detail }: PgError): string => {
+const foreignKeyViolationMessage = ({ constraint, message, detail }: PgError): string => {
     const known = constraint ? FK_MESSAGES[constraint] : undefined;
 
     if (!known) {
         return detail ?? "Riferimento non valido";
     }
 
-    return table === known.parentTable ? known.onDeleteParent : known.onInvalidReference;
+    // The `table` field is unreliable here — Postgres always reports the
+    // referencing (child) table there regardless of which side of the FK was
+    // violated. The message prefix is the only signal that distinguishes a
+    // blocked delete ("update or delete on table <parent>...") from an insert
+    // referencing a non-existent row ("insert or update on table <child>...").
+    const isDeleteBlockedByReference = message?.startsWith("update or delete");
+
+    return isDeleteBlockedByReference ? known.onDeleteParent : known.onInvalidReference;
 };
 
 export const errorHandler = (
