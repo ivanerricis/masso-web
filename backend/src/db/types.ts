@@ -3,6 +3,7 @@ import {
     collaboratorTable,
     customerTable,
     deviceTable,
+    interventionTable,
     IssueTable,
     reportTable,
     reportTechnicianTable,
@@ -36,3 +37,7 @@ export type UpdateIssue = Partial<Omit<NewIssue, "id">>;
 export type ReportTechnician = InferSelectModel<typeof reportTechnicianTable>;
 export type NewReportTechnician = InferInsertModel<typeof reportTechnicianTable>;
 export type UpdateReportTechnician = Partial<Omit<NewReportTechnician, "reportId" | "technicianId">>;
+
+export type Intervention = InferSelectModel<typeof interventionTable>;
+export type NewIntervention = InferInsertModel<typeof interventionTable>;
+export type UpdateIntervention = Partial<Omit<NewIntervention, "id">>;

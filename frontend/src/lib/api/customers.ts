@@ -50,3 +50,6 @@ export const deleteCustomer = async (id: number) =>
 
 export const getCustomerReportsPrintUrl = (id: number) =>
     api.getUri({ url: `/customers/${id}/reports/print` });
+
+export const getCustomerInterventionsPrintUrl = (id: number) =>
+    api.getUri({ url: `/customers/${id}/interventions/print` });

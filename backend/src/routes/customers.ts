@@ -8,7 +8,9 @@ import {
     updateCustomerById,
 } from "../db/queries/customer";
 import { listReports } from "../db/queries/report";
+import { listInterventions } from "../db/queries/intervention";
 import { createCustomerReportsPdfBuffer } from "../services/reportPdf";
+import { createCustomerInterventionsPdfBuffer } from "../services/interventionPdf";
 import { validate } from "./validation";
 
 const customersRouter = Router();
@@ -154,6 +156,64 @@ customersRouter.get("/:id/reports/print", validate({ params: customerIdParamsSch
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `inline; filename=customer-${id}-reports.pdf`);
+    res.send(pdfBuffer);
+});
+
+customersRouter.get("/:id/interventions/print", validate({ params: customerIdParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
+    const customers = await getCustomerById(id);
+
+    if (customers.length === 0) {
+        res.status(404).json({ message: "Customer not found" });
+        return;
+    }
+
+    const [customer] = customers;
+    const interventionsResult = await listInterventions({ customerId: id });
+    const interventions = Array.isArray(interventionsResult) ? interventionsResult : interventionsResult.items;
+    const customerName = `${customer.firstName} ${customer.lastName ?? ""}`.trim();
+    const customerPhonePrimary = customer.phoneNumber?.trim() ?? "";
+    const customerPhoneSecondary = customer.phoneNumberSecondary?.trim() ?? "";
+    const customerPhone =
+        customerPhonePrimary && customerPhoneSecondary
+            ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
+            : customerPhonePrimary || customerPhoneSecondary || "N/D";
+    const labName = process.env.LAB_NAME ?? "Masso";
+    const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
+    const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
+    const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
+    const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
+    const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
+        ? configuredLogoUrl
+        : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
+
+    const pdfBuffer = await createCustomerInterventionsPdfBuffer({
+        customerId: customer.id,
+        customerName,
+        customerPhone,
+        customerEmail: customer.email ?? "-",
+        labName,
+        labEmail,
+        labAddress,
+        labPhone,
+        labLogoUrl,
+        interventionCount: interventions.length,
+        interventions: interventions.map((intervention) => ({
+            id: intervention.id,
+            createdAtLabel: new Intl.DateTimeFormat("it-IT", {
+                dateStyle: "medium",
+            }).format(intervention.createdAt),
+            type: intervention.type as "consegna_materiale" | "intervento_sede" | "intervento_remoto",
+            status: intervention.status as "programmato" | "in_lavorazione" | "completato",
+            description: intervention.description,
+            scheduleLabel: intervention.interventionDate
+                ? `${new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${intervention.interventionDate}T00:00:00`))} ${intervention.startTime?.slice(0, 5) ?? ""}-${intervention.endTime?.slice(0, 5) ?? ""}`
+                : null,
+        })),
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename=customer-${id}-interventions.pdf`);
     res.send(pdfBuffer);
 });
 

@@ -1,4 +1,4 @@
-import { integer, pgTable, varchar, boolean, timestamp, primaryKey, index } from "drizzle-orm/pg-core";
+import { integer, pgTable, varchar, boolean, timestamp, date, time, text, primaryKey, index } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 const timestamps = {
@@ -101,3 +101,25 @@ export const reportTechnicianTable = pgTable("report_technician",
         primaryKey({ columns: [table.reportId] }),
     ])
 )
+
+export const interventionTypes = ["consegna_materiale", "intervento_sede", "intervento_remoto"] as const;
+export const interventionStatuses = ["programmato", "in_lavorazione", "completato"] as const;
+
+export const interventionTable = pgTable("intervention", {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    type: varchar("type", { length: 30 }).notNull(),
+    description: text("description").notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("programmato"),
+    interventionDate: date("intervention_date"),
+    startTime: time("start_time"),
+    endTime: time("end_time"),
+    ...timestamps,
+    customerId: integer("customer_id").notNull().references(() => customerTable.id),
+    technicianId: integer("technician_id").notNull().references(() => technicianTable.id),
+}, (table) => [
+    index("intervention_customer_id_idx").on(table.customerId),
+    index("intervention_technician_id_idx").on(table.technicianId),
+    index("intervention_type_idx").on(table.type),
+    index("intervention_status_idx").on(table.status),
+    index("intervention_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`),
+]);

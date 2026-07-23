@@ -1,29 +1,33 @@
 import OpenEntityButton from "@/components/open-entity-button";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { CustomerDto } from "@/types/dtos";
+import type { InterventionDto } from "@/types/dtos";
 import { Pencil, Printer, Trash2 } from "lucide-react";
-import type { CustomerColumn } from "./customer-columns";
+import type { InterventionColumn } from "./intervention-columns";
 
-type CustomersTableProps = {
-    columns: CustomerColumn[];
-    rows: CustomerDto[];
-    onOpenCustomer: (id: number) => void;
-    onPrintCustomerReports: (id: number) => void;
-    onPrintCustomerInterventions: (id: number) => void;
-    onEditCustomer: (id: number) => void;
-    onDeleteCustomer: (customer: CustomerDto) => void;
+type InterventionsTableProps = {
+    columns: InterventionColumn[];
+    rows: InterventionDto[];
+    onOpenIntervention: (id: number) => void;
+    onEditIntervention: (id: number) => void;
+    onPrintIntervention: (id: number) => void;
+    onDeleteIntervention: (intervention: InterventionDto) => void;
 };
 
-const CustomersTable = ({
+const rowClassNameByStatus: Record<InterventionDto["status"], string> = {
+    programmato: "bg-red-500/30 hover:bg-red-500/40 dark:bg-red-500/15 dark:hover:bg-red-500/20",
+    in_lavorazione: "bg-yellow-400/30 hover:bg-yellow-400/40 dark:bg-yellow-400/15 dark:hover:bg-yellow-400/20",
+    completato: "bg-green-500/30 hover:bg-green-500/40 dark:bg-green-500/15 dark:hover:bg-green-500/20",
+};
+
+const InterventionsTable = ({
     columns,
     rows,
-    onOpenCustomer,
-    onPrintCustomerReports,
-    onPrintCustomerInterventions,
-    onEditCustomer,
-    onDeleteCustomer,
-}: CustomersTableProps) => {
+    onOpenIntervention,
+    onEditIntervention,
+    onPrintIntervention,
+    onDeleteIntervention,
+}: InterventionsTableProps) => {
     return (
         <Table className="hidden sm:table bg-background">
             <TableHeader className="w-full">
@@ -39,49 +43,46 @@ const CustomersTable = ({
                 {rows.length === 0 ? (
                     <TableRow>
                         <TableCell colSpan={columns.length} className="py-6 text-center text-muted-foreground">
-                            Nessun cliente disponibile.
+                            Nessun intervento disponibile.
                         </TableCell>
                     </TableRow>
                 ) : (
                     rows.map((row) => (
-                        <TableRow key={row.id}>
+                        <TableRow key={row.id} className={rowClassNameByStatus[row.status]}>
                             {columns.map((column) => (
-                                <TableCell key={`${row.id}-${column.key}`} className={column.className}>
+                                <TableCell
+                                    key={`${row.id}-${column.key}`}
+                                    className={column.key === "actions" ? "bg-background" : column.className}
+                                >
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <OpenEntityButton size="lg" onClick={() => onOpenCustomer(row.id)} aria-label={`Apri cliente ${row.id}`} />
-                                            <Button
-                                                variant="default"
+                                            <OpenEntityButton
                                                 size="icon-lg"
-                                                className="bg-yellow-400/20 hover:bg-yellow-400/30"
-                                                onClick={() => onPrintCustomerReports(row.id)}
-                                                aria-label={`Stampa resoconto report cliente ${row.id}`}
-                                            >
-                                                <Printer className="size-5 text-yellow-400" />
-                                            </Button>
-                                            <Button
-                                                variant="default"
-                                                size="icon-lg"
-                                                className="bg-sky-400/20 hover:bg-sky-400/30"
-                                                onClick={() => onPrintCustomerInterventions(row.id)}
-                                                aria-label={`Stampa resoconto interventi cliente ${row.id}`}
-                                            >
-                                                <Printer className="size-5 text-sky-500" />
-                                            </Button>
+                                                onClick={() => onOpenIntervention(row.id)}
+                                                aria-label={`Apri intervento ${row.id}`} />
                                             <Button
                                                 variant="default"
                                                 size="icon-lg"
                                                 className="bg-primary/10 hover:bg-primary/20"
-                                                onClick={() => onEditCustomer(row.id)}
-                                                aria-label={`Modifica cliente ${row.id}`}
+                                                onClick={() => onEditIntervention(row.id)}
+                                                aria-label={`Modifica intervento ${row.id}`}
                                             >
                                                 <Pencil className="size-5 text-primary" />
                                             </Button>
                                             <Button
+                                                variant="default"
+                                                size="icon-lg"
+                                                className="bg-yellow-400/20 hover:bg-yellow-400/30"
+                                                onClick={() => onPrintIntervention(row.id)}
+                                                aria-label={`Stampa intervento ${row.id}`}
+                                            >
+                                                <Printer className="size-5 text-yellow-400" />
+                                            </Button>
+                                            <Button
                                                 variant="destructive"
                                                 size="icon-lg"
-                                                onClick={() => onDeleteCustomer(row)}
-                                                aria-label={`Elimina cliente ${row.id}`}
+                                                onClick={() => onDeleteIntervention(row)}
+                                                aria-label={`Elimina intervento ${row.id}`}
                                             >
                                                 <Trash2 className="size-5" />
                                             </Button>
@@ -99,4 +100,4 @@ const CustomersTable = ({
     );
 };
 
-export default CustomersTable;
+export default InterventionsTable;

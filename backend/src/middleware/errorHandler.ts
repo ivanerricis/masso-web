@@ -67,6 +67,14 @@ const FK_MESSAGES: Record<string, { onDeleteParent: string; onInvalidReference: 
         onDeleteParent: "Impossibile eliminare il tecnico: è ancora assegnato a uno o più rapporti.",
         onInvalidReference: "Il tecnico selezionato non esiste.",
     },
+    intervention_customer_id_customer_id_fk: {
+        onDeleteParent: "Impossibile eliminare il cliente: è ancora associato a uno o più interventi.",
+        onInvalidReference: "Il cliente selezionato non esiste.",
+    },
+    intervention_technician_id_technician_id_fk: {
+        onDeleteParent: "Impossibile eliminare il tecnico: è ancora associato a uno o più interventi.",
+        onInvalidReference: "Il tecnico selezionato non esiste.",
+    },
 };
 
 const foreignKeyViolationMessage = ({ constraint, message, detail }: PgError): string => {

@@ -4,7 +4,14 @@ import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
-import { createCustomer, deleteCustomer, getApiErrorMessage, updateCustomer, getCustomerReportsPrintUrl } from "@/lib/api";
+import {
+    createCustomer,
+    deleteCustomer,
+    getApiErrorMessage,
+    updateCustomer,
+    getCustomerReportsPrintUrl,
+    getCustomerInterventionsPrintUrl,
+} from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { CustomerDto } from "@/types/dtos";
 import { toast } from "sonner";
@@ -85,6 +92,10 @@ const CustomersPage = () => {
 
     const handlePrintCustomerReports = (id: number) => {
         window.open(getCustomerReportsPrintUrl(id), "_blank", "noopener,noreferrer");
+    };
+
+    const handlePrintCustomerInterventions = (id: number) => {
+        window.open(getCustomerInterventionsPrintUrl(id), "_blank", "noopener,noreferrer");
     };
 
     const handleDeleteCustomer = async () => {
@@ -169,6 +180,7 @@ const CustomersPage = () => {
                     rows={customerRows}
                     onOpenCustomer={handleOpenCustomer}
                     onPrintCustomerReports={handlePrintCustomerReports}
+                    onPrintCustomerInterventions={handlePrintCustomerInterventions}
                     onEditCustomer={handleOpenEditDialog}
                     onDeleteCustomer={handleOpenDeleteDialog}
                 />

@@ -78,6 +78,13 @@
       "when": 1776341000000,
       "tag": "0010_add_search_and_fk_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776350000000,
+      "tag": "0011_add_intervention",
+      "breakpoints": true
     }
   ]
 }

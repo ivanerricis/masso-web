@@ -10,6 +10,7 @@ import techniciansRouter from "./routes/technicians";
 import devicesRouter from "./routes/devices";
 import issuesRouter from "./routes/issues";
 import reportTechniciansRouter from "./routes/reportTechnicians";
+import interventionsRouter from "./routes/interventions";
 import { userActionLogger } from "./middleware/userActionLogger";
 import { errorHandler } from "./middleware/errorHandler";
 import settingsRouter from "./routes/settings";
@@ -38,6 +39,7 @@ app.use("/api/technicians", techniciansRouter);
 app.use("/api/devices", devicesRouter);
 app.use("/api/issues", issuesRouter);
 app.use("/api/report-technicians", reportTechniciansRouter);
+app.use("/api/interventions", interventionsRouter);
 app.use("/api/settings", settingsRouter);
 
 app.get("/api/health", (_, res) => {

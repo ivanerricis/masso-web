@@ -11,6 +11,8 @@ const MainLayout = lazy(() => import("@/pages/MainLayout").then((module) => ({ d
 const DashboardPage = lazy(() => import("@/pages/dashboard/DashboardPage"))
 const ReportsPage = lazy(() => import("@/pages/reports/ReportsPage"))
 const ReportPage = lazy(() => import("./pages/reports/ReportPage"))
+const InterventionsPage = lazy(() => import("@/pages/interventions/InterventionsPage"))
+const InterventionPage = lazy(() => import("./pages/interventions/InterventionPage"))
 const CustomersPage = lazy(() => import("@/pages/customers/CustomersPage"))
 const CustomerPage = lazy(() => import("./pages/customers/CustomerPage"))
 const CollaboratorsPage = lazy(() => import("@/pages/collaborators/CollaboratorsPage"))
@@ -35,6 +37,8 @@ export function App() {
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="reports/:id" element={<ReportPage />} />
+                  <Route path="interventions" element={<InterventionsPage />} />
+                  <Route path="interventions/:id" element={<InterventionPage />} />
                   <Route path="clients" element={<CustomersPage />} />
                   <Route path="clients/:id" element={<CustomerPage />} />
                   <Route path="collaborators" element={<CollaboratorsPage />} />

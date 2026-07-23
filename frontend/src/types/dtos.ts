@@ -77,3 +77,24 @@ export type ReportTechnicianDto = {
     technicianId: number;
     price: number;
 };
+
+export type InterventionType = "consegna_materiale" | "intervento_sede" | "intervento_remoto";
+
+export type InterventionStatus = "programmato" | "in_lavorazione" | "completato";
+
+export type InterventionDto = {
+    id: number;
+    type: InterventionType;
+    description: string;
+    status: InterventionStatus;
+    interventionDate: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    customerId: number;
+    technicianId: number;
+    customer: string;
+    customerPhone: string | null;
+    technician: string;
+    createdAt: string;
+    updatedAt: string | null;
+};

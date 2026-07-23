@@ -3,6 +3,7 @@ import {
     collaboratorTable,
     customerTable,
     deviceTable,
+    interventionTable,
     IssueTable,
     reportTable,
     reportTechnicianTable,
@@ -43,10 +44,12 @@ export const collaboratorRelations = relations(collaboratorTable, ({ many }) => 
 
 export const customerRelations = relations(customerTable, ({ many }) => ({
     reports: many(reportTable),
+    interventions: many(interventionTable),
 }));
 
 export const technicianRelations = relations(technicianTable, ({ many }) => ({
     reportTechnicians: many(reportTechnicianTable),
+    interventions: many(interventionTable),
 }));
 
 export const reportTechnicianRelations = relations(reportTechnicianTable, ({ one }) => ({
@@ -56,6 +59,17 @@ export const reportTechnicianRelations = relations(reportTechnicianTable, ({ one
     }),
     technician: one(technicianTable, {
         fields: [reportTechnicianTable.technicianId],
+        references: [technicianTable.id],
+    }),
+}));
+
+export const interventionRelations = relations(interventionTable, ({ one }) => ({
+    customer: one(customerTable, {
+        fields: [interventionTable.customerId],
+        references: [customerTable.id],
+    }),
+    technician: one(technicianTable, {
+        fields: [interventionTable.technicianId],
         references: [technicianTable.id],
     }),
 }));
