@@ -1,6 +1,4 @@
-import CreateCollaboratorDialog from "@/components/dialogs/create/createCollaboratorDialog";
 import CustomDialog from "@/components/dialogs/customDialog";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import PaymentMethodSelector from "@/components/payment-method-selector";
 import {
-    createCollaborator,
     getApiErrorMessage,
     getReport,
     listCollaborators,
@@ -60,7 +57,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
     const [collaborators, setCollaborators] = useState<CollaboratorDto[]>([]);
     const [technicians, setTechnicians] = useState<TechnicianDto[]>([]);
     const [existingTechnicianId, setExistingTechnicianId] = useState<number | null>(null);
-    const [isCreateCollaboratorDialogOpen, setIsCreateCollaboratorDialogOpen] = useState(false);
 
     const [formValues, setFormValues] = useState({
         customerId: "",
@@ -139,17 +135,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
         });
     }, [open, reportId, onOpenChange]);
 
-    const handleCreateCollaborator = async (values: Record<string, string | boolean>) => {
-        const createdCollaborator = await createCollaborator({
-            firstName: String(values.firstName).trim(),
-            lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
-            phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
-        });
-
-        setCollaborators((currentCollaborators) => [...currentCollaborators, createdCollaborator]);
-        setFormValues((prev) => ({ ...prev, collaboratorId: String(createdCollaborator.id) }));
-    };
-
     const handleConfirm = async () => {
         if (!reportId || isSubmitting || isLoading) {
             return;
@@ -225,8 +210,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
     };
 
     return (
-        <>
-            <CustomDialog
+        <CustomDialog
                 open={open}
                 onOpenChange={onOpenChange}
                 title="Modifica rapporto"
@@ -300,32 +284,19 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
 
                                         <div className="grid gap-1">
                                             <Label htmlFor="collaboratorId" className="text-lg">Collaboratore</Label>
-                                            <div className="flex gap-2">
-                                                <Select value={formValues.collaboratorId} onValueChange={(value) => setFormValues((prev) => ({ ...prev, collaboratorId: value }))}>
-                                                    <SelectTrigger id="collaboratorId" className="w-full">
-                                                        <SelectValue placeholder="Nessun collaboratore" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="none">Nessuno</SelectItem>
-                                                        {collaborators.map((collaborator) => (
-                                                            <SelectItem key={collaborator.id} value={String(collaborator.id)}>
-                                                                {formatPersonName(collaborator.firstName, collaborator.lastName)}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    className="shrink-0"
-                                                    onClick={() => setIsCreateCollaboratorDialogOpen(true)}
-                                                    aria-label="Crea nuovo collaboratore"
-                                                >
-                                                    +
-                                                </Button>
-                                            </div>
+                                            <Select value={formValues.collaboratorId} onValueChange={(value) => setFormValues((prev) => ({ ...prev, collaboratorId: value }))}>
+                                                <SelectTrigger id="collaboratorId" className="w-full">
+                                                    <SelectValue placeholder="Nessun collaboratore" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">Nessuno</SelectItem>
+                                                    {collaborators.map((collaborator) => (
+                                                        <SelectItem key={collaborator.id} value={String(collaborator.id)}>
+                                                            {formatPersonName(collaborator.firstName, collaborator.lastName)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
                                 </section>
@@ -337,13 +308,20 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                         </h3>
                                     </div>
 
-                                    <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-                                        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3 content-start">
+                                    <div className="grid gap-4">
+                                        <div className="grid gap-4 lg:grid-cols-2">
                                             <div className="grid gap-1">
                                                 <Label htmlFor="serviceDescription" className="text-lg">Descrizione intervento</Label>
                                                 <Textarea id="serviceDescription" className="text-lg! resize-none" placeholder="Descrivi l'intervento" rows={4} value={formValues.serviceDescription} onChange={(event) => setFormValues((prev) => ({ ...prev, serviceDescription: event.target.value }))} />
                                             </div>
 
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="note" className="text-lg">Note</Label>
+                                                <Textarea id="note" className="text-lg! resize-none" placeholder="Note" rows={4} value={formValues.note} onChange={(event) => setFormValues((prev) => ({ ...prev, note: event.target.value }))} />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                             <div className="grid gap-1">
                                                 <Label htmlFor="password" className="text-lg">Password sblocco</Label>
                                                 <Input id="password" className="text-lg!" placeholder="Password dispositivo" value={formValues.password} onChange={(event) => setFormValues((prev) => ({ ...prev, password: event.target.value }))} />
@@ -375,11 +353,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                                                 <Label htmlFor="internalPrice" className="text-lg">Prezzo interno</Label>
                                                 <Input id="internalPrice" className="text-lg!" type="number" min={0} step={1} value={formValues.internalPrice} onChange={(event) => setFormValues((prev) => ({ ...prev, internalPrice: event.target.value }))} />
                                             </div>
-                                        </div>
-
-                                        <div className="grid gap-1 grid-rows-[auto_1fr]">
-                                            <Label htmlFor="note" className="text-lg">Note</Label>
-                                            <Textarea id="note" className="text-lg! h-31 resize-none" placeholder="Note" value={formValues.note} onChange={(event) => setFormValues((prev) => ({ ...prev, note: event.target.value }))} />
                                         </div>
                                     </div>
                                 </section>
@@ -434,13 +407,6 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                     </div>
                 }
             />
-
-            <CreateCollaboratorDialog
-                open={isCreateCollaboratorDialogOpen}
-                onOpenChange={setIsCreateCollaboratorDialogOpen}
-                onSubmit={handleCreateCollaborator}
-            />
-        </>
     );
 };
 
