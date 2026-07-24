@@ -25,6 +25,7 @@ RUN npm ci --omit=dev
 COPY drizzle ./drizzle
 COPY public ./public
 COPY migrate.js ./migrate.js
+COPY reset-admin-password.js ./reset-admin-password.js
 COPY --from=builder /app/dist ./dist
 
 CMD ["npm", "run", "start"]

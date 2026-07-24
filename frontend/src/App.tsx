@@ -2,11 +2,14 @@ import { Suspense, lazy } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import AppErrorBoundary from "@/components/app-error-boundary"
 import { ThemeProvider } from "./components/theme-provider"
+import { AuthProvider } from "./components/auth-provider"
+import RequireAuth from "@/components/require-auth"
 import { Toaster } from "./components/ui/sonner"
 import { TooltipProvider } from "./components/ui/tooltip"
 import LoadingPage from "./components/loadingPage"
 import UnhandledErrorPage from "@/pages/UnhandledErrorPage"
 
+const LoginPage = lazy(() => import("@/pages/auth/LoginPage"))
 const MainLayout = lazy(() => import("@/pages/MainLayout").then((module) => ({ default: module.MainLayout })))
 const DashboardPage = lazy(() => import("@/pages/dashboard/DashboardPage"))
 const ReportsPage = lazy(() => import("@/pages/reports/ReportsPage"))
@@ -30,31 +33,36 @@ export function App() {
       <TooltipProvider>
         <BrowserRouter>
           <AppErrorBoundary>
-            <Suspense fallback={<LoadingPage />}>
-              <Routes>
-                <Route path="/" element={<MainLayout />}>
-                  <Route index element={<Navigate to="/dashboard" replace />} />
-                  <Route path="dashboard" element={<DashboardPage />} />
-                  <Route path="reports" element={<ReportsPage />} />
-                  <Route path="reports/:id" element={<ReportPage />} />
-                  <Route path="interventions" element={<InterventionsPage />} />
-                  <Route path="interventions/:id" element={<InterventionPage />} />
-                  <Route path="clients" element={<CustomersPage />} />
-                  <Route path="clients/:id" element={<CustomerPage />} />
-                  <Route path="collaborators" element={<CollaboratorsPage />} />
-                  <Route path="collaborators/:id" element={<CollaboratorPage />} />
-                  <Route path="technicians" element={<TechnicianPage />} />
-                  <Route path="technicians/:id" element={<SingleTechnicianPage />} />
-                  <Route path="devices" element={<DevicesPage />} />
-                  <Route path="devices/:id" element={<DevicePage />} />
-                  <Route path="issues" element={<IssuesPage />} />
-                  <Route path="issues/:id" element={<IssuePage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  <Route path="error" element={<UnhandledErrorPage />} />
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Route>
-              </Routes>
-            </Suspense>
+            <AuthProvider>
+              <Suspense fallback={<LoadingPage />}>
+                <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route element={<RequireAuth />}>
+                    <Route path="/" element={<MainLayout />}>
+                      <Route index element={<Navigate to="/dashboard" replace />} />
+                      <Route path="dashboard" element={<DashboardPage />} />
+                      <Route path="reports" element={<ReportsPage />} />
+                      <Route path="reports/:id" element={<ReportPage />} />
+                      <Route path="interventions" element={<InterventionsPage />} />
+                      <Route path="interventions/:id" element={<InterventionPage />} />
+                      <Route path="clients" element={<CustomersPage />} />
+                      <Route path="clients/:id" element={<CustomerPage />} />
+                      <Route path="collaborators" element={<CollaboratorsPage />} />
+                      <Route path="collaborators/:id" element={<CollaboratorPage />} />
+                      <Route path="technicians" element={<TechnicianPage />} />
+                      <Route path="technicians/:id" element={<SingleTechnicianPage />} />
+                      <Route path="devices" element={<DevicesPage />} />
+                      <Route path="devices/:id" element={<DevicePage />} />
+                      <Route path="issues" element={<IssuesPage />} />
+                      <Route path="issues/:id" element={<IssuePage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                      <Route path="error" element={<UnhandledErrorPage />} />
+                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    </Route>
+                  </Route>
+                </Routes>
+              </Suspense>
+            </AuthProvider>
           </AppErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>

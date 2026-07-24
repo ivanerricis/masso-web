@@ -102,6 +102,23 @@ export const reportTechnicianTable = pgTable("report_technician",
     ])
 )
 
+export const userTable = pgTable("user", {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    username: varchar("username", { length: 50 }).notNull().unique(),
+    passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+    mustChangePassword: boolean("must_change_password").notNull().default(false),
+    ...timestamps,
+});
+
+export const sessionTable = pgTable("session", {
+    token: varchar("token", { length: 64 }).primaryKey(),
+    userId: integer("user_id").notNull().references(() => userTable.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+    index("session_user_id_idx").on(table.userId),
+]);
+
 export const interventionTypes = ["consegna_materiale", "intervento_sede", "intervento_remoto"] as const;
 export const interventionStatuses = ["programmato", "in_lavorazione", "completato"] as const;
 

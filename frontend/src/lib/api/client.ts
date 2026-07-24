@@ -4,6 +4,7 @@ const apiBaseURL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
 
 export const api = axios.create({
     baseURL: apiBaseURL,
+    withCredentials: true,
 });
 
 export type EntityWithRawTimestamps<T> = Omit<T, "createdAt" | "updatedAt"> & {

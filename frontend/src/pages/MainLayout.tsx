@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import LoadingPage from "@/components/loadingPage"
 import { ModeToggle } from "@/components/mode-toggle"
+import { UserBadge } from "@/components/user-badge"
 import MainSidebar from "@/components/main-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
@@ -42,7 +43,10 @@ export const MainLayout = () => {
             <SidebarInset className="h-svh overflow-hidden">
                 <header className="flex h-13 items-center justify-between border-b px-2">
                     <SidebarTrigger />
-                    <ModeToggle />
+                    <div className="flex items-center gap-2">
+                        <UserBadge />
+                        <ModeToggle />
+                    </div>
                 </header>
                 <main className="relative flex flex-1 w-full min-h-0 overflow-hidden p-3">
                     <Outlet />

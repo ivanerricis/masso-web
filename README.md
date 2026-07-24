@@ -54,6 +54,20 @@ In alternativa, produzione su CT Proxmox: vedi [Installazione su Proxmox CT (LXC
 
 	L'app è raggiungibile su `http://<IP_VM>`.
 
+	Al primissimo avvio viene creato automaticamente un utente amministratore (`admin`) con una password casuale sicura, necessaria per accedere all'app. Per recuperarla:
+
+	```bash
+	docker compose logs backend | grep -A3 "Utente amministratore"
+	```
+
+	La password viene stampata una sola volta nei log, al momento della creazione. Se te la sei persa (log ruotati, container riavviato dopo, ecc.), è comunque salvata in un file dentro il volume `backend_data`:
+
+	```bash
+	docker cp backend:/app/data/initial-admin-password.txt .
+	```
+
+	Dopo il primo accesso, cambia subito la password da Impostazioni > Utenti (o dal badge utente in alto a destra) e crea eventuali altri utenti da lì.
+
 6. **Abilita l'aggiornamento da interfaccia web** (opzionale ma consigliato):
 
 	```bash
@@ -179,7 +193,7 @@ Comportamento rete:
 - nginx inoltra `/api` e `/assets` al backend interno
 - non serve ricompilare il frontend quando cambia IP LAN del server
 
-Nota sicurezza: la VM non ha alcun sistema di autenticazione davanti alle API (come il resto dell'app) e la funzione di aggiornamento esegue codice preso da `origin/main` sull'host — tieni la VM raggiungibile solo dalla LAN, non esporla su internet.
+Nota sicurezza: l'app richiede login (utenti gestiti da Impostazioni > Utenti), ma il cookie di sessione viaggia in chiaro perché non c'è terminazione TLS, e la funzione di aggiornamento esegue codice preso da `origin/main` sull'host — tieni la VM raggiungibile solo dalla LAN, non esporla su internet.
 
 ## Arresto servizi
 
@@ -222,6 +236,24 @@ scripts\restore-db.ps1 -DumpPath "C:\path\to\db-dump.sql" -ResetDatabase
 ```bash
 ./scripts/restore-db.sh --dump-path /path/to/db-dump.sql --reset-database
 ```
+
+## Reset password utente
+
+Se un utente perde la password e non riesce più ad accedere (tipicamente: unico utente rimasto, quindi nessun altro può rigenerargliela da Impostazioni > Utenti), usa lo script dedicato per rigenerarla direttamente sul database, senza toccare il resto dei dati.
+
+Da Windows (sviluppo locale):
+
+```powershell
+scripts\reset-admin-password.ps1
+```
+
+Sulla VM Proxmox (produzione):
+
+```bash
+./scripts/reset-admin-password.sh
+```
+
+Per default agisce sull'utente `admin`; per un altro utente passa `-Username nomeutente` (PowerShell) o `--username nomeutente` (bash). Lo script stampa una sola volta la nuova password generata casualmente: al primo accesso verrà richiesto di impostarne una propria, ed eventuali sessioni attive di quell'utente vengono disconnesse.
 
 ## Aggiornamento applicazione
 

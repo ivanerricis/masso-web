@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Database, Image, Mail, Palette, RefreshCw, ScrollText } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Database, Image, Mail, Palette, RefreshCw, ScrollText, Users } from "lucide-react";
 import BackupSettingsPanel from "@/components/dialogs/settings/backupSettingsPanel";
 import EmailSettingsPanel from "@/components/dialogs/settings/emailSettingsPanel";
 import LogoSettingsPanel from "@/components/dialogs/settings/logoSettingsPanel";
@@ -9,8 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
+import UsersSettingsSection from "@/components/settings/usersSettingsSection";
 
-type SettingsSectionKey = "theme" | "logo" | "email" | "backup" | "update" | "logs";
+type SettingsSectionKey = "theme" | "users" | "logo" | "email" | "backup" | "update" | "logs";
+
+const settingsSectionKeys: SettingsSectionKey[] = ["theme", "users", "logo", "email", "backup", "update", "logs"];
 
 const settingsSections: Array<{
     key: SettingsSectionKey;
@@ -23,6 +27,12 @@ const settingsSections: Array<{
         label: "Tema",
         description: "Colori, modalità e accenti visivi",
         icon: Palette,
+    },
+    {
+        key: "users",
+        label: "Utenti",
+        description: "Account che possono accedere all'app",
+        icon: Users,
     },
     {
         key: "logo",
@@ -56,8 +66,24 @@ const settingsSections: Array<{
     },
 ];
 
+const isSettingsSectionKey = (value: string | null): value is SettingsSectionKey =>
+    value != null && (settingsSectionKeys as string[]).includes(value);
+
 const SettingsPage = () => {
-    const [activeSection, setActiveSection] = useState<SettingsSectionKey>("theme");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const sectionFromUrl = searchParams.get("section");
+    const [activeSection, setActiveSectionState] = useState<SettingsSectionKey>(
+        isSettingsSectionKey(sectionFromUrl) ? sectionFromUrl : "theme"
+    );
+
+    const setActiveSection = (section: SettingsSectionKey) => {
+        setActiveSectionState(section);
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set("section", section);
+            return next;
+        }, { replace: true });
+    };
 
     return (
         <div className="flex h-full min-h-0 w-full gap-4">
@@ -103,6 +129,8 @@ const SettingsPage = () => {
             <section className="min-w-0 flex-1 overflow-y-auto rounded-2xl border bg-background/90 p-4 shadow-sm backdrop-blur-sm md:p-6">
                 {activeSection === "theme" ? (
                     <ThemeSettingsSection />
+                ) : activeSection === "users" ? (
+                    <UsersSettingsSection />
                 ) : activeSection === "logo" ? (
                     <LogoSettingsPanel />
                 ) : activeSection === "email" ? (

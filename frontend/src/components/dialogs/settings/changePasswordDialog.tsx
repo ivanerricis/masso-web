@@ -1,0 +1,137 @@
+import { useState } from "react";
+import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
+import CustomDialog from "@/components/dialogs/customDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { changeOwnPassword, getApiErrorMessage } from "@/lib/api";
+
+type Props = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+};
+
+const emptyForm = { currentPassword: "", newPassword: "", confirmPassword: "" };
+
+const ChangePasswordDialog = ({ open, onOpenChange }: Props) => {
+    const [formValues, setFormValues] = useState(emptyForm);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen) {
+            setFormValues(emptyForm);
+            setIsPasswordVisible(false);
+        }
+        onOpenChange(nextOpen);
+    };
+
+    const handleConfirm = async () => {
+        if (isSubmitting) {
+            return;
+        }
+
+        if (!formValues.currentPassword) {
+            toast.error("Inserisci la password attuale");
+            return;
+        }
+
+        if (formValues.newPassword.length < 8) {
+            toast.error("La nuova password deve avere almeno 8 caratteri");
+            return;
+        }
+
+        if (formValues.newPassword !== formValues.confirmPassword) {
+            toast.error("Le due password inserite non coincidono");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            await changeOwnPassword({
+                currentPassword: formValues.currentPassword,
+                newPassword: formValues.newPassword,
+            });
+            toast.success("Password aggiornata con successo");
+            handleOpenChange(false);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile aggiornare la password"));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <CustomDialog
+            open={open}
+            onOpenChange={handleOpenChange}
+            title="Cambia password"
+            description="Inserisci la password attuale e quella nuova."
+            confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}
+            cancelLabel="Annulla"
+            onCancel={() => handleOpenChange(false)}
+            onConfirm={() => void handleConfirm()}
+            cancelDisabled={isSubmitting}
+            confirmDisabled={isSubmitting}
+            content={
+                <div className="grid gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="currentPassword">Password attuale</Label>
+                        <Input
+                            id="currentPassword"
+                            type="password"
+                            autoComplete="current-password"
+                            value={formValues.currentPassword}
+                            onChange={(event) =>
+                                setFormValues((prev) => ({ ...prev, currentPassword: event.target.value }))
+                            }
+                        />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="newPassword">Nuova password</Label>
+                        <div className="relative">
+                            <Input
+                                id="newPassword"
+                                type={isPasswordVisible ? "text" : "password"}
+                                autoComplete="new-password"
+                                value={formValues.newPassword}
+                                onChange={(event) =>
+                                    setFormValues((prev) => ({ ...prev, newPassword: event.target.value }))
+                                }
+                                className="pr-9"
+                            />
+                            <div className="absolute inset-y-0 right-1.5 flex items-center">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    onClick={() => setIsPasswordVisible((prev) => !prev)}
+                                    aria-label={isPasswordVisible ? "Nascondi password" : "Mostra password"}
+                                >
+                                    {isPasswordVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="confirmPassword">Conferma nuova password</Label>
+                        <Input
+                            id="confirmPassword"
+                            type={isPasswordVisible ? "text" : "password"}
+                            autoComplete="new-password"
+                            value={formValues.confirmPassword}
+                            onChange={(event) =>
+                                setFormValues((prev) => ({ ...prev, confirmPassword: event.target.value }))
+                            }
+                        />
+                    </div>
+                </div>
+            }
+        />
+    );
+};
+
+export default ChangePasswordDialog;
