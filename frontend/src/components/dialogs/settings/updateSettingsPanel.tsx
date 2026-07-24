@@ -130,7 +130,9 @@ const UpdateSettingsPanel = () => {
 
                     if (result.state === "success" && result.currentCommit !== previousCommit) {
                         setStatus(result);
-                        toast.success("Aggiornamento completato. Ricarica la pagina.", { id: toastId });
+                        toast.success("Aggiornamento completato. Ricarico la pagina...", { id: toastId });
+                        await sleep(1500);
+                        window.location.reload();
                         return;
                     }
                 } catch {
