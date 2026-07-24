@@ -42,7 +42,11 @@ write_status() {
             lastUpdateStatus: (if $lastUpdateStatus == "" then (.lastUpdateStatus // null) else $lastUpdateStatus end),
             lastError: (if $lastError == "" then null else $lastError end),
             log: $log
-        }' > "$tmp_file"
+        }
+        # After a successful apply, HEAD now matches the commit we just fetched
+        # from origin/main, so clear the stale "update available" flag left
+        # over from the last check instead of waiting for the next timer run.
+        + (if $lastUpdateStatus == "success" then { remoteCommit: $currentCommit, updateAvailable: false } else {} end)' > "$tmp_file"
     mv "$tmp_file" "$STATUS_FILE"
     chmod 666 "$STATUS_FILE" 2>/dev/null || true
 }
