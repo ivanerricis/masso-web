@@ -2,7 +2,6 @@ import { api } from "./client";
 import type { PaginatedResponse } from "./client";
 
 export type BackupSettingsDto = {
-    dumpEnabled: boolean;
     autoEnabled: boolean;
     frequencyDays: number;
     runAt: string;
@@ -28,7 +27,6 @@ export type BackupSettingsDto = {
 
 export type BackupSettingsInput = Pick<
     BackupSettingsDto,
-    | "dumpEnabled"
     | "autoEnabled"
     | "frequencyDays"
     | "runAt"

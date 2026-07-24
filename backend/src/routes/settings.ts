@@ -71,7 +71,6 @@ const handleLogError = (error: unknown, res: Response) => {
 };
 
 const backupSettingsSchema = z.object({
-    dumpEnabled: z.boolean(),
     autoEnabled: z.boolean(),
     frequencyDays: z.coerce.number().int().min(1).max(365),
     runAt: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),

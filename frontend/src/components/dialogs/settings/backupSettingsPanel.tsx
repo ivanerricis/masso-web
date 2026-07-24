@@ -36,7 +36,6 @@ type BackupSettingsPanelProps = {
 };
 
 const defaultForm: BackupSettingsInput = {
-    dumpEnabled: false,
     autoEnabled: false,
     frequencyDays: 1,
     runAt: "02:00",
@@ -77,7 +76,6 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         try {
             const settings = await getBackupSettings();
             setFormValues({
-                dumpEnabled: settings.dumpEnabled,
                 autoEnabled: settings.autoEnabled,
                 frequencyDays: settings.frequencyDays,
                 runAt: settings.runAt,
@@ -296,25 +294,8 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                             <div className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-3">
                                 <div className="flex items-center gap-3">
                                     <Checkbox
-                                        id="dumpEnabled"
-                                        checked={formValues.dumpEnabled}
-                                        onCheckedChange={(checked) =>
-                                            setFormValues((prev) => ({
-                                                ...prev,
-                                                dumpEnabled: Boolean(checked),
-                                            }))
-                                        }
-                                    />
-                                    <Label htmlFor="dumpEnabled" className="cursor-pointer">
-                                        Abilita dump database
-                                    </Label>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <Checkbox
                                         id="autoEnabled"
                                         checked={formValues.autoEnabled}
-                                        disabled={!formValues.dumpEnabled}
                                         onCheckedChange={(checked) =>
                                             setFormValues((prev) => ({
                                                 ...prev,
@@ -335,7 +316,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                             type="number"
                                             min={1}
                                             max={365}
-                                            disabled={!formValues.dumpEnabled || !formValues.autoEnabled}
+                                            disabled={!formValues.autoEnabled}
                                             value={formValues.frequencyDays}
                                             onChange={(event) =>
                                                 setFormValues((prev) => ({
@@ -351,7 +332,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                         <Input
                                             id="runAt"
                                             type="time"
-                                            disabled={!formValues.dumpEnabled || !formValues.autoEnabled}
+                                            disabled={!formValues.autoEnabled}
                                             value={formValues.runAt}
                                             onChange={(event) =>
                                                 setFormValues((prev) => ({
@@ -370,7 +351,6 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                         type="number"
                                         min={1}
                                         max={365}
-                                        disabled={!formValues.dumpEnabled}
                                         value={formValues.maxBackupsToKeep}
                                         onChange={(event) =>
                                             setFormValues((prev) => ({

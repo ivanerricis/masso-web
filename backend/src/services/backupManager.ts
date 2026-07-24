@@ -14,7 +14,6 @@ const smbMkdirTimeoutMs = 15_000;
 const smbPutTimeoutMs = 30 * 60 * 1000;
 
 export type BackupSettingsState = {
-    dumpEnabled: boolean;
     autoEnabled: boolean;
     frequencyDays: number;
     runAt: string;
@@ -58,7 +57,6 @@ export class BackupManagerError extends Error {
 }
 
 const defaultState: BackupSettingsState = {
-    dumpEnabled: false,
     autoEnabled: false,
     frequencyDays: 1,
     runAt: "02:00",
@@ -169,7 +167,6 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
     parseRunTime(runAt);
 
     return {
-        dumpEnabled: Boolean(input.dumpEnabled ?? defaultState.dumpEnabled),
         autoEnabled: Boolean(input.autoEnabled ?? defaultState.autoEnabled),
         frequencyDays,
         runAt,
@@ -430,7 +427,7 @@ const pruneOldBackups = async (outputDir: string, keep: number) => {
 };
 
 const setNextRunIfNeeded = (state: BackupSettingsState, reference: Date) => {
-    if (state.dumpEnabled && state.autoEnabled) {
+    if (state.autoEnabled) {
         state.nextRunAt = computeNextRunAt(reference, state.frequencyDays, state.runAt);
         return;
     }
@@ -454,7 +451,6 @@ export const getBackupSettings = async (): Promise<BackupSettingsPublic> => {
 
 export type BackupSettingsInput = Pick<
     BackupSettingsState,
-    | "dumpEnabled"
     | "autoEnabled"
     | "frequencyDays"
     | "runAt"
@@ -472,7 +468,6 @@ export type BackupSettingsInput = Pick<
 export const updateBackupSettings = async (input: BackupSettingsInput) => {
     const current = await loadState();
 
-    current.dumpEnabled = input.dumpEnabled;
     current.autoEnabled = input.autoEnabled;
     current.frequencyDays = input.frequencyDays;
     current.runAt = input.runAt;
@@ -557,8 +552,8 @@ export const getBackupDumpPath = async (fileName: string) => {
 export const runBackupNow = async (origin: "manual" | "auto") => {
     const state = await loadState();
 
-    if (origin === "auto" && !state.dumpEnabled) {
-        throw new BackupManagerError("Il dump database non e abilitato nelle impostazioni", 400);
+    if (origin === "auto" && !state.autoEnabled) {
+        throw new BackupManagerError("Il dump automatico non e abilitato nelle impostazioni", 400);
     }
 
     if (dumpInProgress) {
@@ -645,7 +640,7 @@ export const startBackupScheduler = () => {
             try {
                 const state = await loadState();
 
-                if (!state.dumpEnabled || !state.autoEnabled || !state.nextRunAt) {
+                if (!state.autoEnabled || !state.nextRunAt) {
                     return;
                 }
 
