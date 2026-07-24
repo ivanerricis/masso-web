@@ -61,7 +61,7 @@ const ThemeSettingsSection = () => {
                                     variant="outline"
                                     className={cn(
                                         "h-auto items-start justify-start gap-3 rounded-xl border p-4 text-left",
-                                        isActive && "border-primary bg-primary/10"
+                                        isActive && "border-primary bg-primary/10 dark:border-primary dark:bg-primary/10"
                                     )}
                                     onClick={() => setTheme(option.value)}
                                 >
@@ -95,7 +95,7 @@ const ThemeSettingsSection = () => {
                                         variant="outline"
                                         className={cn(
                                             "h-auto items-start justify-start gap-3 rounded-xl border p-4 text-left",
-                                            isActive && "border-primary bg-primary/10"
+                                            isActive && "border-primary bg-primary/10 dark:border-primary dark:bg-primary/10"
                                         )}
                                         onClick={() => handleSelectAccent(preset.key)}
                                     >

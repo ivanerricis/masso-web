@@ -76,7 +76,7 @@ const SettingsPage = () => {
                                 onClick={() => setActiveSection(section.key)}
                                 className={cn(
                                     "h-auto items-start justify-start gap-2 rounded-xl border p-2.5 text-left",
-                                    isActive && "border-primary bg-primary/10"
+                                    isActive && "border-primary bg-primary/10 dark:border-primary dark:bg-primary/10"
                                 )}
                             >
                                 <Icon className="mt-0.5 size-4 shrink-0" />
