@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Database, Image, Palette, RefreshCw, ScrollText } from "lucide-react";
+import { Database, Image, Mail, Palette, RefreshCw, ScrollText } from "lucide-react";
 import BackupSettingsPanel from "@/components/dialogs/settings/backupSettingsPanel";
+import EmailSettingsPanel from "@/components/dialogs/settings/emailSettingsPanel";
 import LogoSettingsPanel from "@/components/dialogs/settings/logoSettingsPanel";
 import LogsSettingsPanel from "@/components/dialogs/settings/logsSettingsPanel";
 import UpdateSettingsPanel from "@/components/dialogs/settings/updateSettingsPanel";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
 
-type SettingsSectionKey = "theme" | "logo" | "backup" | "update" | "logs";
+type SettingsSectionKey = "theme" | "logo" | "email" | "backup" | "update" | "logs";
 
 const settingsSections: Array<{
     key: SettingsSectionKey;
@@ -28,6 +29,12 @@ const settingsSections: Array<{
         label: "Logo",
         description: "Logo del laboratorio su app e report",
         icon: Image,
+    },
+    {
+        key: "email",
+        label: "Email",
+        description: "Configurazione SMTP per l'invio email",
+        icon: Mail,
     },
     {
         key: "backup",
@@ -98,6 +105,8 @@ const SettingsPage = () => {
                     <ThemeSettingsSection />
                 ) : activeSection === "logo" ? (
                     <LogoSettingsPanel />
+                ) : activeSection === "email" ? (
+                    <EmailSettingsPanel />
                 ) : activeSection === "backup" ? (
                     <BackupSettingsPanel />
                 ) : activeSection === "update" ? (

@@ -128,3 +128,37 @@ export const listLogEntries = async (dayKey: string, params: ListLogEntriesParam
 
 export const getLogDownloadUrl = (dayKey: string) =>
     api.getUri({ url: `/settings/logs/${encodeURIComponent(dayKey)}/download` });
+
+export type EmailSettingsDto = {
+    enabled: boolean;
+    host: string;
+    port: number;
+    secure: boolean;
+    username: string;
+    fromName: string;
+    fromEmail: string;
+    passwordSet: boolean;
+};
+
+export type EmailSettingsInput = Pick<
+    EmailSettingsDto,
+    "enabled" | "host" | "port" | "secure" | "username" | "fromName" | "fromEmail"
+> & { password?: string };
+
+export const getEmailSettings = async () => (await api.get<EmailSettingsDto>("/settings/email")).data;
+
+export const updateEmailSettings = async (payload: EmailSettingsInput) =>
+    (await api.put<EmailSettingsDto>("/settings/email", payload)).data;
+
+export type EmailConnectionTestInput = {
+    host: string;
+    port: number;
+    secure: boolean;
+    username: string;
+    password: string;
+    fromName: string;
+    fromEmail: string;
+};
+
+export const testEmailConnection = async (payload: EmailConnectionTestInput) =>
+    (await api.post<{ message: string }>("/settings/email/test", payload)).data;

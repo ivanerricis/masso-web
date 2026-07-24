@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { type Response, Router } from "express";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -10,6 +10,7 @@ import {
 } from "../db/queries/intervention";
 import { db } from "../db";
 import { collaboratorTable, customerTable, interventionTable } from "../db/schema";
+import { EmailManagerError, sendEmail } from "../services/emailManager";
 import { createInterventionPdfBuffer } from "../services/interventionPdf";
 import { validate } from "./validation";
 
@@ -116,9 +117,7 @@ interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), a
     });
 });
 
-interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSchema }), async (req, res) => {
-    const { id } = req.params as unknown as { id: number };
-
+const loadInterventionPrintContext = async (id: number, req: { protocol: string; get: (name: string) => string | undefined }) => {
     const interventionRows = await db
         .select({
             id: interventionTable.id,
@@ -133,6 +132,7 @@ interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSch
             customerLastName: customerTable.lastName,
             customerPhone: customerTable.phoneNumber,
             customerPhoneSecondary: customerTable.phoneNumberSecondary,
+            customerEmail: customerTable.email,
             collaboratorFirstName: collaboratorTable.firstName,
             collaboratorLastName: collaboratorTable.lastName,
         })
@@ -142,8 +142,7 @@ interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSch
         .where(eq(interventionTable.id, id));
 
     if (interventionRows.length === 0) {
-        res.status(404).json({ message: "Intervento non trovato" });
-        return;
+        return null;
     }
 
     const intervention = interventionRows[0];
@@ -163,30 +162,94 @@ interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSch
         ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
         : customerPhonePrimary || customerPhoneSecondary || "N/D";
 
-    const pdfBuffer = await createInterventionPdfBuffer({
-        id: intervention.id,
-        labName,
-        labEmail,
-        labAddress,
-        labPhone,
-        labLogoUrl,
+    return {
         customerName,
-        customerPhone: customerPhoneLabel,
-        collaboratorName,
-        type: intervention.type as InterventionType,
-        status: intervention.status as (typeof interventionStatuses)[number],
-        description: intervention.description,
-        interventionDateLabel: intervention.interventionDate
-            ? new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${intervention.interventionDate}T00:00:00`))
-            : null,
-        startTime: intervention.startTime,
-        endTime: intervention.endTime,
-        createdAtLabel: new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(intervention.createdAt),
-    });
+        customerEmail: intervention.customerEmail?.trim() || null,
+        labName,
+        pdfData: {
+            id: intervention.id,
+            labName,
+            labEmail,
+            labAddress,
+            labPhone,
+            labLogoUrl,
+            customerName,
+            customerPhone: customerPhoneLabel,
+            collaboratorName,
+            type: intervention.type as InterventionType,
+            status: intervention.status as (typeof interventionStatuses)[number],
+            description: intervention.description,
+            interventionDateLabel: intervention.interventionDate
+                ? new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${intervention.interventionDate}T00:00:00`))
+                : null,
+            startTime: intervention.startTime,
+            endTime: intervention.endTime,
+            createdAtLabel: new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(intervention.createdAt),
+        },
+    };
+};
+
+const handleEmailError = (error: unknown, res: Response) => {
+    if (error instanceof EmailManagerError) {
+        res.status(error.statusCode).json({ message: error.message });
+        return true;
+    }
+
+    return false;
+};
+
+interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
+
+    const context = await loadInterventionPrintContext(id, req);
+
+    if (!context) {
+        res.status(404).json({ message: "Intervento non trovato" });
+        return;
+    }
+
+    const pdfBuffer = await createInterventionPdfBuffer(context.pdfData);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `inline; filename=intervento-${id}.pdf`);
     res.send(pdfBuffer);
+});
+
+interventionsRouter.post("/:id/send-email", validate({ params: interventionIdParamsSchema }), async (req, res, next) => {
+    const { id } = req.params as unknown as { id: number };
+
+    try {
+        const context = await loadInterventionPrintContext(id, req);
+
+        if (!context) {
+            res.status(404).json({ message: "Intervento non trovato" });
+            return;
+        }
+
+        if (!context.customerEmail) {
+            res.status(400).json({ message: "Il cliente non ha un indirizzo email configurato" });
+            return;
+        }
+
+        const pdfBuffer = await createInterventionPdfBuffer(context.pdfData);
+
+        await sendEmail({
+            to: context.customerEmail,
+            subject: `Intervento #${id} - ${context.labName}`,
+            text: `Gentile ${context.customerName},\n\nin allegato trova il riepilogo dell'intervento #${id}.\n\nCordiali saluti,\n${context.labName}`,
+            attachment: {
+                filename: `intervento-${id}.pdf`,
+                content: pdfBuffer,
+            },
+        });
+
+        res.json({ message: "Email inviata con successo" });
+    } catch (error) {
+        if (handleEmailError(error, res)) {
+            return;
+        }
+        next(error);
+    }
 });
 
 interventionsRouter.get("/:id", validate({ params: interventionIdParamsSchema }), async (req, res) => {

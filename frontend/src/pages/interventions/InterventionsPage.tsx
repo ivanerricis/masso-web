@@ -10,6 +10,7 @@ import {
     getApiErrorMessage,
     getInterventionPrintUrl,
     listCustomers,
+    sendInterventionEmail,
     updateIntervention,
 } from "@/lib/api";
 import { useState } from "react";
@@ -209,6 +210,15 @@ const InterventionsPage = () => {
         }
     };
 
+    const handleSendEmailIntervention = async (id: number) => {
+        try {
+            const result = await sendInterventionEmail(id);
+            toast.success(result.message);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile inviare l'email"));
+        }
+    };
+
     return (
         <div className="relative flex flex-col gap-4 w-full h-full">
             <>
@@ -274,6 +284,7 @@ const InterventionsPage = () => {
                         onOpenIntervention={handleOpenIntervention}
                         onEditIntervention={handleOpenEditDialog}
                         onPrintIntervention={handlePrintIntervention}
+                        onSendEmailIntervention={handleSendEmailIntervention}
                         onDeleteIntervention={handleOpenDeleteDialog}
                     />
                     <TablePagination

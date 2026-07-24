@@ -72,3 +72,6 @@ export const deleteIntervention = async (id: number) =>
 
 export const getInterventionPrintUrl = (id: number) =>
     api.getUri({ url: `/interventions/${id}/print` });
+
+export const sendInterventionEmail = async (id: number) =>
+    (await api.post<{ message: string }>(`/interventions/${id}/send-email`)).data;

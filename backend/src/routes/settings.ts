@@ -12,6 +12,7 @@ import {
     testSmbConnection,
     updateBackupSettings,
 } from "../services/backupManager";
+import { EmailManagerError, getEmailSettings, testEmailConnection, updateEmailSettings } from "../services/emailManager";
 import { LogoManagerError, getLogoStatus, resetLogo, saveLogo } from "../services/logoManager";
 import { LogManagerError, getLogFilePath, listLogFiles, readLogEntries } from "../services/logManager";
 import { UpdateManagerError, getUpdateStatus, requestUpdate, requestUpdateCheck } from "../services/updateManager";
@@ -21,6 +22,16 @@ const logoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize:
 
 const handleBackupError = (error: unknown, res: Response) => {
     if (error instanceof BackupManagerError) {
+        res.locals.apiErrorMessage = error.message;
+        res.status(error.statusCode).json({ message: error.message });
+        return true;
+    }
+
+    return false;
+};
+
+const handleEmailError = (error: unknown, res: Response) => {
+    if (error instanceof EmailManagerError) {
         res.locals.apiErrorMessage = error.message;
         res.status(error.statusCode).json({ message: error.message });
         return true;
@@ -84,6 +95,27 @@ const smbTestSchema = z.object({
     port: z.coerce.number().int().min(1).max(65535),
     username: z.string().trim().min(1).max(255),
     password: z.string().min(1).max(512),
+}).strict();
+
+const emailSettingsSchema = z.object({
+    enabled: z.boolean(),
+    host: z.string().trim().max(255),
+    port: z.coerce.number().int().min(1).max(65535),
+    secure: z.boolean(),
+    username: z.string().trim().max(255),
+    password: z.string().max(512).optional(),
+    fromName: z.string().trim().max(255),
+    fromEmail: z.string().trim().max(255),
+}).strict();
+
+const emailTestSchema = z.object({
+    host: z.string().trim().min(1).max(255),
+    port: z.coerce.number().int().min(1).max(65535),
+    secure: z.boolean(),
+    username: z.string().trim().min(1).max(255),
+    password: z.string().min(1).max(512),
+    fromName: z.string().trim().max(255),
+    fromEmail: z.string().trim().min(1).email().max(255),
 }).strict();
 
 const logDayKeyParamsSchema = z.object({
@@ -212,6 +244,42 @@ settingsRouter.post("/backup/smb/test", validate({ body: smbTestSchema }), async
             return;
         }
 
+        next(error);
+    }
+});
+
+settingsRouter.get("/email", async (_req, res, next) => {
+    try {
+        const settings = await getEmailSettings();
+        res.json(settings);
+    } catch (error) {
+        if (handleEmailError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.put("/email", validate({ body: emailSettingsSchema }), async (req, res, next) => {
+    try {
+        const settings = await updateEmailSettings(req.body);
+        res.json(settings);
+    } catch (error) {
+        if (handleEmailError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.post("/email/test", validate({ body: emailTestSchema }), async (req, res, next) => {
+    try {
+        await testEmailConnection(req.body);
+        res.json({ message: `Email di prova inviata con successo a ${req.body.fromEmail}` });
+    } catch (error) {
+        if (handleEmailError(error, res)) {
+            return;
+        }
         next(error);
     }
 });

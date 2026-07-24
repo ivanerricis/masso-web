@@ -2,7 +2,7 @@ import OpenEntityButton from "@/components/open-entity-button";
 import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { InterventionDto } from "@/types/dtos";
-import { Pencil, Printer, Trash2 } from "lucide-react";
+import { Mail, Pencil, Printer, Trash2 } from "lucide-react";
 import type { InterventionColumn } from "./intervention-columns";
 
 type InterventionsTableProps = {
@@ -11,6 +11,7 @@ type InterventionsTableProps = {
     onOpenIntervention: (id: number) => void;
     onEditIntervention: (id: number) => void;
     onPrintIntervention: (id: number) => void;
+    onSendEmailIntervention: (id: number) => void;
     onDeleteIntervention: (intervention: InterventionDto) => void;
 };
 
@@ -26,6 +27,7 @@ const InterventionsTable = ({
     onOpenIntervention,
     onEditIntervention,
     onPrintIntervention,
+    onSendEmailIntervention,
     onDeleteIntervention,
 }: InterventionsTableProps) => {
     return (
@@ -77,6 +79,15 @@ const InterventionsTable = ({
                                                 aria-label={`Stampa intervento ${row.id}`}
                                             >
                                                 <Printer className="size-5 text-yellow-400" />
+                                            </TableActionButton>
+                                            <TableActionButton
+                                                variant="default"
+                                                size="icon-lg"
+                                                className="bg-sky-400/20 hover:bg-sky-400/30"
+                                                onClick={() => onSendEmailIntervention(row.id)}
+                                                aria-label={`Invia email intervento ${row.id}`}
+                                            >
+                                                <Mail className="size-5 text-sky-500" />
                                             </TableActionButton>
                                             <TableActionButton
                                                 variant="destructive"
