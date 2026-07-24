@@ -44,8 +44,8 @@ export const MainLayout = () => {
                 <header className="flex h-13 items-center justify-between border-b px-2">
                     <SidebarTrigger />
                     <div className="flex items-center gap-2">
-                        <UserBadge />
                         <ModeToggle />
+                        <UserBadge />
                     </div>
                 </header>
                 <main className="relative flex flex-1 w-full min-h-0 overflow-hidden p-3">

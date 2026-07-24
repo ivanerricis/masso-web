@@ -33,7 +33,7 @@ const sidebarItems: SidebarItem[] = [
     { label: "Interventi", path: "/interventions", icon: HardHat },
     { label: "Clienti", path: "/clients", icon: Users },
     { label: "Collaboratori", path: "/collaborators", icon: BookUser },
-    { label: "Tecnici", path: "/technicians", icon: Wrench },
+    { label: "Tecnici esterni", path: "/technicians", icon: Wrench },
     { label: "Dispositivi", path: "/devices", icon: Laptop },
     { label: "Difetti", path: "/issues", icon: Bug },
 ];
