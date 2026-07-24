@@ -241,7 +241,7 @@ const EmailSettingsPanel = () => {
                                     <Input
                                         id="emailPassword"
                                         type={isPasswordVisible ? "text" : "password"}
-                                        autoComplete="new-password"
+                                        autoComplete="off"
                                         placeholder={passwordSet ? "•••• (invariata, lascia vuoto)" : ""}
                                         disabled={!formValues.enabled}
                                         value={formValues.password ?? ""}
@@ -250,17 +250,18 @@ const EmailSettingsPanel = () => {
                                         }
                                         className="pr-9"
                                     />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-xs"
-                                        disabled={!formValues.enabled}
-                                        onClick={() => setIsPasswordVisible((prev) => !prev)}
-                                        className="absolute top-1/2 right-1.5 -translate-y-1/2"
-                                        aria-label={isPasswordVisible ? "Nascondi password" : "Mostra password"}
-                                    >
-                                        {isPasswordVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                                    </Button>
+                                    <div className="absolute inset-y-0 right-1.5 flex items-center">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-xs"
+                                            disabled={!formValues.enabled}
+                                            onClick={() => setIsPasswordVisible((prev) => !prev)}
+                                            aria-label={isPasswordVisible ? "Nascondi password" : "Mostra password"}
+                                        >
+                                            {isPasswordVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
