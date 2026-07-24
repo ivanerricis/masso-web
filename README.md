@@ -7,8 +7,8 @@ Applicazione full stack per la gestione di un laboratorio, composta da:
 
 ## Prerequisiti
 
-Sviluppo locale (Windows):
-- Docker Desktop con supporto a Docker Compose
+Sviluppo locale:
+- Docker con supporto a Docker Compose
 - Porte libere: `80` (frontend shared), `3000` (backend), `5433` (db in dev), `5173` (frontend dev)
 
 Produzione (VM Proxmox): vedi [Installazione su Proxmox VM (prima volta)](#installazione-su-proxmox-vm-prima-volta).
@@ -115,21 +115,7 @@ cp .env.example .env
 
 2. Aggiorna i valori in `.env` secondo il tuo ambiente.
 
-Per modificare il file in modo interattivo da Windows (sviluppo locale) puoi usare:
-
-```powershell
-.\scripts\edit-env.ps1 -ConfigureFirewall
-```
-
-Oppure:
-
-```cmd
-scripts\edit-env.cmd
-```
-
-Se vuoi applicare anche le regole firewall del server Windows, avvia PowerShell come amministratore e usa `-ConfigureFirewall`.
-
-Sulla VM Proxmox (produzione) usa invece l'equivalente bash:
+Per modificare il file in modo interattivo puoi usare:
 
 ```bash
 ./scripts/edit-env.sh --configure-ufw
@@ -213,14 +199,6 @@ docker compose -f docker-compose.dev.yml down
 
 Per ripristinare un dump SQL nel database Postgres usa lo script dedicato.
 
-Da Windows (sviluppo locale):
-
-```powershell
-scripts\restore-db.ps1 -DumpPath "C:\path\to\db-dump-YYYYMMDD-HHMMSS.sql"
-```
-
-Sulla VM Proxmox (produzione):
-
 ```bash
 ./scripts/restore-db.sh --dump-path /path/to/db-dump-YYYYMMDD-HHMMSS.sql
 ```
@@ -228,10 +206,6 @@ Sulla VM Proxmox (produzione):
 Se non passi il percorso del dump, lo script prova a usare l'ultimo `.sql` trovato nella directory backup configurata in `.env` tramite `BACKUP_HOST_DIR`, oppure in `backups/` se la variabile non è presente.
 
 Opzione distruttiva (svuota prima lo schema `public` nel database target):
-
-```powershell
-scripts\restore-db.ps1 -DumpPath "C:\path\to\db-dump.sql" -ResetDatabase
-```
 
 ```bash
 ./scripts/restore-db.sh --dump-path /path/to/db-dump.sql --reset-database
@@ -241,19 +215,11 @@ scripts\restore-db.ps1 -DumpPath "C:\path\to\db-dump.sql" -ResetDatabase
 
 Se un utente perde la password e non riesce più ad accedere (tipicamente: unico utente rimasto, quindi nessun altro può rigenerargliela da Impostazioni > Utenti), usa lo script dedicato per rigenerarla direttamente sul database, senza toccare il resto dei dati.
 
-Da Windows (sviluppo locale):
-
-```powershell
-scripts\reset-admin-password.ps1
-```
-
-Sulla VM Proxmox (produzione):
-
 ```bash
 ./scripts/reset-admin-password.sh
 ```
 
-Per default agisce sull'utente `admin`; per un altro utente passa `-Username nomeutente` (PowerShell) o `--username nomeutente` (bash). Lo script stampa una sola volta la nuova password generata casualmente: al primo accesso verrà richiesto di impostarne una propria, ed eventuali sessioni attive di quell'utente vengono disconnesse.
+Per default agisce sull'utente `admin`; per un altro utente passa `--username nomeutente`. Lo script stampa una sola volta la nuova password generata casualmente: al primo accesso verrà richiesto di impostarne una propria, ed eventuali sessioni attive di quell'utente vengono disconnesse.
 
 ## Aggiornamento applicazione
 

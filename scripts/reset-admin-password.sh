@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bash port of scripts/reset-admin-password.ps1, for the Proxmox VM (production/LAN mode).
+# For the Proxmox VM (production/LAN mode).
 # Rigenera la password di un utente quando nessuno riesce più ad accedere all'app
 # (es. unico utente rimasto e password persa) senza toccare il resto dei dati.
 # Usage: scripts/reset-admin-password.sh [--username nome]

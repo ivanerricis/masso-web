@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bash port of scripts/edit-env.ps1, for the Proxmox VM (production/LAN mode).
+# For the Proxmox VM (production/LAN mode).
 # Usage: scripts/edit-env.sh [--configure-ufw]
 # Al termine chiede anche se impostare un IP statico (scripts/configure-static-ip.sh).
 set -euo pipefail

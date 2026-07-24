@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bash port of scripts/start-server.ps1, for the Proxmox VM (production/LAN mode).
+# For the Proxmox VM (production/LAN mode).
 # Usage: scripts/start-server.sh [--no-build]
 set -euo pipefail
 

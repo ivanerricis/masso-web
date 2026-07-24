@@ -7,7 +7,7 @@
 set -euo pipefail
 
 if [ "$(uname -s)" != "Linux" ]; then
-    echo "Questo script e' pensato per la VM Linux (Proxmox), non per Windows." >&2
+    echo "Questo script e' pensato per la VM Linux (Proxmox)." >&2
     exit 1
 fi
 

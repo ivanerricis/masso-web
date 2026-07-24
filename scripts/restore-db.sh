@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bash port of scripts/restore-db.ps1, for the Proxmox VM (production/LAN mode).
+# For the Proxmox VM (production/LAN mode).
 # Usage: scripts/restore-db.sh [--dump-path /path/to/dump.sql] [--reset-database]
 set -euo pipefail
 
