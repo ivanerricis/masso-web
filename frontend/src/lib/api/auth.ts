@@ -5,6 +5,8 @@ export type UserDto = {
     username: string;
     createdAt: string;
     mustChangePassword: boolean;
+    active: boolean;
+    isAdmin: boolean;
 };
 
 export const login = async (username: string, password: string) =>

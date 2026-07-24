@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
 import UsersSettingsSection from "@/components/settings/usersSettingsSection";
+import { useAuth } from "@/components/use-auth";
 
 type SettingsSectionKey = "theme" | "users" | "logo" | "email" | "backup" | "update" | "logs";
 
@@ -70,11 +71,13 @@ const isSettingsSectionKey = (value: string | null): value is SettingsSectionKey
     value != null && (settingsSectionKeys as string[]).includes(value);
 
 const SettingsPage = () => {
+    const { user } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const sectionFromUrl = searchParams.get("section");
     const [activeSection, setActiveSectionState] = useState<SettingsSectionKey>(
-        isSettingsSectionKey(sectionFromUrl) ? sectionFromUrl : "theme"
+        isSettingsSectionKey(sectionFromUrl) && (sectionFromUrl !== "users" || user?.isAdmin) ? sectionFromUrl : "theme"
     );
+    const visibleSettingsSections = settingsSections.filter((section) => section.key !== "users" || user?.isAdmin);
 
     const setActiveSection = (section: SettingsSectionKey) => {
         setActiveSectionState(section);
@@ -90,7 +93,7 @@ const SettingsPage = () => {
             <aside className="flex w-full max-w-xs shrink-0 flex-col gap-4 overflow-y-auto rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur-sm">
 
                 <div className="grid gap-1.5">
-                    {settingsSections.map((section) => {
+                    {visibleSettingsSections.map((section) => {
                         const Icon = section.icon;
                         const isActive = activeSection === section.key;
 
@@ -129,7 +132,7 @@ const SettingsPage = () => {
             <section className="min-w-0 flex-1 overflow-y-auto rounded-2xl border bg-background/90 p-4 shadow-sm backdrop-blur-sm md:p-6">
                 {activeSection === "theme" ? (
                     <ThemeSettingsSection />
-                ) : activeSection === "users" ? (
+                ) : activeSection === "users" && user?.isAdmin ? (
                     <UsersSettingsSection />
                 ) : activeSection === "logo" ? (
                     <LogoSettingsPanel />

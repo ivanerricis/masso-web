@@ -50,3 +50,14 @@ export const requirePasswordChangeCompleted = (req: Request, res: Response, next
 
     next();
 };
+
+// Da applicare dopo requireAuth sulle rotte riservate all'amministratore (il primo utente
+// mai registrato nel sistema).
+export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user?.isAdmin) {
+        res.status(403).json({ message: "Richiesti permessi di amministratore" });
+        return;
+    }
+
+    next();
+};

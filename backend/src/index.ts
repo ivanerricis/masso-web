@@ -16,7 +16,7 @@ import authRouter from "./routes/auth";
 import usersRouter from "./routes/users";
 import { userActionLogger } from "./middleware/userActionLogger";
 import { errorHandler } from "./middleware/errorHandler";
-import { requireAuth, requirePasswordChangeCompleted } from "./middleware/requireAuth";
+import { requireAdmin, requireAuth, requirePasswordChangeCompleted } from "./middleware/requireAuth";
 import settingsRouter from "./routes/settings";
 import { startBackupScheduler } from "./services/backupManager";
 import { getLogoFile } from "./services/logoManager";
@@ -46,7 +46,7 @@ app.use("/api/auth", authRouter);
 
 app.use("/api", requireAuth, requirePasswordChangeCompleted);
 
-app.use("/api/users", usersRouter);
+app.use("/api/users", requireAdmin, usersRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/customers", customersRouter);
 app.use("/api/collaborators", collaboratorsRouter);

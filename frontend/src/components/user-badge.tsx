@@ -48,7 +48,7 @@ export function UserBadge() {
                     </TooltipTrigger>
                     <TooltipContent>{user.username}</TooltipContent>
                 </Tooltip>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel className="font-normal text-muted-foreground">
                         Accesso come <span className="font-semibold text-foreground">{user.username}</span>
                     </DropdownMenuLabel>
@@ -57,10 +57,12 @@ export function UserBadge() {
                         <KeyRound className="size-4" />
                         Cambia password
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/settings?section=users")}>
-                        <Users className="size-4" />
-                        Gestisci utenti
-                    </DropdownMenuItem>
+                    {user.isAdmin ? (
+                        <DropdownMenuItem onClick={() => navigate("/settings?section=users")}>
+                            <Users className="size-4" />
+                            Gestisci utenti
+                        </DropdownMenuItem>
+                    ) : null}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => void handleLogout()}>
                         <LogOut className="size-4" />

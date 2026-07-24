@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { and, eq, ne } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { db } from "../db";
 import { sessionTable, userTable } from "../db/schema";
 
@@ -31,6 +31,8 @@ export type PublicUser = {
     username: string;
     createdAt: string;
     mustChangePassword: boolean;
+    active: boolean;
+    isAdmin: boolean;
 };
 
 const hashPassword = (password: string): Promise<string> =>
@@ -84,17 +86,30 @@ const getDummyPasswordHash = (): Promise<string> => {
     return cachedDummyPasswordHash;
 };
 
-const toPublicUser = (user: {
-    id: number;
-    username: string;
-    created_at: Date;
-    mustChangePassword: boolean;
-}): PublicUser => ({
+const toPublicUser = (
+    user: {
+        id: number;
+        username: string;
+        created_at: Date;
+        mustChangePassword: boolean;
+        active: boolean;
+    },
+    isAdmin: boolean
+): PublicUser => ({
     id: user.id,
     username: user.username,
     createdAt: user.created_at.toISOString(),
     mustChangePassword: user.mustChangePassword,
+    active: user.active,
+    isAdmin,
 });
+
+// L'admin è semplicemente il primo account mai registrato (id più basso): non esiste
+// un campo "ruolo" separato da mantenere sincronizzato.
+const getAdminUserId = async (): Promise<number | null> => {
+    const rows = await db.select({ id: userTable.id }).from(userTable).orderBy(asc(userTable.id)).limit(1);
+    return rows[0]?.id ?? null;
+};
 
 export const ensureDefaultAdmin = async (): Promise<void> => {
     const existing = await db.select({ id: userTable.id }).from(userTable).limit(1);
@@ -174,11 +189,16 @@ export const login = async (username: string, password: string, ip: string) => {
 
     registerSuccessfulLogin(ip);
 
+    if (!user.active) {
+        throw new AuthManagerError("Questo account è stato disabilitato. Contatta un amministratore.", 403);
+    }
+
     const token = generateSessionToken();
     const expiresAt = new Date(Date.now() + sessionDurationMs);
     await db.insert(sessionTable).values({ token, userId: user.id, expiresAt });
 
-    return { token, expiresAt, user: toPublicUser(user) };
+    const adminId = await getAdminUserId();
+    return { token, expiresAt, user: toPublicUser(user, user.id === adminId) };
 };
 
 export const getSessionUser = async (token: string): Promise<PublicUser | null> => {
@@ -189,6 +209,7 @@ export const getSessionUser = async (token: string): Promise<PublicUser | null> 
             username: userTable.username,
             created_at: userTable.created_at,
             mustChangePassword: userTable.mustChangePassword,
+            active: userTable.active,
         })
         .from(sessionTable)
         .innerJoin(userTable, eq(sessionTable.userId, userTable.id))
@@ -200,12 +221,13 @@ export const getSessionUser = async (token: string): Promise<PublicUser | null> 
         return null;
     }
 
-    if (row.expiresAt.getTime() <= Date.now()) {
+    if (row.expiresAt.getTime() <= Date.now() || !row.active) {
         await db.delete(sessionTable).where(eq(sessionTable.token, token));
         return null;
     }
 
-    return toPublicUser(row);
+    const adminId = await getAdminUserId();
+    return toPublicUser(row, row.id === adminId);
 };
 
 export const deleteSession = (token: string) => db.delete(sessionTable).where(eq(sessionTable.token, token));
@@ -217,8 +239,11 @@ const deleteOtherSessionsForUser = (userId: number, currentToken: string) =>
     db.delete(sessionTable).where(and(eq(sessionTable.userId, userId), ne(sessionTable.token, currentToken)));
 
 export const listUsers = async (): Promise<PublicUser[]> => {
-    const rows = await db.select().from(userTable).orderBy(userTable.username);
-    return rows.map(toPublicUser);
+    const [rows, adminId] = await Promise.all([
+        db.select().from(userTable).orderBy(userTable.username),
+        getAdminUserId(),
+    ]);
+    return rows.map((row) => toPublicUser(row, row.id === adminId));
 };
 
 export const createUser = async (username: string) => {
@@ -229,7 +254,8 @@ export const createUser = async (username: string) => {
         .values({ username, passwordHash, mustChangePassword: true })
         .returning();
 
-    return { user: toPublicUser(user), generatedPassword: password };
+    const adminId = await getAdminUserId();
+    return { user: toPublicUser(user, user.id === adminId), generatedPassword: password };
 };
 
 export const regeneratePassword = async (userId: number) => {
@@ -246,7 +272,29 @@ export const regeneratePassword = async (userId: number) => {
     // (incluso un eventuale ladro di sessione) deve rifare il login con quella nuova.
     await deleteAllSessionsForUser(userId);
 
-    return { user: { ...toPublicUser(user), mustChangePassword: true }, generatedPassword: password };
+    const adminId = await getAdminUserId();
+    return {
+        user: { ...toPublicUser(user, user.id === adminId), mustChangePassword: true },
+        generatedPassword: password,
+    };
+};
+
+export const setUserActive = async (userId: number, active: boolean): Promise<PublicUser> => {
+    const rows = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
+    const user = rows[0];
+    if (!user) {
+        throw new AuthManagerError("Utente non trovato", 404);
+    }
+
+    const [updated] = await db.update(userTable).set({ active }).where(eq(userTable.id, userId)).returning();
+
+    if (!active) {
+        // Disattivare l'account deve invalidare subito eventuali sessioni già aperte.
+        await deleteAllSessionsForUser(userId);
+    }
+
+    const adminId = await getAdminUserId();
+    return toPublicUser(updated, updated.id === adminId);
 };
 
 export const changeOwnPassword = async (

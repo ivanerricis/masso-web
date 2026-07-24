@@ -107,6 +107,7 @@ export const userTable = pgTable("user", {
     username: varchar("username", { length: 50 }).notNull().unique(),
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
     mustChangePassword: boolean("must_change_password").notNull().default(false),
+    active: boolean("active").notNull().default(true),
     ...timestamps,
 });
 

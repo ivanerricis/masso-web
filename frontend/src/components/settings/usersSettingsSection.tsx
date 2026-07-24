@@ -1,13 +1,21 @@
 import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { KeyRound, UserPlus } from "lucide-react";
+import { KeyRound, ShieldCheck, UserPlus, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CustomDialog from "@/components/dialogs/customDialog";
 import CreateUserDialog from "@/components/dialogs/settings/createUserDialog";
 import GeneratedPasswordDialog from "@/components/dialogs/settings/generatedPasswordDialog";
-import { getApiErrorMessage, listUsers, regeneratePassword, type CreatedUserResult, type UserDto } from "@/lib/api";
+import {
+    disableUser,
+    enableUser,
+    getApiErrorMessage,
+    listUsers,
+    regeneratePassword,
+    type CreatedUserResult,
+    type UserDto,
+} from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/components/use-auth";
 
@@ -19,6 +27,8 @@ const UsersSettingsSection = () => {
     const [generatedPasswordResult, setGeneratedPasswordResult] = useState<CreatedUserResult | null>(null);
     const [userPendingRegeneration, setUserPendingRegeneration] = useState<UserDto | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
+    const [userPendingDisable, setUserPendingDisable] = useState<UserDto | null>(null);
+    const [isTogglingActive, setIsTogglingActive] = useState(false);
 
     const loadUsers = async () => {
         setIsLoading(true);
@@ -61,6 +71,41 @@ const UsersSettingsSection = () => {
         }
     };
 
+    const handleConfirmDisable = async () => {
+        if (!userPendingDisable || isTogglingActive) {
+            return;
+        }
+
+        try {
+            setIsTogglingActive(true);
+            const updated = await disableUser(userPendingDisable.id);
+            setUsers((prev) => prev.map((user) => (user.id === updated.id ? updated : user)));
+            setUserPendingDisable(null);
+            toast.success(`Account "${updated.username}" disabilitato`);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile disabilitare l'account"));
+        } finally {
+            setIsTogglingActive(false);
+        }
+    };
+
+    const handleEnable = async (user: UserDto) => {
+        if (isTogglingActive) {
+            return;
+        }
+
+        try {
+            setIsTogglingActive(true);
+            const updated = await enableUser(user.id);
+            setUsers((prev) => prev.map((existing) => (existing.id === updated.id ? updated : existing)));
+            toast.success(`Account "${updated.username}" riabilitato`);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile riabilitare l'account"));
+        } finally {
+            setIsTogglingActive(false);
+        }
+    };
+
     return (
         <Card size="sm" className="border-primary/15 shadow-sm">
             <CardHeader className="flex-row items-start justify-between gap-2 border-b border-primary/10 bg-muted/20">
@@ -95,18 +140,50 @@ const UsersSettingsSection = () => {
                                         {user.id === currentUser?.id ? (
                                             <span className="ml-2 text-xs text-muted-foreground">(tu)</span>
                                         ) : null}
+                                        {user.isAdmin ? (
+                                            <span className="ml-2 text-xs text-muted-foreground">(admin)</span>
+                                        ) : null}
+                                        {!user.active ? (
+                                            <span className="ml-2 text-xs text-destructive">(disabilitato)</span>
+                                        ) : null}
                                     </TableCell>
                                     <TableCell>{formatDateTime(user.createdAt)}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setUserPendingRegeneration(user)}
-                                        >
-                                            <KeyRound className="size-4" />
-                                            Rigenera password
-                                        </Button>
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setUserPendingRegeneration(user)}
+                                            >
+                                                <KeyRound className="size-4" />
+                                                Rigenera password
+                                            </Button>
+                                            {user.id !== currentUser?.id ? (
+                                                user.active ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setUserPendingDisable(user)}
+                                                    >
+                                                        <UserX className="size-4" />
+                                                        Disabilita
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        disabled={isTogglingActive}
+                                                        onClick={() => void handleEnable(user)}
+                                                    >
+                                                        <ShieldCheck className="size-4" />
+                                                        Riabilita
+                                                    </Button>
+                                                )
+                                            ) : null}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -136,6 +213,28 @@ const UsersSettingsSection = () => {
                 onConfirm={() => void handleConfirmRegenerate()}
                 cancelDisabled={isRegenerating}
                 confirmDisabled={isRegenerating}
+            />
+
+            <CustomDialog
+                open={userPendingDisable != null}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setUserPendingDisable(null);
+                    }
+                }}
+                title="Disabilita account"
+                description={
+                    userPendingDisable
+                        ? `L'utente "${userPendingDisable.username}" non potrà più accedere all'applicazione finché non verrà riabilitato. Le sessioni aperte verranno terminate.`
+                        : undefined
+                }
+                destructive
+                confirmLabel={isTogglingActive ? "Disabilitazione..." : "Disabilita"}
+                cancelLabel="Annulla"
+                onCancel={() => setUserPendingDisable(null)}
+                onConfirm={() => void handleConfirmDisable()}
+                cancelDisabled={isTogglingActive}
+                confirmDisabled={isTogglingActive}
             />
 
             {generatedPasswordResult ? (

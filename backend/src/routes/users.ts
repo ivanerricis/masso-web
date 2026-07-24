@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import { z } from "zod";
-import { AuthManagerError, createUser, listUsers, regeneratePassword } from "../services/authManager";
+import { AuthManagerError, createUser, listUsers, regeneratePassword, setUserActive } from "../services/authManager";
 import { validate } from "./validation";
 
 const usersRouter = Router();
@@ -49,6 +49,37 @@ usersRouter.post("/:id/regenerate-password", validate({ params: userIdParamsSche
     try {
         const { id } = req.params as unknown as { id: number };
         const result = await regeneratePassword(id);
+        res.json(result);
+    } catch (error) {
+        if (handleAuthError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+usersRouter.post("/:id/disable", validate({ params: userIdParamsSchema }), async (req, res, next) => {
+    try {
+        const { id } = req.params as unknown as { id: number };
+        if (id === req.user!.id) {
+            res.status(400).json({ message: "Non puoi disabilitare il tuo stesso account" });
+            return;
+        }
+
+        const result = await setUserActive(id, false);
+        res.json(result);
+    } catch (error) {
+        if (handleAuthError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+usersRouter.post("/:id/enable", validate({ params: userIdParamsSchema }), async (req, res, next) => {
+    try {
+        const { id } = req.params as unknown as { id: number };
+        const result = await setUserActive(id, true);
         res.json(result);
     } catch (error) {
         if (handleAuthError(error, res)) {
