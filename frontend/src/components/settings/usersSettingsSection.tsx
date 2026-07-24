@@ -1,13 +1,15 @@
 import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { KeyRound, ShieldCheck, UserPlus, UserX } from "lucide-react";
+import { KeyRound, ShieldCheck, Trash2, UserPlus, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CustomDialog from "@/components/dialogs/customDialog";
+import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import CreateUserDialog from "@/components/dialogs/settings/createUserDialog";
 import GeneratedPasswordDialog from "@/components/dialogs/settings/generatedPasswordDialog";
 import {
+    deleteUser,
     disableUser,
     enableUser,
     getApiErrorMessage,
@@ -29,6 +31,8 @@ const UsersSettingsSection = () => {
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [userPendingDisable, setUserPendingDisable] = useState<UserDto | null>(null);
     const [isTogglingActive, setIsTogglingActive] = useState(false);
+    const [userPendingDelete, setUserPendingDelete] = useState<UserDto | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const loadUsers = async () => {
         setIsLoading(true);
@@ -86,6 +90,29 @@ const UsersSettingsSection = () => {
             toast.error(getApiErrorMessage(error, "Impossibile disabilitare l'account"));
         } finally {
             setIsTogglingActive(false);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!userPendingDelete || isDeleting) {
+            return;
+        }
+
+        try {
+            setIsDeleting(true);
+            await deleteUser(userPendingDelete.id);
+            setUsers((prev) => prev.filter((user) => user.id !== userPendingDelete.id));
+            toast.success(`Utente "${userPendingDelete.username}" eliminato`);
+            setUserPendingDelete(null);
+        } catch (error) {
+            toast.error(
+                getApiErrorMessage(
+                    error,
+                    "Impossibile eliminare l'account: disabilitalo se è ancora in uso altrove"
+                )
+            );
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -160,28 +187,39 @@ const UsersSettingsSection = () => {
                                                 Rigenera password
                                             </Button>
                                             {user.id !== currentUser?.id ? (
-                                                user.active ? (
+                                                <>
+                                                    {user.active ? (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setUserPendingDisable(user)}
+                                                        >
+                                                            <UserX className="size-4" />
+                                                            Disabilita
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled={isTogglingActive}
+                                                            onClick={() => void handleEnable(user)}
+                                                        >
+                                                            <ShieldCheck className="size-4" />
+                                                            Riabilita
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         type="button"
                                                         variant="outline"
                                                         size="sm"
-                                                        onClick={() => setUserPendingDisable(user)}
+                                                        onClick={() => setUserPendingDelete(user)}
                                                     >
-                                                        <UserX className="size-4" />
-                                                        Disabilita
+                                                        <Trash2 className="size-4" />
+                                                        Elimina
                                                     </Button>
-                                                ) : (
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled={isTogglingActive}
-                                                        onClick={() => void handleEnable(user)}
-                                                    >
-                                                        <ShieldCheck className="size-4" />
-                                                        Riabilita
-                                                    </Button>
-                                                )
+                                                </>
                                             ) : null}
                                         </div>
                                     </TableCell>
@@ -235,6 +273,23 @@ const UsersSettingsSection = () => {
                 onConfirm={() => void handleConfirmDisable()}
                 cancelDisabled={isTogglingActive}
                 confirmDisabled={isTogglingActive}
+            />
+
+            <ConfirmDeleteDialog
+                open={userPendingDelete != null}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setUserPendingDelete(null);
+                    }
+                }}
+                title="Elimina utente"
+                description={
+                    userPendingDelete
+                        ? `L'account "${userPendingDelete.username}" verrà eliminato definitivamente. Se è ancora collegato a qualcosa nell'applicazione, disabilitalo invece di eliminarlo.`
+                        : ""
+                }
+                isDeleting={isDeleting}
+                onConfirm={handleConfirmDelete}
             />
 
             {generatedPasswordResult ? (

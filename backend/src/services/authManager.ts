@@ -297,6 +297,18 @@ export const setUserActive = async (userId: number, active: boolean): Promise<Pu
     return toPublicUser(updated, updated.id === adminId);
 };
 
+export const deleteUser = async (userId: number): Promise<void> => {
+    const rows = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.id, userId)).limit(1);
+    if (rows.length === 0) {
+        throw new AuthManagerError("Utente non trovato", 404);
+    }
+
+    // Eventuali FK verso questa tabella senza cascade fanno fallire la query con un
+    // vincolo di integrità: l'errore viene tradotto in un messaggio leggibile dal
+    // middleware globale, invitando l'admin a disabilitare l'account invece di eliminarlo.
+    await db.delete(userTable).where(eq(userTable.id, userId));
+};
+
 export const changeOwnPassword = async (
     userId: number,
     currentPassword: string,

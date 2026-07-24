@@ -19,3 +19,7 @@ export const disableUser = async (userId: number) =>
 
 export const enableUser = async (userId: number) =>
     (await api.post<UserDto>(`/users/${userId}/enable`)).data;
+
+export const deleteUser = async (userId: number) => {
+    await api.delete(`/users/${userId}`);
+};
