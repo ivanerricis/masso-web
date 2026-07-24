@@ -100,8 +100,8 @@ body {
 }
 
 .logo {
-  width: 10mm;
-  height: 10mm;
+  width: 14mm;
+  height: 14mm;
   flex-shrink: 0;
 }
 

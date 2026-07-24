@@ -175,8 +175,8 @@ const buildHeader = (report: ReportPrintData, logoDataUrl: string | null, compac
                   width: "*",
                   columns: [
                       ...(logoDataUrl
-                          ? [{ width: 40, image: logoDataUrl, fit: [36, 36], margin: [0, 0, 0, 0] }]
-                          : [{ width: 40, text: "" }]),
+                          ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
+                          : [{ width: 56, text: "" }]),
                       {
                           width: "*",
                           stack: [
@@ -238,8 +238,8 @@ const buildCustomerSummaryHeader = (customer: CustomerReportsPrintData, logoData
                   width: "*",
                   columns: [
                       ...(logoDataUrl
-                          ? [{ width: 40, image: logoDataUrl, fit: [36, 36], margin: [0, 0, 0, 0] }]
-                          : [{ width: 40, text: "" }]),
+                          ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
+                          : [{ width: 56, text: "" }]),
                       {
                           width: "*",
                           stack: [
