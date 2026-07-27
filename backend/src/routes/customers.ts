@@ -207,7 +207,14 @@ customersRouter.get("/:id/interventions/print", validate({ params: customerIdPar
             status: intervention.status as "programmato" | "in_lavorazione" | "completato",
             description: intervention.description,
             scheduleLabel: intervention.interventionDate
-                ? `${new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${intervention.interventionDate}T00:00:00`))} ${intervention.startTime?.slice(0, 5) ?? ""}-${intervention.endTime?.slice(0, 5) ?? ""}`
+                ? [
+                      new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${intervention.interventionDate}T00:00:00`)),
+                      intervention.startTime && intervention.endTime
+                          ? `${intervention.startTime.slice(0, 5)}-${intervention.endTime.slice(0, 5)}`
+                          : null,
+                  ]
+                      .filter(Boolean)
+                      .join(" ")
                 : null,
         })),
     });

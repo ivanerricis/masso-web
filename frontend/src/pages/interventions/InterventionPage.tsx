@@ -219,7 +219,7 @@ const InterventionPage = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-semibold">
-                            {isOnSite ? formatDate(details.intervention.interventionDate) : "-"}
+                            {formatDate(details.intervention.interventionDate)}
                         </p>
                     </CardContent>
                 </Card>

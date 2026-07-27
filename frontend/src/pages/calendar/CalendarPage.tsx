@@ -63,7 +63,7 @@ const CalendarPage = () => {
         <div className="relative flex flex-col gap-4 w-full h-full">
             <PageHeader
                 title="Calendario"
-                description="Visualizza gli interventi in sede e da remoto già programmati e le consegne materiale (in base alla data di creazione)."
+                description="Visualizza gli interventi in sede e da remoto già programmati e le consegne materiale in base alla data prevista."
             />
 
             <Card className="flex-1">

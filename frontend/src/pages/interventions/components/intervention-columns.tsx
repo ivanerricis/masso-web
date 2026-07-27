@@ -39,10 +39,17 @@ export const interventionColumns: InterventionColumn[] = [
     {
         key: "schedule",
         header: "Data/Orario",
-        render: (row) =>
-            row.interventionDate
-                ? `${formatDate(row.interventionDate)} ${formatInterventionTime(row.startTime)}-${formatInterventionTime(row.endTime)}`
-                : "-",
+        render: (row) => {
+            if (!row.interventionDate) {
+                return "-";
+            }
+
+            if (!row.startTime || !row.endTime) {
+                return formatDate(row.interventionDate);
+            }
+
+            return `${formatDate(row.interventionDate)} ${formatInterventionTime(row.startTime)}-${formatInterventionTime(row.endTime)}`;
+        },
     },
     {
         key: "status",

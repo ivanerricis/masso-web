@@ -52,12 +52,12 @@ const interventionBodySchema = z
     .strict();
 
 const interventionCreateBodySchema = interventionBodySchema.superRefine((value, ctx) => {
-    if (!onSiteInterventionTypes.has(value.type)) {
-        return;
-    }
-
     if (!value.interventionDate) {
         ctx.addIssue({ code: "custom", message: "La data dell'intervento è obbligatoria", path: ["interventionDate"] });
+    }
+
+    if (!onSiteInterventionTypes.has(value.type)) {
+        return;
     }
 
     if (!value.startTime) {
@@ -273,7 +273,7 @@ interventionsRouter.post("/", validate({ body: interventionCreateBodySchema }), 
         status: req.body.status ?? "programmato",
         customerId: req.body.customerId,
         collaboratorId: req.body.collaboratorId,
-        interventionDate: isOnSite ? req.body.interventionDate ?? null : null,
+        interventionDate: req.body.interventionDate ?? null,
         startTime: isOnSite ? req.body.startTime ?? null : null,
         endTime: isOnSite ? req.body.endTime ?? null : null,
     });
@@ -300,8 +300,13 @@ interventionsRouter.put(
         const nextStartTime = "startTime" in req.body ? req.body.startTime ?? null : existing.startTime;
         const nextEndTime = "endTime" in req.body ? req.body.endTime ?? null : existing.endTime;
 
-        if (isOnSite && (!nextInterventionDate || !nextStartTime || !nextEndTime)) {
-            res.status(400).json({ message: "Per interventi in sede o da remoto sono richiesti data, ora inizio e ora fine" });
+        if (!nextInterventionDate) {
+            res.status(400).json({ message: "La data dell'intervento è obbligatoria" });
+            return;
+        }
+
+        if (isOnSite && (!nextStartTime || !nextEndTime)) {
+            res.status(400).json({ message: "Per interventi in sede o da remoto sono richiesti ora inizio e ora fine" });
             return;
         }
 
@@ -312,7 +317,7 @@ interventionsRouter.put(
 
         const updatedIntervention = await updateInterventionById(id, {
             ...req.body,
-            interventionDate: isOnSite ? nextInterventionDate : null,
+            interventionDate: nextInterventionDate,
             startTime: isOnSite ? nextStartTime : null,
             endTime: isOnSite ? nextEndTime : null,
         });

@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import DatePickerField from "@/components/date-picker-field";
 import { getApiErrorMessage, getIntervention, listCollaborators } from "@/lib/api";
 import {
+    interventionDateLabel,
     interventionDescriptionLabel,
     interventionStatusOptions,
     interventionTypeOptions,
@@ -116,12 +117,12 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
             return;
         }
 
-        if (isOnSite) {
-            if (formValues.interventionDate.trim() === "") {
-                toast.error("Seleziona la data dell'intervento");
-                return;
-            }
+        if (formValues.interventionDate.trim() === "") {
+            toast.error(isOnSite ? "Seleziona la data dell'intervento" : "Seleziona la data di consegna");
+            return;
+        }
 
+        if (isOnSite) {
             if (formValues.startTime.trim() === "" || formValues.endTime.trim() === "") {
                 toast.error("Indica l'ora di inizio e di fine assistenza");
                 return;
@@ -141,7 +142,7 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                 status: formValues.status,
                 description: formValues.description.trim(),
                 collaboratorId,
-                interventionDate: isOnSite ? formValues.interventionDate : null,
+                interventionDate: formValues.interventionDate,
                 startTime: isOnSite ? formValues.startTime : null,
                 endTime: isOnSite ? formValues.endTime : null,
             });
@@ -255,39 +256,37 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                                         </Select>
                                     </div>
 
+                                    <div className="grid gap-1">
+                                        <Label htmlFor="interventionDate" className="text-lg">{interventionDateLabel(formValues.type)}</Label>
+                                        <DatePickerField
+                                            id="interventionDate"
+                                            value={formValues.interventionDate}
+                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, interventionDate: value }))}
+                                        />
+                                    </div>
+
                                     {isOnSite ? (
-                                        <>
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-1">
-                                                <Label htmlFor="interventionDate" className="text-lg">Data intervento</Label>
-                                                <DatePickerField
-                                                    id="interventionDate"
-                                                    value={formValues.interventionDate}
-                                                    onValueChange={(value) => setFormValues((prev) => ({ ...prev, interventionDate: value }))}
+                                                <Label htmlFor="startTime" className="text-lg">Ora inizio</Label>
+                                                <Input
+                                                    id="startTime"
+                                                    type="time"
+                                                    value={formValues.startTime}
+                                                    onChange={(event) => setFormValues((prev) => ({ ...prev, startTime: event.target.value }))}
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="grid gap-1">
-                                                    <Label htmlFor="startTime" className="text-lg">Ora inizio</Label>
-                                                    <Input
-                                                        id="startTime"
-                                                        type="time"
-                                                        value={formValues.startTime}
-                                                        onChange={(event) => setFormValues((prev) => ({ ...prev, startTime: event.target.value }))}
-                                                    />
-                                                </div>
-
-                                                <div className="grid gap-1">
-                                                    <Label htmlFor="endTime" className="text-lg">Ora fine</Label>
-                                                    <Input
-                                                        id="endTime"
-                                                        type="time"
-                                                        value={formValues.endTime}
-                                                        onChange={(event) => setFormValues((prev) => ({ ...prev, endTime: event.target.value }))}
-                                                    />
-                                                </div>
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="endTime" className="text-lg">Ora fine</Label>
+                                                <Input
+                                                    id="endTime"
+                                                    type="time"
+                                                    value={formValues.endTime}
+                                                    onChange={(event) => setFormValues((prev) => ({ ...prev, endTime: event.target.value }))}
+                                                />
                                             </div>
-                                        </>
+                                        </div>
                                     ) : null}
 
                                     <div className="grid gap-1 lg:col-span-2">

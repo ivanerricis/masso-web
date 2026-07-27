@@ -28,13 +28,18 @@ const toCalendarEvent = (intervention: InterventionDto): InterventionCalendarEve
         };
     }
 
-    const createdAtDate = new Date(intervention.createdAt);
+    // Le consegne materiale hanno solo una data (senza orario). I record creati prima
+    // dell'introduzione di questo campo non hanno interventionDate: in quel caso si usa
+    // la data di creazione come ripiego.
+    const fallbackDate = intervention.interventionDate
+        ? new Date(`${intervention.interventionDate}T00:00:00`)
+        : new Date(intervention.createdAt);
 
     return {
         id: intervention.id,
         title,
-        start: createdAtDate,
-        end: createdAtDate,
+        start: fallbackDate,
+        end: fallbackDate,
         allDay: true,
         resource: intervention,
     };

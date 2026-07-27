@@ -24,4 +24,7 @@ export const isOnSiteInterventionType = (value: InterventionType) =>
 export const interventionDescriptionLabel = (value: InterventionType) =>
     value === "consegna_materiale" ? "Materiali da consegnare" : "Assistenza effettuata";
 
+export const interventionDateLabel = (value: InterventionType) =>
+    value === "consegna_materiale" ? "Data consegna" : "Data intervento";
+
 export const formatInterventionTime = (value: string | null) => (value ? value.slice(0, 5) : "-");
