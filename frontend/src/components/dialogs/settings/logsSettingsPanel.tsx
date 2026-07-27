@@ -183,6 +183,7 @@ const LogsSettingsPanel = () => {
                                     <TableRow>
                                         <TableHead>Data e ora</TableHead>
                                         <TableHead>IP</TableHead>
+                                        <TableHead>Utente</TableHead>
                                         <TableHead>Azione</TableHead>
                                         <TableHead>Stato</TableHead>
                                         <TableHead>Errore</TableHead>
@@ -191,13 +192,13 @@ const LogsSettingsPanel = () => {
                                 <TableBody>
                                     {isLoadingEntries ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="whitespace-normal text-center text-muted-foreground">
+                                            <TableCell colSpan={6} className="whitespace-normal text-center text-muted-foreground">
                                                 Caricamento log...
                                             </TableCell>
                                         </TableRow>
                                     ) : entries.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="whitespace-normal text-center text-muted-foreground">
+                                            <TableCell colSpan={6} className="whitespace-normal text-center text-muted-foreground">
                                                 Nessuna voce trovata per i criteri selezionati.
                                             </TableCell>
                                         </TableRow>
@@ -206,6 +207,7 @@ const LogsSettingsPanel = () => {
                                             <TableRow key={`${entry.timestamp}-${index}`}>
                                                 <TableCell>{formatDateTime(entry.timestamp)}</TableCell>
                                                 <TableCell>{entry.ip}</TableCell>
+                                                <TableCell>{entry.user}</TableCell>
                                                 <TableCell className="whitespace-normal">{entry.action}</TableCell>
                                                 <TableCell className={cn(entry.status >= 400 && "font-semibold text-destructive")}>
                                                     {entry.status}

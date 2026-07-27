@@ -21,6 +21,7 @@ export class LogManagerError extends Error {
 export type LogEntry = {
     timestamp: string;
     ip: string;
+    user: string;
     action: string;
     status: number;
     error: string | null;
@@ -90,7 +91,9 @@ export const listLogFiles = async (): Promise<LogFileSummary[]> => {
     return summaries.sort((a, b) => b.dayKey.localeCompare(a.dayKey));
 };
 
-const logLinePattern = /^(\S+) \| ip=(\S+) \| action=(.+?) \| status=(\d+)(?: \| error=(.*))?$/;
+// Il campo "user=" e' opzionale nel pattern per restare compatibile con le righe di log
+// scritte prima che il tracciamento dell'utente fosse introdotto.
+const logLinePattern = /^(\S+) \| ip=(\S+) \|(?: user=(.+?) \|)? action=(.+?) \| status=(\d+)(?: \| error=(.*))?$/;
 
 const parseLogLine = (line: string): LogEntry | null => {
     const match = logLinePattern.exec(line);
@@ -99,11 +102,12 @@ const parseLogLine = (line: string): LogEntry | null => {
         return null;
     }
 
-    const [, timestamp, ip, action, status, error] = match;
+    const [, timestamp, ip, user, action, status, error] = match;
 
     return {
         timestamp,
         ip,
+        user: user ?? "-",
         action,
         status: Number(status),
         error: error ?? null,

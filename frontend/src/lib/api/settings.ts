@@ -100,6 +100,7 @@ export type LogFileDto = {
 export type LogEntryDto = {
     timestamp: string;
     ip: string;
+    user: string;
     action: string;
     status: number;
     error: string | null;

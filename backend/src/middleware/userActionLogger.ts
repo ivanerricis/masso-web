@@ -49,6 +49,8 @@ export const userActionLogger = (request: Request, _response: Response, next: Ne
         const timestamp = now.toISOString();
         const dayKey = getDayKey(now);
         const status = response.statusCode;
+        const rawUsername = request.user?.username ?? "";
+        const user = rawUsername.replace(/\|/g, "/").replace(/\s+/g, " ").trim() || "-";
         const rawErrorMessage = typeof response.locals.apiErrorMessage === "string"
             ? response.locals.apiErrorMessage
             : "";
@@ -56,7 +58,7 @@ export const userActionLogger = (request: Request, _response: Response, next: Ne
         const errorPart = status >= 400
             ? ` | error=${cleanErrorMessage || `HTTP ${status}`}`
             : "";
-        const logLine = `${timestamp} | ip=${ip} | action=${action} | status=${status}${errorPart}\n`;
+        const logLine = `${timestamp} | ip=${ip} | user=${user} | action=${action} | status=${status}${errorPart}\n`;
 
         void appendUserActionLog(logLine, dayKey).catch((error) => {
             console.error("Impossibile scrivere il log azioni utente:", error);

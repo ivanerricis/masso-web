@@ -155,7 +155,7 @@ settingsRouter.get(
             const normalizedSearch = search?.toLowerCase();
             const filteredEntries = normalizedSearch
                 ? allEntries.filter((entry) =>
-                    `${entry.action} ${entry.ip} ${entry.error ?? ""}`.toLowerCase().includes(normalizedSearch)
+                    `${entry.action} ${entry.ip} ${entry.user} ${entry.error ?? ""}`.toLowerCase().includes(normalizedSearch)
                 )
                 : allEntries;
 
