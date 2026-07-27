@@ -50,7 +50,7 @@ export const MainLayout = () => {
                         <UserBadge />
                     </div>
                 </header>
-                <main className="relative flex flex-1 w-full min-h-0 overflow-hidden p-3">
+                <main className="relative flex flex-1 w-full min-h-0 overflow-x-hidden overflow-y-auto p-3">
                     <Outlet />
                     {isRouteTransitioning ? (
                         <LoadingPage className="absolute inset-3 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
