@@ -8,6 +8,7 @@ type TableLoadingSkeletonProps = {
 
 const TableLoadingSkeleton = ({ columns, rows = 6 }: TableLoadingSkeletonProps) => {
     return (
+        <>
         <Table className="hidden sm:table bg-background">
             <TableHeader className="w-full">
                 <TableRow>
@@ -30,6 +31,22 @@ const TableLoadingSkeleton = ({ columns, rows = 6 }: TableLoadingSkeletonProps) 
                 ))}
             </TableBody>
         </Table>
+
+        <div className="flex flex-col gap-3 sm:hidden">
+            {Array.from({ length: Math.min(rows, 4) }).map((_, cardIndex) => (
+                <div key={`skeleton-card-${cardIndex}`} className="rounded-lg border bg-background p-3">
+                    <div className="flex flex-col gap-2">
+                        {Array.from({ length: Math.min(columns, 5) }).map((_, lineIndex) => (
+                            <div key={`skeleton-card-${cardIndex}-line-${lineIndex}`} className="flex items-center justify-between gap-3">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-4 w-24" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+        </>
     );
 };
 

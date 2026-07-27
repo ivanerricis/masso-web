@@ -356,7 +356,7 @@ const DashboardPage = () => {
                 </Dialog>
             </div>
 
-            <InterventionsCalendar className="h-[calc(100vh-16rem)] min-h-[28rem]" />
+            <InterventionsCalendar className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]" />
 
             {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
 

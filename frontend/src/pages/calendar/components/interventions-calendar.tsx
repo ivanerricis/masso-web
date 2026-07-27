@@ -75,7 +75,7 @@ const InterventionsCalendar = ({ className }: Props) => {
 
     return (
         <Card className={cn("relative flex flex-col", className)}>
-            <CardContent className="h-full">
+            <CardContent className="h-full overflow-x-auto">
                 <Calendar
                     localizer={localizer}
                     culture="it"

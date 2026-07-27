@@ -1,3 +1,4 @@
+import EntityCardList from "@/components/entity-card-list";
 import OpenEntityButton from "@/components/open-entity-button";
 import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,7 +21,31 @@ const TechniciansTable = ({
     onEditTechnician,
     onDeleteTechnician,
 }: TechniciansTableProps) => {
+    const renderRowActions = (row: TechnicianDto) => (
+        <>
+            <OpenEntityButton size="lg" onClick={() => onOpenTechnician(row.id)} aria-label={`Apri tecnico ${row.id}`} />
+            <TableActionButton
+                variant="default"
+                size="icon-lg"
+                className="bg-primary/10 hover:bg-primary/20"
+                onClick={() => onEditTechnician(row.id)}
+                aria-label={`Modifica tecnico ${row.id}`}
+            >
+                <Pencil className="size-5 text-primary" />
+            </TableActionButton>
+            <TableActionButton
+                variant="destructive"
+                size="icon-lg"
+                onClick={() => onDeleteTechnician(row)}
+                aria-label={`Elimina tecnico ${row.id}`}
+            >
+                <Trash2 className="size-5" />
+            </TableActionButton>
+        </>
+    );
+
     return (
+        <>
         <Table className="hidden sm:table bg-background">
             <TableHeader className="w-full">
                 <TableRow>
@@ -45,24 +70,7 @@ const TechniciansTable = ({
                                 <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <OpenEntityButton size="lg" onClick={() => onOpenTechnician(row.id)} aria-label={`Apri tecnico ${row.id}`} />
-                                            <TableActionButton
-                                                variant="default"
-                                                size="icon-lg"
-                                                className="bg-primary/10 hover:bg-primary/20"
-                                                onClick={() => onEditTechnician(row.id)}
-                                                aria-label={`Modifica tecnico ${row.id}`}
-                                            >
-                                                <Pencil className="size-5 text-primary" />
-                                            </TableActionButton>
-                                            <TableActionButton
-                                                variant="destructive"
-                                                size="icon-lg"
-                                                onClick={() => onDeleteTechnician(row)}
-                                                aria-label={`Elimina tecnico ${row.id}`}
-                                            >
-                                                <Trash2 className="size-5" />
-                                            </TableActionButton>
+                                            {renderRowActions(row)}
                                         </div>
                                     ) : (
                                         column.render(row)
@@ -74,6 +82,16 @@ const TechniciansTable = ({
                 )}
             </TableBody>
         </Table>
+
+        <EntityCardList
+            className="sm:hidden"
+            columns={columns.filter((column) => column.key !== "actions")}
+            rows={rows}
+            getRowKey={(row) => row.id}
+            renderActions={renderRowActions}
+            emptyMessage="Nessun tecnico disponibile."
+        />
+        </>
     );
 };
 

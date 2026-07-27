@@ -1,3 +1,4 @@
+import EntityCardList from "@/components/entity-card-list";
 import OpenEntityButton from "@/components/open-entity-button";
 import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,6 +22,12 @@ const rowClassNameByStatus: Record<InterventionDto["status"], string> = {
     completato: "bg-green-500/30 hover:bg-green-500/40 dark:bg-green-500/15 dark:hover:bg-green-500/20",
 };
 
+const cardClassNameByStatus: Record<InterventionDto["status"], string> = {
+    programmato: "bg-red-500/30 dark:bg-red-500/15",
+    in_lavorazione: "bg-yellow-400/30 dark:bg-yellow-400/15",
+    completato: "bg-green-500/30 dark:bg-green-500/15",
+};
+
 const InterventionsTable = ({
     columns,
     rows,
@@ -30,7 +37,52 @@ const InterventionsTable = ({
     onSendEmailIntervention,
     onDeleteIntervention,
 }: InterventionsTableProps) => {
+    const renderRowActions = (row: InterventionDto) => (
+        <>
+            <OpenEntityButton
+                size="icon-lg"
+                onClick={() => onOpenIntervention(row.id)}
+                aria-label={`Apri intervento ${row.id}`} />
+            <TableActionButton
+                variant="default"
+                size="icon-lg"
+                className="bg-primary/10 hover:bg-primary/20"
+                onClick={() => onEditIntervention(row.id)}
+                aria-label={`Modifica intervento ${row.id}`}
+            >
+                <Pencil className="size-5 text-primary" />
+            </TableActionButton>
+            <TableActionButton
+                variant="default"
+                size="icon-lg"
+                className="bg-yellow-400/20 hover:bg-yellow-400/30"
+                onClick={() => onPrintIntervention(row.id)}
+                aria-label={`Stampa intervento ${row.id}`}
+            >
+                <Printer className="size-5 text-yellow-400" />
+            </TableActionButton>
+            <TableActionButton
+                variant="default"
+                size="icon-lg"
+                className="bg-sky-400/20 hover:bg-sky-400/30"
+                onClick={() => onSendEmailIntervention(row.id)}
+                aria-label={`Invia email intervento ${row.id}`}
+            >
+                <Mail className="size-5 text-sky-500" />
+            </TableActionButton>
+            <TableActionButton
+                variant="destructive"
+                size="icon-lg"
+                onClick={() => onDeleteIntervention(row)}
+                aria-label={`Elimina intervento ${row.id}`}
+            >
+                <Trash2 className="size-5" />
+            </TableActionButton>
+        </>
+    );
+
     return (
+        <>
         <Table className="hidden sm:table bg-background">
             <TableHeader className="w-full">
                 <TableRow>
@@ -58,45 +110,7 @@ const InterventionsTable = ({
                                 >
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <OpenEntityButton
-                                                size="icon-lg"
-                                                onClick={() => onOpenIntervention(row.id)}
-                                                aria-label={`Apri intervento ${row.id}`} />
-                                            <TableActionButton
-                                                variant="default"
-                                                size="icon-lg"
-                                                className="bg-primary/10 hover:bg-primary/20"
-                                                onClick={() => onEditIntervention(row.id)}
-                                                aria-label={`Modifica intervento ${row.id}`}
-                                            >
-                                                <Pencil className="size-5 text-primary" />
-                                            </TableActionButton>
-                                            <TableActionButton
-                                                variant="default"
-                                                size="icon-lg"
-                                                className="bg-yellow-400/20 hover:bg-yellow-400/30"
-                                                onClick={() => onPrintIntervention(row.id)}
-                                                aria-label={`Stampa intervento ${row.id}`}
-                                            >
-                                                <Printer className="size-5 text-yellow-400" />
-                                            </TableActionButton>
-                                            <TableActionButton
-                                                variant="default"
-                                                size="icon-lg"
-                                                className="bg-sky-400/20 hover:bg-sky-400/30"
-                                                onClick={() => onSendEmailIntervention(row.id)}
-                                                aria-label={`Invia email intervento ${row.id}`}
-                                            >
-                                                <Mail className="size-5 text-sky-500" />
-                                            </TableActionButton>
-                                            <TableActionButton
-                                                variant="destructive"
-                                                size="icon-lg"
-                                                onClick={() => onDeleteIntervention(row)}
-                                                aria-label={`Elimina intervento ${row.id}`}
-                                            >
-                                                <Trash2 className="size-5" />
-                                            </TableActionButton>
+                                            {renderRowActions(row)}
                                         </div>
                                     ) : (
                                         column.render(row)
@@ -108,6 +122,17 @@ const InterventionsTable = ({
                 )}
             </TableBody>
         </Table>
+
+        <EntityCardList
+            className="sm:hidden"
+            columns={columns.filter((column) => column.key !== "actions")}
+            rows={rows}
+            getRowKey={(row) => row.id}
+            getCardClassName={(row) => cardClassNameByStatus[row.status]}
+            renderActions={renderRowActions}
+            emptyMessage="Nessun intervento disponibile."
+        />
+        </>
     );
 };
 

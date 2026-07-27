@@ -74,3 +74,23 @@
 .rbc-agenda-view table.rbc-agenda-table {
     color: var(--foreground);
 }
+
+@media (max-width: 640px) {
+    .rbc-month-view,
+    .rbc-time-view {
+        min-width: 640px;
+    }
+
+    .rbc-toolbar {
+        font-size: 0.8rem;
+    }
+
+    .rbc-toolbar button {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .rbc-header {
+        padding: 0.25rem 0;
+        font-size: 0.7rem;
+    }
+}

@@ -1,3 +1,4 @@
+import EntityCardList from "@/components/entity-card-list";
 import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { DeviceDto } from "@/types/dtos";
@@ -12,7 +13,30 @@ type DevicesTableProps = {
 };
 
 const DevicesTable = ({ columns, rows, onEditDevice, onDeleteDevice }: DevicesTableProps) => {
+    const renderRowActions = (row: DeviceDto) => (
+        <>
+            <TableActionButton
+                variant="default"
+                size="icon-lg"
+                className="bg-primary/10 hover:bg-primary/20"
+                onClick={() => onEditDevice(row.id)}
+                aria-label={`Modifica dispositivo ${row.id}`}
+            >
+                <Pencil className="size-5 text-primary" />
+            </TableActionButton>
+            <TableActionButton
+                variant="destructive"
+                size="icon-lg"
+                onClick={() => onDeleteDevice(row)}
+                aria-label={`Elimina dispositivo ${row.id}`}
+            >
+                <Trash2 className="size-5" />
+            </TableActionButton>
+        </>
+    );
+
     return (
+        <>
         <Table className="hidden sm:table bg-background">
             <TableHeader className="w-full">
                 <TableRow>
@@ -37,23 +61,7 @@ const DevicesTable = ({ columns, rows, onEditDevice, onDeleteDevice }: DevicesTa
                                 <TableCell key={`${row.id}-${column.key}`} className={column.className}>
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <TableActionButton
-                                                variant="default"
-                                                size="icon-lg"
-                                                className="bg-primary/10 hover:bg-primary/20"
-                                                onClick={() => onEditDevice(row.id)}
-                                                aria-label={`Modifica dispositivo ${row.id}`}
-                                            >
-                                                <Pencil className="size-5 text-primary" />
-                                            </TableActionButton>
-                                            <TableActionButton
-                                                variant="destructive"
-                                                size="icon-lg"
-                                                onClick={() => onDeleteDevice(row)}
-                                                aria-label={`Elimina dispositivo ${row.id}`}
-                                            >
-                                                <Trash2 className="size-5" />
-                                            </TableActionButton>
+                                            {renderRowActions(row)}
                                         </div>
                                     ) : (
                                         column.render(row)
@@ -65,6 +73,16 @@ const DevicesTable = ({ columns, rows, onEditDevice, onDeleteDevice }: DevicesTa
                 )}
             </TableBody>
         </Table>
+
+        <EntityCardList
+            className="sm:hidden"
+            columns={columns.filter((column) => column.key !== "actions")}
+            rows={rows}
+            getRowKey={(row) => row.id}
+            renderActions={renderRowActions}
+            emptyMessage="Nessun dispositivo disponibile."
+        />
+        </>
     );
 };
 

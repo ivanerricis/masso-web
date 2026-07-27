@@ -1,3 +1,4 @@
+import EntityCardList from "@/components/entity-card-list";
 import OpenEntityButton from "@/components/open-entity-button";
 import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,6 +15,11 @@ type ReportsTableProps = {
     onDeleteReport: (report: ReportDto) => void;
 };
 
+const getCardClassName = (row: ReportDto) =>
+    row.closed
+        ? "bg-green-500/30 dark:bg-green-500/15"
+        : "bg-red-500/30 dark:bg-red-500/15";
+
 const ReportsTable = ({
     columns,
     rows,
@@ -22,7 +28,43 @@ const ReportsTable = ({
     onPrintReport,
     onDeleteReport,
 }: ReportsTableProps) => {
+    const renderRowActions = (row: ReportDto) => (
+        <>
+            <OpenEntityButton
+                size="icon-lg"
+                onClick={() => onOpenReport(row.id)}
+                aria-label={`Apri rapporto ${row.id}`} />
+            <TableActionButton
+                variant="default"
+                size="icon-lg"
+                className="bg-primary/10 hover:bg-primary/20"
+                onClick={() => onEditReport(row.id)}
+                aria-label={`Modifica rapporto ${row.id}`}
+            >
+                <Pencil className="size-5 text-primary" />
+            </TableActionButton>
+            <TableActionButton
+                variant="default"
+                size="icon-lg"
+                className="bg-yellow-400/20 hover:bg-yellow-400/30"
+                onClick={() => onPrintReport(row.id)}
+                aria-label={`Stampa rapporto ${row.id}`}
+            >
+                <Printer className="size-5 text-yellow-400" />
+            </TableActionButton>
+            <TableActionButton
+                variant="destructive"
+                size="icon-lg"
+                onClick={() => onDeleteReport(row)}
+                aria-label={`Elimina rapporto ${row.id}`}
+            >
+                <Trash2 className="size-5" />
+            </TableActionButton>
+        </>
+    );
+
     return (
+        <>
         <Table className="hidden sm:table bg-background">
             <TableHeader className="w-full">
                 <TableRow>
@@ -57,36 +99,7 @@ const ReportsTable = ({
                                 >
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
-                                            <OpenEntityButton
-                                                size="icon-lg"
-                                                onClick={() => onOpenReport(row.id)}
-                                                aria-label={`Apri rapporto ${row.id}`} />
-                                            <TableActionButton
-                                                variant="default"
-                                                size="icon-lg"
-                                                className="bg-primary/10 hover:bg-primary/20"
-                                                onClick={() => onEditReport(row.id)}
-                                                aria-label={`Modifica rapporto ${row.id}`}
-                                            >
-                                                <Pencil className="size-5 text-primary" />
-                                            </TableActionButton>
-                                            <TableActionButton
-                                                variant="default"
-                                                size="icon-lg"
-                                                className="bg-yellow-400/20 hover:bg-yellow-400/30"
-                                                onClick={() => onPrintReport(row.id)}
-                                                aria-label={`Stampa rapporto ${row.id}`}
-                                            >
-                                                <Printer className="size-5 text-yellow-400" />
-                                            </TableActionButton>
-                                            <TableActionButton
-                                                variant="destructive"
-                                                size="icon-lg"
-                                                onClick={() => onDeleteReport(row)}
-                                                aria-label={`Elimina rapporto ${row.id}`}
-                                            >
-                                                <Trash2 className="size-5" />
-                                            </TableActionButton>
+                                            {renderRowActions(row)}
                                         </div>
                                     ) : (
                                         column.render(row)
@@ -98,6 +111,17 @@ const ReportsTable = ({
                 )}
             </TableBody>
         </Table>
+
+        <EntityCardList
+            className="sm:hidden"
+            columns={columns.filter((column) => column.key !== "actions")}
+            rows={rows}
+            getRowKey={(row) => row.id}
+            getCardClassName={getCardClassName}
+            renderActions={renderRowActions}
+            emptyMessage="Nessun rapporto disponibile."
+        />
+        </>
     );
 };
 
