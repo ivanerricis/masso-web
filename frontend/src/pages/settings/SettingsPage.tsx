@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Database, Image, Mail, Palette, RefreshCw, ScrollText, Users } from "lucide-react";
 import BackupSettingsPanel from "@/components/dialogs/settings/backupSettingsPanel";
@@ -74,13 +73,11 @@ const SettingsPage = () => {
     const { user } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const sectionFromUrl = searchParams.get("section");
-    const [activeSection, setActiveSectionState] = useState<SettingsSectionKey>(
-        isSettingsSectionKey(sectionFromUrl) && (sectionFromUrl !== "users" || user?.isAdmin) ? sectionFromUrl : "theme"
-    );
+    const activeSection: SettingsSectionKey =
+        isSettingsSectionKey(sectionFromUrl) && (sectionFromUrl !== "users" || user?.isAdmin) ? sectionFromUrl : "theme";
     const visibleSettingsSections = settingsSections.filter((section) => section.key !== "users" || user?.isAdmin);
 
     const setActiveSection = (section: SettingsSectionKey) => {
-        setActiveSectionState(section);
         setSearchParams((prev) => {
             const next = new URLSearchParams(prev);
             next.set("section", section);
