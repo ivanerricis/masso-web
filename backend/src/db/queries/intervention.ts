@@ -11,6 +11,7 @@ type ListInterventionsParams = {
     type?: "all" | "consegna_materiale" | "intervento_sede" | "intervento_remoto";
     dateFrom?: string;
     dateTo?: string;
+    scheduledDate?: string;
     customerId?: number;
 };
 
@@ -22,6 +23,7 @@ export const listInterventions = async ({
     type = "all",
     dateFrom,
     dateTo,
+    scheduledDate,
     customerId,
 }: ListInterventionsParams) => {
     const trimmedSearch = search?.trim();
@@ -53,11 +55,17 @@ export const listInterventions = async ({
               : dateTo
                 ? sql`${interventionTable.created_at}::date <= ${dateTo}`
                 : undefined;
+    const scheduledDateCondition = scheduledDate ? eq(interventionTable.interventionDate, scheduledDate) : undefined;
     const customerCondition = customerId ? eq(interventionTable.customerId, customerId) : undefined;
     const searchCondition = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const whereConditions = [statusCondition, typeCondition, dateCondition, customerCondition, searchCondition].filter(
-        (condition): condition is NonNullable<typeof condition> => condition != null
-    );
+    const whereConditions = [
+        statusCondition,
+        typeCondition,
+        dateCondition,
+        scheduledDateCondition,
+        customerCondition,
+        searchCondition,
+    ].filter((condition): condition is NonNullable<typeof condition> => condition != null);
     const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
     const baseQuery = db

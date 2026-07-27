@@ -28,3 +28,12 @@ export const interventionDateLabel = (value: InterventionType) =>
     value === "consegna_materiale" ? "Data consegna" : "Data intervento";
 
 export const formatInterventionTime = (value: string | null) => (value ? value.slice(0, 5) : "-");
+
+export const getTodayDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+};

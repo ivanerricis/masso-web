@@ -35,6 +35,7 @@ export type ListInterventionsParams = {
     type?: "all" | InterventionType;
     dateFrom?: string;
     dateTo?: string;
+    scheduledDate?: string;
 };
 
 export function listInterventions(): Promise<InterventionDto[]>;
@@ -54,6 +55,7 @@ export async function listInterventions(params?: ListInterventionsParams) {
             type: params.type,
             dateFrom: params.dateFrom,
             dateTo: params.dateTo,
+            scheduledDate: params.scheduledDate,
         },
     });
 
