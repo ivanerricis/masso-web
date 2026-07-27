@@ -40,10 +40,12 @@ const messages: Messages = {
     showMore: (total) => `+${total} altri`,
 };
 
-const statusEventClass: Record<InterventionStatus, string> = {
-    completato: "bg-green-500 text-white",
-    in_lavorazione: "bg-yellow-400 text-black",
-    programmato: "bg-red-500 text-white",
+// Stili inline: il CSS di react-big-calendar definisce già .rbc-event con la stessa
+// specificità delle classi Tailwind e viene caricato dopo, quindi vincerebbe sempre lui.
+const statusEventStyle: Record<InterventionStatus, { backgroundColor: string; color: string }> = {
+    completato: { backgroundColor: "var(--color-green-500)", color: "#fff" },
+    in_lavorazione: { backgroundColor: "var(--color-yellow-400)", color: "#000" },
+    programmato: { backgroundColor: "var(--color-red-500)", color: "#fff" },
 };
 
 const CalendarPage = () => {
@@ -52,7 +54,7 @@ const CalendarPage = () => {
 
     const eventPropGetter = useMemo<EventPropGetter<InterventionCalendarEvent>>(
         () => (event) => ({
-            className: statusEventClass[event.resource.status],
+            style: statusEventStyle[event.resource.status],
         }),
         []
     );
