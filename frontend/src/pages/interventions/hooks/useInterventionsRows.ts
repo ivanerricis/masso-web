@@ -9,18 +9,18 @@ type UseInterventionsRowsParams = {
     searchText: string;
     statusFilter: InterventionStatusFilter;
     typeFilter: InterventionTypeFilter;
-    selectedDate?: Date;
+    dateFrom?: string;
+    dateTo?: string;
     currentPage: number;
     pageSize: number;
 };
-
-const formatDateForQuery = (date: Date) => date.toISOString().slice(0, 10);
 
 export const useInterventionsRows = ({
     searchText,
     statusFilter,
     typeFilter,
-    selectedDate,
+    dateFrom,
+    dateTo,
     currentPage,
     pageSize,
 }: UseInterventionsRowsParams) => {
@@ -39,7 +39,8 @@ export const useInterventionsRows = ({
                 search: debouncedSearchText,
                 status: statusFilter,
                 type: typeFilter,
-                date: selectedDate ? formatDateForQuery(selectedDate) : undefined,
+                dateFrom,
+                dateTo,
             });
 
             setInterventionRows(response.items);
@@ -50,7 +51,7 @@ export const useInterventionsRows = ({
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, debouncedSearchText, statusFilter, typeFilter, selectedDate]);
+    }, [currentPage, pageSize, debouncedSearchText, statusFilter, typeFilter, dateFrom, dateTo]);
 
     useEffect(() => {
         startTransition(() => {

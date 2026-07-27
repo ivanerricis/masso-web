@@ -119,15 +119,17 @@ const ReportsPage = () => {
     }
 
     const [searchText, setSearchText] = useState("");
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
+    const [dateTo, setDateTo] = useState<string | undefined>(undefined);
     const pageSize = 10;
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [searchText, visibilityFilter, selectedDate],
+        resetDependencies: [searchText, visibilityFilter, dateFrom, dateTo],
     });
     const { reportRows, totalItems, totalPages, isLoading, loadReports, updateReportRow } = useReportsRows({
         searchText,
         visibilityFilter,
-        selectedDate,
+        dateFrom,
+        dateTo,
         currentPage,
         pageSize,
     });
@@ -379,8 +381,10 @@ const ReportsPage = () => {
                     onSearchTextChange={setSearchText}
                     visibilityFilter={visibilityFilter}
                     onVisibilityFilterChange={handleVisibilityFilterChange}
-                    selectedDate={selectedDate}
-                    onSelectedDateChange={setSelectedDate}
+                    dateFrom={dateFrom}
+                    onDateFromChange={setDateFrom}
+                    dateTo={dateTo}
+                    onDateToChange={setDateTo}
                 />
 
                 <div className="flex flex-col gap-4">

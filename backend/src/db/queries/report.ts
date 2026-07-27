@@ -8,11 +8,12 @@ type ListReportsParams = {
     pageSize?: number;
     search?: string;
     visibility?: "all" | "open" | "closed";
-    date?: string;
+    dateFrom?: string;
+    dateTo?: string;
     customerId?: number;
 };
 
-export const listReports = async ({ page, pageSize, search, visibility = "all", date, customerId }: ListReportsParams) => {
+export const listReports = async ({ page, pageSize, search, visibility = "all", dateFrom, dateTo, customerId }: ListReportsParams) => {
     const technicianPriceSubquery = db
         .select({
             reportId: reportTechnicianTable.reportId,
@@ -58,7 +59,14 @@ export const listReports = async ({ page, pageSize, search, visibility = "all", 
         : [];
     const visibilityCondition =
         visibility === "open" ? eq(reportTable.closed, false) : visibility === "closed" ? eq(reportTable.closed, true) : undefined;
-    const dateCondition = date ? sql`${reportTable.created_at}::date = ${date}` : undefined;
+    const dateCondition =
+        dateFrom && dateTo
+            ? sql`${reportTable.created_at}::date BETWEEN ${dateFrom} AND ${dateTo}`
+            : dateFrom
+              ? sql`${reportTable.created_at}::date >= ${dateFrom}`
+              : dateTo
+                ? sql`${reportTable.created_at}::date <= ${dateTo}`
+                : undefined;
     const customerCondition = customerId ? eq(reportTable.customerId, customerId) : undefined;
     const searchCondition = searchConditions.length > 0 ? or(...searchConditions) : undefined;
     const whereConditions = [visibilityCondition, dateCondition, customerCondition, searchCondition].filter(

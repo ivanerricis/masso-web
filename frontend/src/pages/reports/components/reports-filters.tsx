@@ -1,9 +1,8 @@
 import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, FilterX } from "lucide-react";
+import { FilterX } from "lucide-react";
 import type { ReportVisibilityFilter } from "./types";
 
 type ReportsFiltersProps = {
@@ -11,8 +10,10 @@ type ReportsFiltersProps = {
     onSearchTextChange: (value: string) => void;
     visibilityFilter: ReportVisibilityFilter;
     onVisibilityFilterChange: (value: ReportVisibilityFilter) => void;
-    selectedDate: Date | undefined;
-    onSelectedDateChange: (value: Date | undefined) => void;
+    dateFrom: string | undefined;
+    onDateFromChange: (value: string | undefined) => void;
+    dateTo: string | undefined;
+    onDateToChange: (value: string | undefined) => void;
 };
 
 const ReportsFilters = ({
@@ -20,16 +21,15 @@ const ReportsFilters = ({
     onSearchTextChange,
     visibilityFilter,
     onVisibilityFilterChange,
-    selectedDate,
-    onSelectedDateChange,
+    dateFrom,
+    onDateFromChange,
+    dateTo,
+    onDateToChange,
 }: ReportsFiltersProps) => {
-    const selectedDateLabel = selectedDate
-        ? new Intl.DateTimeFormat("it-IT", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-        }).format(selectedDate)
-        : "Filtra per data";
+    const handleClearDates = () => {
+        onDateFromChange(undefined);
+        onDateToChange(undefined);
+    };
 
     return (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -45,31 +45,34 @@ const ReportsFilters = ({
                 </SelectContent>
             </Select>
 
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start gap-2 sm:w-56">
-                        <CalendarDays className="size-4" />
-                        <span className="truncate">{selectedDateLabel}</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-auto p-0">
-                    <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={onSelectedDateChange}
-                        className="rounded-md border"
-                    />
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+                <Input
+                    type="date"
+                    aria-label="Data di inizio"
+                    value={dateFrom ?? ""}
+                    max={dateTo}
+                    onChange={(event) => onDateFromChange(event.target.value || undefined)}
+                    className="w-full sm:w-40"
+                />
+                <span className="text-sm text-muted-foreground">-</span>
+                <Input
+                    type="date"
+                    aria-label="Data di fine"
+                    value={dateTo ?? ""}
+                    min={dateFrom}
+                    onChange={(event) => onDateToChange(event.target.value || undefined)}
+                    className="w-full sm:w-40"
+                />
+            </div>
 
-            {selectedDate ? (
+            {dateFrom || dateTo ? (
                 <Button
                     variant="ghost"
                     className="w-full gap-2 sm:w-auto"
-                    onClick={() => onSelectedDateChange(undefined)}
+                    onClick={handleClearDates}
                 >
                     <FilterX className="size-4" />
-                    Pulisci data
+                    Pulisci date
                 </Button>
             ) : null}
         </div>

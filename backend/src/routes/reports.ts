@@ -33,7 +33,8 @@ const reportListQuerySchema = z.object({
     pageSize: z.coerce.number().int().min(1).max(1000).optional(),
     search: z.string().trim().max(255).optional(),
     visibility: z.enum(["all", "open", "closed"]).optional(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 const reportBodySchema = z
@@ -73,12 +74,13 @@ const reportUpdateBodySchema = reportBodySchema.partial().refine((value) => Obje
 });
 
 reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search, visibility, date } = req.query as unknown as {
+    const { page, pageSize, search, visibility, dateFrom, dateTo } = req.query as unknown as {
         page?: number;
         pageSize?: number;
         search?: string;
         visibility?: "all" | "open" | "closed";
-        date?: string;
+        dateFrom?: string;
+        dateTo?: string;
     };
 
     const reports = await listReports({
@@ -86,7 +88,8 @@ reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, r
         pageSize,
         search,
         visibility: visibility ?? (page == null || pageSize == null ? "all" : "open"),
-        date,
+        dateFrom,
+        dateTo,
     });
 
     if (page == null || pageSize == null) {

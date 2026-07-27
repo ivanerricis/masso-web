@@ -33,7 +33,8 @@ export type ListInterventionsParams = {
     search?: string;
     status?: "all" | InterventionStatus;
     type?: "all" | InterventionType;
-    date?: string;
+    dateFrom?: string;
+    dateTo?: string;
 };
 
 export function listInterventions(): Promise<InterventionDto[]>;
@@ -51,7 +52,8 @@ export async function listInterventions(params?: ListInterventionsParams) {
             search: params.search?.trim() || undefined,
             status: params.status,
             type: params.type,
-            date: params.date,
+            dateFrom: params.dateFrom,
+            dateTo: params.dateTo,
         },
     });
 

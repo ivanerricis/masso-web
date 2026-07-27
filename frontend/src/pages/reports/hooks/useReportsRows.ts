@@ -8,17 +8,17 @@ import type { ReportVisibilityFilter } from "../components/types";
 type UseReportsRowsParams = {
     searchText: string;
     visibilityFilter: ReportVisibilityFilter;
-    selectedDate?: Date;
+    dateFrom?: string;
+    dateTo?: string;
     currentPage: number;
     pageSize: number;
 };
 
-const formatDateForQuery = (date: Date) => date.toISOString().slice(0, 10);
-
 export const useReportsRows = ({
     searchText,
     visibilityFilter,
-    selectedDate,
+    dateFrom,
+    dateTo,
     currentPage,
     pageSize,
 }: UseReportsRowsParams) => {
@@ -36,7 +36,8 @@ export const useReportsRows = ({
                 pageSize,
                 search: debouncedSearchText,
                 visibility: visibilityFilter,
-                date: selectedDate ? formatDateForQuery(selectedDate) : undefined,
+                dateFrom,
+                dateTo,
             });
 
             setReportRows(response.items);
@@ -47,7 +48,7 @@ export const useReportsRows = ({
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, debouncedSearchText, selectedDate, visibilityFilter]);
+    }, [currentPage, pageSize, debouncedSearchText, dateFrom, dateTo, visibilityFilter]);
 
     useEffect(() => {
         startTransition(() => {

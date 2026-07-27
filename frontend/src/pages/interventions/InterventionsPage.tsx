@@ -91,16 +91,18 @@ const InterventionsPage = () => {
     const [searchText, setSearchText] = useState("");
     const [statusFilter, setStatusFilter] = useState<InterventionStatusFilter>("all");
     const [typeFilter, setTypeFilter] = useState<InterventionTypeFilter>("all");
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
+    const [dateTo, setDateTo] = useState<string | undefined>(undefined);
     const pageSize = 10;
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [searchText, statusFilter, typeFilter, selectedDate],
+        resetDependencies: [searchText, statusFilter, typeFilter, dateFrom, dateTo],
     });
     const { interventionRows, totalItems, totalPages, isLoading, loadInterventions, updateInterventionRow } = useInterventionsRows({
         searchText,
         statusFilter,
         typeFilter,
-        selectedDate,
+        dateFrom,
+        dateTo,
         currentPage,
         pageSize,
     });
@@ -273,8 +275,10 @@ const InterventionsPage = () => {
                     onStatusFilterChange={setStatusFilter}
                     typeFilter={typeFilter}
                     onTypeFilterChange={setTypeFilter}
-                    selectedDate={selectedDate}
-                    onSelectedDateChange={setSelectedDate}
+                    dateFrom={dateFrom}
+                    onDateFromChange={setDateFrom}
+                    dateTo={dateTo}
+                    onDateToChange={setDateTo}
                 />
 
                 <div className="flex flex-col gap-4">

@@ -9,7 +9,8 @@ type ListInterventionsParams = {
     search?: string;
     status?: "all" | "programmato" | "in_lavorazione" | "completato";
     type?: "all" | "consegna_materiale" | "intervento_sede" | "intervento_remoto";
-    date?: string;
+    dateFrom?: string;
+    dateTo?: string;
     customerId?: number;
 };
 
@@ -19,7 +20,8 @@ export const listInterventions = async ({
     search,
     status = "all",
     type = "all",
-    date,
+    dateFrom,
+    dateTo,
     customerId,
 }: ListInterventionsParams) => {
     const trimmedSearch = search?.trim();
@@ -43,7 +45,14 @@ export const listInterventions = async ({
         : [];
     const statusCondition = status !== "all" ? eq(interventionTable.status, status) : undefined;
     const typeCondition = type !== "all" ? eq(interventionTable.type, type) : undefined;
-    const dateCondition = date ? sql`${interventionTable.created_at}::date = ${date}` : undefined;
+    const dateCondition =
+        dateFrom && dateTo
+            ? sql`${interventionTable.created_at}::date BETWEEN ${dateFrom} AND ${dateTo}`
+            : dateFrom
+              ? sql`${interventionTable.created_at}::date >= ${dateFrom}`
+              : dateTo
+                ? sql`${interventionTable.created_at}::date <= ${dateTo}`
+                : undefined;
     const customerCondition = customerId ? eq(interventionTable.customerId, customerId) : undefined;
     const searchCondition = searchConditions.length > 0 ? or(...searchConditions) : undefined;
     const whereConditions = [statusCondition, typeCondition, dateCondition, customerCondition, searchCondition].filter(

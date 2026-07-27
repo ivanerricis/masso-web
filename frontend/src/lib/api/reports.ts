@@ -60,7 +60,8 @@ export type ListReportsParams = {
     pageSize?: number;
     search?: string;
     visibility?: "all" | "open" | "closed";
-    date?: string;
+    dateFrom?: string;
+    dateTo?: string;
 };
 
 export function listReports(): Promise<ReportDto[]>;
@@ -77,7 +78,8 @@ export async function listReports(params?: ListReportsParams) {
             pageSize: params.pageSize ?? 1000,
             search: params.search?.trim() || undefined,
             visibility: params.visibility,
-            date: params.date,
+            dateFrom: params.dateFrom,
+            dateTo: params.dateTo,
         },
     });
 

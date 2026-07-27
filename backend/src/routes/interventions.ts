@@ -35,7 +35,8 @@ const interventionListQuerySchema = z.object({
     search: z.string().trim().max(255).optional(),
     status: z.enum(["all", ...interventionStatuses]).optional(),
     type: z.enum(["all", ...interventionTypes]).optional(),
-    date: z.string().regex(dateRegex).optional(),
+    dateFrom: z.string().regex(dateRegex).optional(),
+    dateTo: z.string().regex(dateRegex).optional(),
 });
 
 const interventionBodySchema = z
@@ -78,13 +79,14 @@ const interventionUpdateBodySchema = interventionBodySchema.partial().refine((va
 });
 
 interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search, status, type, date } = req.query as unknown as {
+    const { page, pageSize, search, status, type, dateFrom, dateTo } = req.query as unknown as {
         page?: number;
         pageSize?: number;
         search?: string;
         status?: "all" | (typeof interventionStatuses)[number];
         type?: "all" | InterventionType;
-        date?: string;
+        dateFrom?: string;
+        dateTo?: string;
     };
 
     const interventions = await listInterventions({
@@ -93,7 +95,8 @@ interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), a
         search,
         status: status ?? "all",
         type: type ?? "all",
-        date,
+        dateFrom,
+        dateTo,
     });
 
     if (page == null || pageSize == null) {
