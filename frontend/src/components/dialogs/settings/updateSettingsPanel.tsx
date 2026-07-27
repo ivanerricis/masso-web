@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import CustomDialog from "@/components/dialogs/customDialog";
+import { useUpdateGuard } from "@/components/update-guard-provider";
 import {
     checkForUpdates,
     getApiErrorMessage,
@@ -19,6 +20,7 @@ const UPDATE_MAX_ATTEMPTS = 120; // ~6 minutes
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const UpdateSettingsPanel = () => {
+    const { setIsUpdating: setGlobalUpdating } = useUpdateGuard();
     const [status, setStatus] = useState<UpdateStatusDto | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
@@ -107,6 +109,7 @@ const UpdateSettingsPanel = () => {
         setIsConfirmOpen(false);
         const previousCommit = status?.currentCommit ?? null;
         setIsUpdating(true);
+        setGlobalUpdating(true);
         const toastId = toast.loading("Aggiornamento in corso...");
 
         try {
@@ -147,6 +150,7 @@ const UpdateSettingsPanel = () => {
             if (!cancelledRef.current) {
                 setIsUpdating(false);
             }
+            setGlobalUpdating(false);
         }
     };
 

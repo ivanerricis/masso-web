@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import AppErrorBoundary from "@/components/app-error-boundary"
 import { ThemeProvider } from "./components/theme-provider"
 import { AuthProvider } from "./components/auth-provider"
+import { UpdateGuardProvider } from "@/components/update-guard-provider"
 import RequireAuth from "@/components/require-auth"
 import { Toaster } from "./components/ui/sonner"
 import { TooltipProvider } from "./components/ui/tooltip"
@@ -31,55 +32,57 @@ const SettingsPage = lazy(() => import("./pages/settings/SettingsPage"))
 export function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <TooltipProvider>
-        <BrowserRouter>
-          <AppErrorBoundary>
-            <AuthProvider>
-              <Suspense fallback={<LoadingPage />}>
-                <Routes>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route element={<RequireAuth />}>
-                    <Route path="/" element={<MainLayout />}>
-                      <Route index element={<Navigate to="/dashboard" replace />} />
-                      <Route path="dashboard" element={<DashboardPage />} />
-                      <Route path="reports" element={<ReportsPage />} />
-                      <Route path="reports/:id" element={<ReportPage />} />
-                      <Route path="interventions" element={<InterventionsPage />} />
-                      <Route path="interventions/:id" element={<InterventionPage />} />
-                      <Route path="calendar" element={<CalendarPage />} />
-                      <Route path="clients" element={<CustomersPage />} />
-                      <Route path="clients/:id" element={<CustomerPage />} />
-                      <Route path="collaborators" element={<CollaboratorsPage />} />
-                      <Route path="collaborators/:id" element={<CollaboratorPage />} />
-                      <Route path="technicians" element={<TechnicianPage />} />
-                      <Route path="technicians/:id" element={<SingleTechnicianPage />} />
-                      <Route path="devices" element={<DevicesPage />} />
-                      <Route path="devices/:id" element={<DevicePage />} />
-                      <Route path="issues" element={<IssuesPage />} />
-                      <Route path="issues/:id" element={<IssuePage />} />
-                      <Route path="settings" element={<SettingsPage />} />
-                      <Route path="error" element={<UnhandledErrorPage />} />
-                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <UpdateGuardProvider>
+        <TooltipProvider>
+          <BrowserRouter>
+            <AppErrorBoundary>
+              <AuthProvider>
+                <Suspense fallback={<LoadingPage />}>
+                  <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route element={<RequireAuth />}>
+                      <Route path="/" element={<MainLayout />}>
+                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        <Route path="dashboard" element={<DashboardPage />} />
+                        <Route path="reports" element={<ReportsPage />} />
+                        <Route path="reports/:id" element={<ReportPage />} />
+                        <Route path="interventions" element={<InterventionsPage />} />
+                        <Route path="interventions/:id" element={<InterventionPage />} />
+                        <Route path="calendar" element={<CalendarPage />} />
+                        <Route path="clients" element={<CustomersPage />} />
+                        <Route path="clients/:id" element={<CustomerPage />} />
+                        <Route path="collaborators" element={<CollaboratorsPage />} />
+                        <Route path="collaborators/:id" element={<CollaboratorPage />} />
+                        <Route path="technicians" element={<TechnicianPage />} />
+                        <Route path="technicians/:id" element={<SingleTechnicianPage />} />
+                        <Route path="devices" element={<DevicesPage />} />
+                        <Route path="devices/:id" element={<DevicePage />} />
+                        <Route path="issues" element={<IssuesPage />} />
+                        <Route path="issues/:id" element={<IssuePage />} />
+                        <Route path="settings" element={<SettingsPage />} />
+                        <Route path="error" element={<UnhandledErrorPage />} />
+                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                      </Route>
                     </Route>
-                  </Route>
-                </Routes>
-              </Suspense>
-            </AuthProvider>
-          </AppErrorBoundary>
-        </BrowserRouter>
-      </TooltipProvider>
-      <Toaster
-        closeButton={true}
-        position='top-center'
-        richColors
-        swipeDirections={['left', 'right', 'top']}
-        toastOptions={{
-          classNames: {
-            title: "text-base",
-            description: "text-sm",
-            closeButton: "[&>svg]:h-4 [&>svg]:w-4 w-6! h-6!",
-          }
-        }} />
+                  </Routes>
+                </Suspense>
+              </AuthProvider>
+            </AppErrorBoundary>
+          </BrowserRouter>
+        </TooltipProvider>
+        <Toaster
+          closeButton={true}
+          position='top-center'
+          richColors
+          swipeDirections={['left', 'right', 'top']}
+          toastOptions={{
+            classNames: {
+              title: "text-base",
+              description: "text-sm",
+              closeButton: "[&>svg]:h-4 [&>svg]:w-4 w-6! h-6!",
+            }
+          }} />
+      </UpdateGuardProvider>
     </ThemeProvider>
   )
 }
