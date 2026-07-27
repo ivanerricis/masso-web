@@ -5,7 +5,6 @@ import EmailSettingsPanel from "@/components/dialogs/settings/emailSettingsPanel
 import LogoSettingsPanel from "@/components/dialogs/settings/logoSettingsPanel";
 import LogsSettingsPanel from "@/components/dialogs/settings/logsSettingsPanel";
 import UpdateSettingsPanel from "@/components/dialogs/settings/updateSettingsPanel";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
@@ -114,16 +113,6 @@ const SettingsPage = () => {
                         );
                     })}
                 </div>
-
-                <Card size="sm" className="border-dashed border-primary/20 bg-muted/25 shadow-none">
-                    <CardHeader>
-                        <CardTitle>Prossime sezioni</CardTitle>
-                        <CardDescription className="text-xs">Qui potrai aggiungere nuove aree di configurazione.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-xs text-muted-foreground">
-                        La struttura è già pronta per ospitare altre impostazioni senza cambiare layout.
-                    </CardContent>
-                </Card>
             </aside>
 
             <section className="min-w-0 flex-1 overflow-y-auto rounded-2xl border bg-background/90 p-4 shadow-sm backdrop-blur-sm md:p-6">
