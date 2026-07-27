@@ -85,8 +85,8 @@ const SettingsPage = () => {
     };
 
     return (
-        <div className="flex h-full min-h-0 w-full gap-4">
-            <aside className="flex w-full max-w-xs shrink-0 flex-col gap-4 overflow-y-auto rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur-sm">
+        <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto sm:flex-row sm:overflow-visible">
+            <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur-sm sm:max-w-xs">
 
                 <div className="grid gap-1.5">
                     {visibleSettingsSections.map((section) => {

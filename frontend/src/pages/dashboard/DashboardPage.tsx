@@ -237,7 +237,7 @@ const DashboardPage = () => {
                 }
             />
 
-            <div className="flex flex-wrap items-start gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-start sm:gap-4">
                 <CardDashboard
                     text="Rapportini aperti"
                     icon={CircleDashed}
@@ -255,9 +255,13 @@ const DashboardPage = () => {
 
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button type="button" variant="outline" className="h-auto gap-2 rounded-lg border-primary/20 px-4 py-3">
-                            <Euro className="size-5 text-yellow-400" />
-                            <span className="text-base font-medium text-primary">Incassi mese</span>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-auto w-full flex-col items-start gap-0.5 rounded-lg border-primary/20 p-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2 sm:px-4 sm:py-3"
+                        >
+                            <Euro className="size-4 text-yellow-400 sm:size-5" />
+                            <span className="truncate text-xs font-medium text-primary sm:text-base">Incassi mese</span>
                         </Button>
                     </DialogTrigger>
 

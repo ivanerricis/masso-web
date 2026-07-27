@@ -6,6 +6,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar";
 import {
     BookUser,
@@ -49,8 +50,14 @@ const isPathActive = (pathname: string, itemPath: string) => {
 const MainSidebar = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
+    const { setOpenMobile } = useSidebar();
     const logoUrl = import.meta.env.VITE_LOGO_URL ?? "http://localhost:3000/assets/logo.jpg";
     const isSettingsActive = pathname.startsWith("/settings");
+
+    const navigateAndCloseMobile = (path: string) => {
+        navigate(path);
+        setOpenMobile(false);
+    };
 
     return (
         <Sidebar collapsible="icon">
@@ -82,7 +89,7 @@ const MainSidebar = () => {
                                 <SidebarMenuButton
                                     tooltip={item.label}
                                     isActive={active}
-                                    onClick={() => navigate(item.path)}
+                                    onClick={() => navigateAndCloseMobile(item.path)}
                                     size="lg"
                                     className={`
         ${active ? "bg-primary! text-background! dark:text-foreground!" : ""}
@@ -111,7 +118,7 @@ const MainSidebar = () => {
                             tooltip="Impostazioni"
                             size="lg"
                             isActive={isSettingsActive}
-                            onClick={() => navigate("/settings")}
+                            onClick={() => navigateAndCloseMobile("/settings")}
                             className={`flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:p-0 ${
                                 isSettingsActive ? "bg-primary! text-background! dark:text-foreground!" : ""
                             }`}
