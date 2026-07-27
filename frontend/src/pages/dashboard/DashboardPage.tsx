@@ -1,6 +1,5 @@
 import { ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
-import InterventionsCalendar from "@/pages/calendar/components/interventions-calendar";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
@@ -14,7 +13,9 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
+
+const InterventionsCalendar = lazy(() => import("@/pages/calendar/components/interventions-calendar"));
 import CreateEntityButton from "@/components/create-entity-button";
 import {
     createIssue,
@@ -362,7 +363,9 @@ const DashboardPage = () => {
                 </Dialog>
             </div>
 
-            <InterventionsCalendar className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]" />
+            <Suspense fallback={<LoadingPage className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]" />}>
+                <InterventionsCalendar className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]" />
+            </Suspense>
 
             {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
 
