@@ -1,10 +1,9 @@
-import { ChartColumn, ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
 import InterventionsCalendar from "@/pages/calendar/components/interventions-calendar";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -238,7 +237,7 @@ const DashboardPage = () => {
                 }
             />
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap items-start gap-4">
                 <CardDashboard
                     text="Rapportini aperti"
                     icon={CircleDashed}
@@ -253,130 +252,111 @@ const DashboardPage = () => {
                     iconColor="text-green-400"
                     onClick={() => goToReportsPage("closed")}
                 />
-                <Card className="flex flex-col gap-1! border bg-card p-4 shadow w-60 rounded-lg border-primary/20">
-                    <CardHeader className="p-0">
-                        <div className="flex items-center justify-between gap-3">
-                            <CardTitle className="text-primary">Incassi mese</CardTitle>
+
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button type="button" variant="outline" className="h-auto gap-2 rounded-lg border-primary/20 px-4 py-3">
                             <Euro className="size-5 text-yellow-400" />
-                        </div>
-                    </CardHeader>
+                            <span className="text-base font-medium text-primary">Incassi mese</span>
+                        </Button>
+                    </DialogTrigger>
 
-                    <CardContent className="flex items-end justify-between gap-2 p-0">
-                        <div>
-                            <div className="text-2xl font-bold">{formatEuro(monthlyRevenue)}</div>
-                            <div className="text-sm text-muted-foreground">{selectedRevenueLabel}</div>
-                        </div>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Incassi mese</DialogTitle>
+                            <DialogDescription>Andamento degli ultimi 6 mesi.</DialogDescription>
+                        </DialogHeader>
 
-                        <Dialog>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DialogTrigger asChild>
-                                        <Button type="button" variant="outline" size="icon-sm" aria-label="Visualizza grafico incassi">
-                                            <ChartColumn className="size-4" />
+                        <div className="grid gap-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            onClick={handlePreviousRevenueMonth}
+                                            aria-label="Mese precedente"
+                                        >
+                                            <ChevronLeft className="size-4" />
                                         </Button>
-                                    </DialogTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Visualizza grafico</TooltipContent>
-                            </Tooltip>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mese precedente</TooltipContent>
+                                </Tooltip>
 
-                            <DialogContent className="sm:max-w-md">
-                                <DialogHeader>
-                                    <DialogTitle>Incassi mese</DialogTitle>
-                                    <DialogDescription>Andamento degli ultimi 6 mesi.</DialogDescription>
-                                </DialogHeader>
-
-                                <div className="grid gap-3">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon-sm"
-                                                    onClick={handlePreviousRevenueMonth}
-                                                    aria-label="Mese precedente"
-                                                >
-                                                    <ChevronLeft className="size-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>Mese precedente</TooltipContent>
-                                        </Tooltip>
-
-                                        <div className="text-center">
-                                            <div className="text-3xl font-bold">{formatEuro(monthlyRevenue)}</div>
-                                            <div className="mt-1 text-sm text-muted-foreground">{selectedRevenueLabel}</div>
-                                        </div>
-
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon-sm"
-                                                    onClick={handleNextRevenueMonth}
-                                                    disabled={isCurrentRevenueMonth}
-                                                    aria-label="Mese successivo"
-                                                >
-                                                    <ChevronRight className="size-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>Mese successivo</TooltipContent>
-                                        </Tooltip>
-                                    </div>
-
-                                    <div className="flex h-32 items-end gap-2 border-b border-border">
-                                        {monthlyRevenueSeries.map((point) => {
-                                            const isSelected = point.monthKey === selectedRevenueMonth;
-                                            const shortLabel = getMonthShortLabel(point.monthKey);
-                                            const heightPercent =
-                                                maxMonthlyRevenue > 0
-                                                    ? Math.max((point.value / maxMonthlyRevenue) * 100, 4)
-                                                    : 4;
-
-                                            return (
-                                                <button
-                                                    key={point.monthKey}
-                                                    type="button"
-                                                    onClick={() => setSelectedRevenueMonth(point.monthKey)}
-                                                    title={`${shortLabel}: ${formatEuro(point.value)}`}
-                                                    aria-label={`${shortLabel}: ${formatEuro(point.value)}`}
-                                                    className="flex h-full flex-1 cursor-pointer flex-col items-end justify-end"
-                                                >
-                                                    <div
-                                                        className={cn(
-                                                            "w-full rounded-t-[4px] transition-colors",
-                                                            isSelected
-                                                                ? "bg-primary"
-                                                                : "bg-muted-foreground/25 hover:bg-muted-foreground/40"
-                                                        )}
-                                                        style={{ height: `${heightPercent}%` }}
-                                                    />
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <div className="flex gap-2 text-[10px] uppercase text-muted-foreground">
-                                        {monthlyRevenueSeries.map((point) => (
-                                            <span
-                                                key={point.monthKey}
-                                                className={cn(
-                                                    "flex-1 text-center",
-                                                    point.monthKey === selectedRevenueMonth && "font-semibold text-primary"
-                                                )}
-                                            >
-                                                {getMonthShortLabel(point.monthKey)}
-                                            </span>
-                                        ))}
-                                    </div>
+                                <div className="text-center">
+                                    <div className="text-3xl font-bold">{formatEuro(monthlyRevenue)}</div>
+                                    <div className="mt-1 text-sm text-muted-foreground">{selectedRevenueLabel}</div>
                                 </div>
-                            </DialogContent>
-                        </Dialog>
-                    </CardContent>
-                </Card>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            onClick={handleNextRevenueMonth}
+                                            disabled={isCurrentRevenueMonth}
+                                            aria-label="Mese successivo"
+                                        >
+                                            <ChevronRight className="size-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mese successivo</TooltipContent>
+                                </Tooltip>
+                            </div>
+
+                            <div className="flex h-32 items-end gap-2 border-b border-border">
+                                {monthlyRevenueSeries.map((point) => {
+                                    const isSelected = point.monthKey === selectedRevenueMonth;
+                                    const shortLabel = getMonthShortLabel(point.monthKey);
+                                    const heightPercent =
+                                        maxMonthlyRevenue > 0
+                                            ? Math.max((point.value / maxMonthlyRevenue) * 100, 4)
+                                            : 4;
+
+                                    return (
+                                        <button
+                                            key={point.monthKey}
+                                            type="button"
+                                            onClick={() => setSelectedRevenueMonth(point.monthKey)}
+                                            title={`${shortLabel}: ${formatEuro(point.value)}`}
+                                            aria-label={`${shortLabel}: ${formatEuro(point.value)}`}
+                                            className="flex h-full flex-1 cursor-pointer flex-col items-end justify-end"
+                                        >
+                                            <div
+                                                className={cn(
+                                                    "w-full rounded-t-[4px] transition-colors",
+                                                    isSelected
+                                                        ? "bg-primary"
+                                                        : "bg-muted-foreground/25 hover:bg-muted-foreground/40"
+                                                )}
+                                                style={{ height: `${heightPercent}%` }}
+                                            />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex gap-2 text-[10px] uppercase text-muted-foreground">
+                                {monthlyRevenueSeries.map((point) => (
+                                    <span
+                                        key={point.monthKey}
+                                        className={cn(
+                                            "flex-1 text-center",
+                                            point.monthKey === selectedRevenueMonth && "font-semibold text-primary"
+                                        )}
+                                    >
+                                        {getMonthShortLabel(point.monthKey)}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
 
-            <InterventionsCalendar className="h-[calc(100vh-19rem)] min-h-[28rem]" />
+            <InterventionsCalendar className="h-[calc(100vh-16rem)] min-h-[28rem]" />
 
             {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
 
