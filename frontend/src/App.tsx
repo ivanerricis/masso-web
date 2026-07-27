@@ -16,6 +16,7 @@ const ReportsPage = lazy(() => import("@/pages/reports/ReportsPage"))
 const ReportPage = lazy(() => import("./pages/reports/ReportPage"))
 const InterventionsPage = lazy(() => import("@/pages/interventions/InterventionsPage"))
 const InterventionPage = lazy(() => import("./pages/interventions/InterventionPage"))
+const CalendarPage = lazy(() => import("@/pages/calendar/CalendarPage"))
 const CustomersPage = lazy(() => import("@/pages/customers/CustomersPage"))
 const CustomerPage = lazy(() => import("./pages/customers/CustomerPage"))
 const CollaboratorsPage = lazy(() => import("@/pages/collaborators/CollaboratorsPage"))
@@ -45,6 +46,7 @@ export function App() {
                       <Route path="reports/:id" element={<ReportPage />} />
                       <Route path="interventions" element={<InterventionsPage />} />
                       <Route path="interventions/:id" element={<InterventionPage />} />
+                      <Route path="calendar" element={<CalendarPage />} />
                       <Route path="clients" element={<CustomersPage />} />
                       <Route path="clients/:id" element={<CustomerPage />} />
                       <Route path="collaborators" element={<CollaboratorsPage />} />

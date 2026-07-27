@@ -1,0 +1,76 @@
+.rbc-calendar {
+    color: var(--foreground);
+    font-family: inherit;
+}
+
+.rbc-toolbar {
+    color: var(--foreground);
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.rbc-toolbar button {
+    color: var(--foreground);
+    background-color: var(--background);
+    border-color: var(--border);
+    border-radius: var(--radius-md);
+}
+
+.rbc-toolbar button:hover {
+    background-color: var(--muted);
+    color: var(--foreground);
+}
+
+.rbc-toolbar button.rbc-active,
+.rbc-toolbar button.rbc-active:hover {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+}
+
+.rbc-month-view,
+.rbc-time-view,
+.rbc-agenda-view table.rbc-agenda-table {
+    border-color: var(--border);
+    border-radius: var(--radius-md);
+}
+
+.rbc-header,
+.rbc-day-bg + .rbc-day-bg,
+.rbc-month-row + .rbc-month-row,
+.rbc-time-content,
+.rbc-time-header-content,
+.rbc-timeslot-group,
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td,
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+    border-color: var(--border);
+}
+
+.rbc-header {
+    color: var(--muted-foreground);
+    font-weight: 500;
+    padding: 0.5rem 0;
+}
+
+.rbc-off-range-bg {
+    background-color: var(--muted);
+}
+
+.rbc-today {
+    background-color: color-mix(in oklch, var(--primary) 12%, transparent);
+}
+
+.rbc-event {
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+}
+
+.rbc-show-more {
+    color: var(--primary);
+    background-color: transparent;
+}
+
+.rbc-agenda-view table.rbc-agenda-table {
+    color: var(--foreground);
+}

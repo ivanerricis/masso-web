@@ -10,6 +10,7 @@ import {
 import {
     BookUser,
     Bug,
+    CalendarDays,
     ClipboardList,
     HardHat,
     Laptop,
@@ -31,6 +32,7 @@ const sidebarItems: SidebarItem[] = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: "Rapporti", path: "/reports", icon: ClipboardList },
     { label: "Interventi", path: "/interventions", icon: HardHat },
+    { label: "Calendario", path: "/calendar", icon: CalendarDays },
     { label: "Clienti", path: "/clients", icon: Users },
     { label: "Collaboratori", path: "/collaborators", icon: BookUser },
     { label: "Tecnici esterni", path: "/technicians", icon: Wrench },
