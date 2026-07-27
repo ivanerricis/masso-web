@@ -240,6 +240,7 @@ const DashboardPage = () => {
             <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-start sm:gap-4">
                 <CardDashboard
                     text="Rapportini aperti"
+                    mobileText="Aperti"
                     icon={CircleDashed}
                     number={String(openReports)}
                     iconColor="text-destructive"
@@ -247,6 +248,7 @@ const DashboardPage = () => {
                 />
                 <CardDashboard
                     text="Rapportini chiusi"
+                    mobileText="Chiusi"
                     icon={CircleCheck}
                     number={String(closedReports)}
                     iconColor="text-green-400"

@@ -4,13 +4,14 @@ import type { LucideIcon } from "lucide-react";
 
 type Props = Readonly<{
     text: string
+    mobileText?: string
     icon: LucideIcon
     number: string
     iconColor?: string
     onClick?: () => void
 }>
 
-const CardDashboard = ({ text, icon: Icon, number, iconColor, onClick }: Props) => {
+const CardDashboard = ({ text, mobileText, icon: Icon, number, iconColor, onClick }: Props) => {
     const isInteractive = onClick != null;
 
     return (
@@ -34,7 +35,16 @@ const CardDashboard = ({ text, icon: Icon, number, iconColor, onClick }: Props) 
             }
         >
             <div className="flex items-center justify-between gap-1">
-                <Label className="truncate text-xs sm:text-base">{text}</Label>
+                <Label className="truncate text-xs sm:text-base">
+                    {mobileText ? (
+                        <>
+                            <span className="sm:hidden">{mobileText}</span>
+                            <span className="hidden sm:inline">{text}</span>
+                        </>
+                    ) : (
+                        text
+                    )}
+                </Label>
                 <Icon className={cn("size-4 shrink-0 text-muted-foreground sm:size-5", iconColor)} />
             </div>
             <Label className="text-lg font-bold sm:text-2xl">{number}</Label>

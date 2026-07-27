@@ -6,6 +6,7 @@ import LogoSettingsPanel from "@/components/dialogs/settings/logoSettingsPanel";
 import LogsSettingsPanel from "@/components/dialogs/settings/logsSettingsPanel";
 import UpdateSettingsPanel from "@/components/dialogs/settings/updateSettingsPanel";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
 import UsersSettingsSection from "@/components/settings/usersSettingsSection";
@@ -86,7 +87,25 @@ const SettingsPage = () => {
 
     return (
         <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto sm:flex-row sm:overflow-visible">
-            <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur-sm sm:max-w-xs">
+            <Select value={activeSection} onValueChange={(value) => setActiveSection(value as SettingsSectionKey)}>
+                <SelectTrigger className="w-full sm:hidden">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {visibleSettingsSections.map((section) => {
+                        const Icon = section.icon;
+
+                        return (
+                            <SelectItem key={section.key} value={section.key}>
+                                <Icon className="size-4" />
+                                {section.label}
+                            </SelectItem>
+                        );
+                    })}
+                </SelectContent>
+            </Select>
+
+            <aside className="hidden w-full shrink-0 flex-col gap-4 overflow-y-auto rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur-sm sm:flex sm:max-w-xs">
 
                 <div className="grid gap-1.5">
                     {visibleSettingsSections.map((section) => {
