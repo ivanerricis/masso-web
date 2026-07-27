@@ -237,7 +237,7 @@ const UsersSettingsSection = () => {
 
                     <div className="flex flex-col gap-3 sm:hidden">
                         {users.map((user) => (
-                            <div key={user.id} className="rounded-lg border border-t-4 bg-background p-3">
+                            <div key={user.id} className="rounded-lg border-2 border-t-8 bg-background p-3">
                                 <div className="flex flex-col gap-1.5 text-sm">
                                     <span className="font-medium">
                                         {user.username}

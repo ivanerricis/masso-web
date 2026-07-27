@@ -40,7 +40,7 @@ const EntityCardList = <T,>({
             {rows.map((row) => (
                 <div
                     key={getRowKey(row)}
-                    className={cn("rounded-lg border border-t-4 bg-background p-3", getAccentClassName?.(row))}
+                    className={cn("rounded-lg border-2 border-t-8 bg-background p-3", getAccentClassName?.(row))}
                 >
                     <dl className="flex flex-col gap-1.5">
                         {columns.map((column) => (
