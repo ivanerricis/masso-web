@@ -15,6 +15,7 @@ import {
     listDevices,
     listIssues,
     getReportPrintUrl,
+    getReportsRangePrintUrl,
     updateReport,
     updateReportTechnician,
 } from "@/lib/api";
@@ -329,6 +330,14 @@ const ReportsPage = () => {
         }
     };
 
+    const handlePrintReportsRange = () => {
+        const printWindow = window.open(getReportsRangePrintUrl({ dateFrom, dateTo }), "_blank", "noopener,noreferrer");
+
+        if (!printWindow) {
+            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
+        }
+    };
+
     return (
         <div className="relative flex flex-col gap-4 w-full h-full">
             <>
@@ -385,6 +394,7 @@ const ReportsPage = () => {
                     onDateFromChange={setDateFrom}
                     dateTo={dateTo}
                     onDateToChange={setDateTo}
+                    onPrintRange={handlePrintReportsRange}
                 />
 
                 <div className="flex flex-col gap-4">

@@ -47,6 +47,21 @@ export type CustomerInterventionsPrintData = {
     interventions: CustomerInterventionSummaryItem[];
 };
 
+export type InterventionRangeSummaryItem = CustomerInterventionSummaryItem & {
+    customerName: string;
+};
+
+export type InterventionsRangePrintData = {
+    labName: string;
+    labEmail: string;
+    labAddress: string;
+    labPhone: string;
+    labLogoUrl: string;
+    rangeLabel: string;
+    interventionCount: number;
+    interventions: InterventionRangeSummaryItem[];
+};
+
 const pdfmakeRoot = path.dirname(require.resolve("pdfmake/package.json"));
 
 const fontDescriptors = {
@@ -346,6 +361,106 @@ const buildCustomerSummaryInfoSection = (customer: CustomerInterventionsPrintDat
     margin: [0, 0, 0, 8],
 });
 
+const buildRangeMetaBlock = (data: InterventionsRangePrintData) => ({
+    table: {
+        widths: [160],
+        body: [[
+            {
+                stack: [
+                    { text: "Resoconto interventi", style: "metaTitle", alignment: "right" },
+                    { text: data.rangeLabel, style: "metaDate", alignment: "right" },
+                    { text: `${data.interventionCount} interventi`, style: "metaDate", alignment: "right" },
+                ],
+            },
+        ]],
+    },
+    layout: {
+        hLineWidth: () => 1,
+        vLineWidth: () => 1,
+        hLineColor: () => "#2A75B9",
+        vLineColor: () => "#2A75B9",
+        paddingLeft: () => 8,
+        paddingRight: () => 8,
+        paddingTop: () => 4,
+        paddingBottom: () => 4,
+    },
+    margin: [0, 0, 0, 0],
+});
+
+const buildRangeHeader = (data: InterventionsRangePrintData, logoDataUrl: string | null) => ({
+    columns: [
+        {
+            width: "*",
+            columns: [
+                ...(logoDataUrl
+                    ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
+                    : [{ width: 56, text: "" }]),
+                {
+                    width: "*",
+                    stack: [
+                        { text: data.labName, style: "brandName" },
+                        { text: `${data.labAddress}\n${data.labEmail}\n${data.labPhone}`, style: "brandInfo" },
+                    ],
+                    margin: [0, 0, 0, 0],
+                },
+            ],
+        },
+        {
+            width: "auto",
+            ...buildRangeMetaBlock(data),
+        },
+    ],
+    columnGap: 12,
+    margin: [0, 0, 0, 8],
+});
+
+const buildInterventionsRangeTable = (interventions: InterventionRangeSummaryItem[]) => {
+    const body: SummaryTableCell[][] = [
+        [
+            { text: "#", style: "summaryHeader" },
+            { text: "Creato il", style: "summaryHeader" },
+            { text: "Cliente", style: "summaryHeader" },
+            { text: "Tipo", style: "summaryHeader" },
+            { text: "Descrizione", style: "summaryHeader" },
+            { text: "Data/Orario", style: "summaryHeader" },
+            { text: "Stato", style: "summaryHeader" },
+        ],
+    ];
+
+    if (interventions.length === 0) {
+        body.push([
+            { text: "Nessun intervento disponibile", colSpan: 7, alignment: "center", italics: true, margin: [0, 8, 0, 8] },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+        ]);
+    } else {
+        for (const intervention of interventions) {
+            body.push([
+                { text: String(intervention.id), alignment: "center", bold: true },
+                { text: intervention.createdAtLabel, alignment: "center" },
+                { text: intervention.customerName, fontSize: 8.5 },
+                { text: formatInterventionType(intervention.type), bold: true },
+                { text: intervention.description, fontSize: 8.5 },
+                { text: intervention.scheduleLabel ?? "-", alignment: "center" },
+                { text: formatInterventionStatus(intervention.status), alignment: "center" },
+            ]);
+        }
+    }
+
+    return {
+        table: {
+            headerRows: 1,
+            widths: [20, 52, 76, 68, "*", 92, 56],
+            body,
+        },
+        layout: tableLayout,
+    };
+};
+
 type SummaryTableCell = {
     text?: string;
     style?: string;
@@ -530,6 +645,52 @@ export const createCustomerInterventionsPdfBuffer = async (customer: CustomerInt
             value: {
                 fontSize: 11.75,
                 bold: true,
+            },
+            summaryHeader: {
+                fontSize: 9,
+                bold: true,
+                color: "#2A75B9",
+            },
+        },
+    };
+
+    const pdfDocument = pdfmake.createPdf(documentDefinition);
+
+    return await pdfDocument.getBuffer();
+};
+
+export const createInterventionsRangePdfBuffer = async (data: InterventionsRangePrintData) => {
+    const logoDataUrl = await loadImageDataUrl(data.labLogoUrl);
+
+    const documentDefinition = {
+        pageSize: "A4",
+        pageMargins: [14, 14, 14, 14],
+        defaultStyle: {
+            font: "Roboto",
+            fontSize: 10,
+            color: "#111111",
+        },
+        content: [
+            buildRangeHeader(data, logoDataUrl),
+            buildInterventionsRangeTable(data.interventions),
+        ],
+        styles: {
+            brandName: {
+                fontSize: 15,
+                bold: true,
+                color: "#2A75B9",
+            },
+            brandInfo: {
+                fontSize: 10.5,
+                lineHeight: 1.25,
+            },
+            metaTitle: {
+                fontSize: 13,
+                bold: true,
+                color: "#2A75B9",
+            },
+            metaDate: {
+                fontSize: 10.5,
             },
             summaryHeader: {
                 fontSize: 9,

@@ -46,6 +46,21 @@ export type CustomerReportsPrintData = {
     reports: CustomerReportSummaryItem[];
 };
 
+export type ReportRangeSummaryItem = CustomerReportSummaryItem & {
+    customerName: string;
+};
+
+export type ReportsRangePrintData = {
+    labName: string;
+    labEmail: string;
+    labAddress: string;
+    labPhone: string;
+    labLogoUrl: string;
+    rangeLabel: string;
+    reportCount: number;
+    reports: ReportRangeSummaryItem[];
+};
+
 const pdfmakeRoot = path.dirname(require.resolve("pdfmake/package.json"));
 
 const fontDescriptors = {
@@ -347,6 +362,121 @@ const buildCustomerReportsTable = (reports: CustomerReportSummaryItem[]) => {
         table: {
             headerRows: 1,
             widths: [28, 56, 92, "*", 56, 68, 68],
+            body,
+        },
+        layout: tableLayout,
+    };
+};
+
+const buildRangeMetaBlock = (data: ReportsRangePrintData) => ({
+    table: {
+        widths: [160],
+        body: [[
+            {
+                stack: [
+                    { text: "Resoconto report", style: "metaTitle", alignment: "right" },
+                    { text: data.rangeLabel, style: "metaDate", alignment: "right" },
+                    { text: `${data.reportCount} report`, style: "metaDate", alignment: "right" },
+                ],
+            },
+        ]],
+    },
+    layout: {
+        hLineWidth: () => 1,
+        vLineWidth: () => 1,
+        hLineColor: () => "#2A75B9",
+        vLineColor: () => "#2A75B9",
+        paddingLeft: () => 8,
+        paddingRight: () => 8,
+        paddingTop: () => 4,
+        paddingBottom: () => 4,
+    },
+    margin: [0, 0, 0, 0],
+});
+
+const buildRangeHeader = (data: ReportsRangePrintData, logoDataUrl: string | null) => ({
+    columns: [
+        {
+            width: "*",
+            columns: [
+                ...(logoDataUrl
+                    ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
+                    : [{ width: 56, text: "" }]),
+                {
+                    width: "*",
+                    stack: [
+                        { text: data.labName, style: "brandName" },
+                        { text: `${data.labAddress}\n${data.labEmail}\n${data.labPhone}`, style: "brandInfo" },
+                    ],
+                    margin: [0, 0, 0, 0],
+                },
+            ],
+        },
+        {
+            width: "auto",
+            ...buildRangeMetaBlock(data),
+        },
+    ],
+    columnGap: 12,
+    margin: [0, 0, 0, 8],
+});
+
+const buildReportsRangeTable = (reports: ReportRangeSummaryItem[]) => {
+    const body: ReportsTableCell[][] = [
+        [
+            { text: "#", style: "summaryHeader" },
+            { text: "Data", style: "summaryHeader" },
+            { text: "Cliente", style: "summaryHeader" },
+            { text: "Dispositivo", style: "summaryHeader" },
+            { text: "Problema", style: "summaryHeader" },
+            { text: "Stato", style: "summaryHeader" },
+            { text: "Pagamento", style: "summaryHeader" },
+            { text: "Totale", style: "summaryHeader" },
+        ],
+    ];
+
+    if (reports.length === 0) {
+        body.push([
+            { text: "Nessun report disponibile", colSpan: 8, alignment: "center", italics: true, margin: [0, 8, 0, 8] },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+        ]);
+    } else {
+        for (const report of reports) {
+            body.push([
+                { text: String(report.id), alignment: "center", bold: true },
+                { text: report.createdAtLabel, alignment: "center" },
+                { text: report.customerName, fontSize: 8.5 },
+                { text: report.deviceName, bold: true },
+                { text: report.issueDescription, fontSize: 8.5 },
+                { text: report.closed ? "Chiuso" : "Aperto", alignment: "center" },
+                { text: formatPaymentMethod(report.paymentMethod), alignment: "center" },
+                { text: formatEuro(report.totalPrice), alignment: "right", bold: true },
+            ]);
+        }
+
+        const totalAmount = reports.reduce((sum, report) => sum + report.totalPrice, 0);
+        body.push([
+            { text: "Totale complessivo", colSpan: 7, alignment: "right", bold: true, fillColor: "#F4F8FD" },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            { text: formatEuro(totalAmount), alignment: "right", bold: true, fillColor: "#F4F8FD" },
+        ]);
+    }
+
+    return {
+        table: {
+            headerRows: 1,
+            widths: [22, 52, 82, 80, "*", 48, 60, 62],
             body,
         },
         layout: tableLayout,
@@ -660,6 +790,66 @@ export const createCustomerReportsPdfBuffer = async (customer: CustomerReportsPr
             paymentLabel: {
                 fontSize: 9,
                 color: "#555555",
+            },
+        },
+    };
+
+    const pdfDocument = pdfmake.createPdf(documentDefinition);
+
+    return await pdfDocument.getBuffer();
+};
+
+export const createReportsRangePdfBuffer = async (data: ReportsRangePrintData) => {
+    const logoDataUrl = await loadImageDataUrl(data.labLogoUrl);
+
+    const documentDefinition = {
+        pageSize: "A4",
+        pageMargins: [14, 14, 14, 14],
+        defaultStyle: {
+            font: "Roboto",
+            fontSize: 10,
+            color: "#111111",
+        },
+        content: [
+            buildRangeHeader(data, logoDataUrl),
+            {
+                canvas: [
+                    {
+                        type: "line",
+                        x1: 0,
+                        y1: 0,
+                        x2: 555,
+                        y2: 0,
+                        lineWidth: 1,
+                        dash: { length: 4, space: 3 },
+                    },
+                ],
+                margin: [0, 4, 0, 10],
+            },
+            buildReportsRangeTable(data.reports),
+        ],
+        styles: {
+            brandName: {
+                fontSize: 15,
+                bold: true,
+                color: "#2A75B9",
+            },
+            brandInfo: {
+                fontSize: 10.5,
+                lineHeight: 1.25,
+            },
+            metaTitle: {
+                fontSize: 13,
+                bold: true,
+                color: "#2A75B9",
+            },
+            metaDate: {
+                fontSize: 10.5,
+            },
+            summaryHeader: {
+                fontSize: 9,
+                bold: true,
+                color: "#2A75B9",
             },
         },
     };

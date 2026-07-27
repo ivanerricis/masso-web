@@ -9,6 +9,7 @@ import {
     deleteIntervention,
     getApiErrorMessage,
     getInterventionPrintUrl,
+    getInterventionsRangePrintUrl,
     listCustomers,
     sendInterventionEmail,
     updateIntervention,
@@ -212,6 +213,14 @@ const InterventionsPage = () => {
         }
     };
 
+    const handlePrintInterventionsRange = () => {
+        const printWindow = window.open(getInterventionsRangePrintUrl({ dateFrom, dateTo }), "_blank", "noopener,noreferrer");
+
+        if (!printWindow) {
+            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
+        }
+    };
+
     const handleSendEmailIntervention = async (id: number) => {
         try {
             const result = await sendInterventionEmail(id);
@@ -279,6 +288,7 @@ const InterventionsPage = () => {
                     onDateFromChange={setDateFrom}
                     dateTo={dateTo}
                     onDateToChange={setDateTo}
+                    onPrintRange={handlePrintInterventionsRange}
                 />
 
                 <div className="flex flex-col gap-4">

@@ -109,6 +109,15 @@ export const printReportPdf = async (id: number) =>
 export const getReportPrintUrl = (id: number) =>
     api.getUri({ url: `/reports/${id}/print` });
 
+export const getReportsRangePrintUrl = (params?: { dateFrom?: string; dateTo?: string }) =>
+    api.getUri({
+        url: "/reports/print",
+        params: {
+            dateFrom: params?.dateFrom,
+            dateTo: params?.dateTo,
+        },
+    });
+
 export type ReportStatsDto = {
     openCount: number;
     closedCount: number;

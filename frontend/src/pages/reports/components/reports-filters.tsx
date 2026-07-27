@@ -2,7 +2,7 @@ import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FilterX } from "lucide-react";
+import { FilterX, Printer } from "lucide-react";
 import type { ReportVisibilityFilter } from "./types";
 
 type ReportsFiltersProps = {
@@ -14,6 +14,7 @@ type ReportsFiltersProps = {
     onDateFromChange: (value: string | undefined) => void;
     dateTo: string | undefined;
     onDateToChange: (value: string | undefined) => void;
+    onPrintRange: () => void;
 };
 
 const ReportsFilters = ({
@@ -25,6 +26,7 @@ const ReportsFilters = ({
     onDateFromChange,
     dateTo,
     onDateToChange,
+    onPrintRange,
 }: ReportsFiltersProps) => {
     const handleClearDates = () => {
         onDateFromChange(undefined);
@@ -75,6 +77,15 @@ const ReportsFilters = ({
                     Pulisci date
                 </Button>
             ) : null}
+
+            <Button
+                variant="outline"
+                className="w-full gap-2 sm:w-auto sm:ml-auto"
+                onClick={onPrintRange}
+            >
+                <Printer className="size-4" />
+                {dateFrom || dateTo ? "Stampa resoconto periodo" : "Stampa resoconto completo"}
+            </Button>
         </div>
     );
 };

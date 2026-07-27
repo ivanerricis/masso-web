@@ -16,7 +16,7 @@ import {
     reportTechnicianTable,
     reportTable,
 } from "../db/schema";
-import { createReportPdfBuffer } from "../services/reportPdf";
+import { createReportPdfBuffer, createReportsRangePdfBuffer } from "../services/reportPdf";
 import { validate } from "./validation";
 
 const reportsRouter = Router();
@@ -122,6 +122,72 @@ reportsRouter.get("/stats", validate({ query: reportStatsQuerySchema }), async (
     const stats = await getReportStats(month);
 
     res.json(stats);
+});
+
+const reportsRangePrintQuerySchema = z.object({
+    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+const formatRangeDateLabel = (value: string) =>
+    new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${value}T00:00:00`));
+
+const buildReportsRangeLabel = (dateFrom?: string, dateTo?: string) => {
+    if (dateFrom && dateTo) {
+        return `Dal ${formatRangeDateLabel(dateFrom)} al ${formatRangeDateLabel(dateTo)}`;
+    }
+
+    if (dateFrom) {
+        return `Dal ${formatRangeDateLabel(dateFrom)}`;
+    }
+
+    if (dateTo) {
+        return `Fino al ${formatRangeDateLabel(dateTo)}`;
+    }
+
+    return "Tutti i rapporti";
+};
+
+reportsRouter.get("/print", validate({ query: reportsRangePrintQuerySchema }), async (req, res) => {
+    const { dateFrom, dateTo } = req.query as unknown as { dateFrom?: string; dateTo?: string };
+
+    const reportsResult = await listReports({ visibility: "all", dateFrom, dateTo });
+    const reports = Array.isArray(reportsResult) ? reportsResult : reportsResult.items;
+    const labName = process.env.LAB_NAME ?? "Masso";
+    const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
+    const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
+    const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
+    const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
+    const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
+        ? configuredLogoUrl
+        : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
+
+    const pdfBuffer = await createReportsRangePdfBuffer({
+        labName,
+        labEmail,
+        labAddress,
+        labPhone,
+        labLogoUrl,
+        rangeLabel: buildReportsRangeLabel(dateFrom, dateTo),
+        reportCount: reports.length,
+        reports: reports.map((report) => ({
+            id: report.id,
+            createdAtLabel: new Intl.DateTimeFormat("it-IT", {
+                dateStyle: "medium",
+            }).format(report.createdAt),
+            customerName: report.customer,
+            deviceName: report.device,
+            issueDescription: report.issue,
+            closed: report.closed,
+            alerted: report.alerted,
+            paymentMethod: report.paymentMethod as "non_paid" | "cash" | "card",
+            totalPrice: report.totalPrice,
+        })),
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=resoconto-rapporti.pdf");
+    res.send(pdfBuffer);
 });
 
 reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), async (req, res) => {

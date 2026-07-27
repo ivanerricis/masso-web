@@ -77,5 +77,14 @@ export const deleteIntervention = async (id: number) =>
 export const getInterventionPrintUrl = (id: number) =>
     api.getUri({ url: `/interventions/${id}/print` });
 
+export const getInterventionsRangePrintUrl = (params?: { dateFrom?: string; dateTo?: string }) =>
+    api.getUri({
+        url: "/interventions/print",
+        params: {
+            dateFrom: params?.dateFrom,
+            dateTo: params?.dateTo,
+        },
+    });
+
 export const sendInterventionEmail = async (id: number) =>
     (await api.post<{ message: string }>(`/interventions/${id}/send-email`)).data;
