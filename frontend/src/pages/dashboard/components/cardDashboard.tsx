@@ -16,7 +16,7 @@ const CardDashboard = ({ text, icon: Icon, number, iconColor, onClick }: Props) 
     return (
         <div
             className={cn(
-                "flex flex-col w-48 rounded-lg border bg-card p-6 gap-2 shadow",
+                "flex flex-col w-48 rounded-lg border bg-card p-4 gap-1 shadow",
                 isInteractive && "cursor-pointer *:cursor-pointer *:*:cursor-pointer hover:bg-accent/35"
             )}
             onClick={onClick}
@@ -34,10 +34,10 @@ const CardDashboard = ({ text, icon: Icon, number, iconColor, onClick }: Props) 
             }
         >
             <div className="flex items-center justify-between">
-                <Label className="text-lg">{text}</Label>
-                <Icon className={cn(`size-6 text-muted-foreground`, iconColor)} />
+                <Label className="text-base">{text}</Label>
+                <Icon className={cn(`size-5 text-muted-foreground`, iconColor)} />
             </div>
-            <Label className="text-3xl font-bold">{number}</Label>
+            <Label className="text-2xl font-bold">{number}</Label>
         </div>
     );
 }

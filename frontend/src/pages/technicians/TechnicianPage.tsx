@@ -16,7 +16,7 @@ import {
     updateReport,
     updateReportTechnician,
 } from "@/lib/api";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Pencil } from "lucide-react";
 import type { ReportVisibilityFilter } from "../reports/components/types";
 import { useNavigate, useParams } from "react-router-dom";
@@ -125,7 +125,7 @@ const TechnicianPage = () => {
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
     const paginatedReportCards = visibleReportCards.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setIsLoading(true);
             const [reports, reportTechnicians, technicians, customers, devices] = await Promise.all([
@@ -171,7 +171,7 @@ const TechnicianPage = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [technicianId]);
 
     useEffect(() => {
         if (!hasValidTechnicianId) {
@@ -180,7 +180,7 @@ const TechnicianPage = () => {
             return;
         }
         void loadData();
-    }, [hasValidTechnicianId, navigate, technicianId]);
+    }, [hasValidTechnicianId, navigate, loadData]);
 
     if (isLoading) {
         return <LoadingPage />;

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import LoadingPage from "@/components/loadingPage"
-import { ModeToggle } from "@/components/mode-toggle"
+// import { ModeToggle } from "@/components/mode-toggle"
 import { TodayInterventionsMenu } from "@/components/today-interventions-menu"
 import { UserBadge } from "@/components/user-badge"
 import MainSidebar from "@/components/main-sidebar"
@@ -46,7 +46,7 @@ export const MainLayout = () => {
                     <SidebarTrigger />
                     <div className="flex items-center gap-2">
                         <TodayInterventionsMenu />
-                        <ModeToggle />
+                        {/* <ModeToggle /> */}
                         <UserBadge />
                     </div>
                 </header>

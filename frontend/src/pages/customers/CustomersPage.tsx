@@ -13,7 +13,7 @@ import {
     getCustomerReportsPrintUrl,
     getCustomerInterventionsPrintUrl,
 } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CustomerDto } from "@/types/dtos";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -136,10 +136,6 @@ const CustomersPage = () => {
             setIsDeleting(false);
         }
     };
-
-    useEffect(() => {
-        void loadCustomers();
-    }, []);
 
     return (
         <div className="relative flex flex-col gap-4 w-full">

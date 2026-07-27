@@ -5,7 +5,7 @@ import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
 import { createCollaborator, deleteCollaborator, getApiErrorMessage, updateCollaborator } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CollaboratorDto } from "@/types/dtos";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -95,10 +95,6 @@ const CollaboratorsPage = () => {
             setIsDeleting(false);
         }
     };
-
-    useEffect(() => {
-        void loadCollaborators();
-    }, []);
 
     return (
         <div className="relative flex flex-col gap-4 w-full">
