@@ -12,7 +12,8 @@ type EntityCardListProps<T> = {
     columns: EntityCardColumn<T>[];
     rows: T[];
     getRowKey: (row: T) => React.Key;
-    getCardClassName?: (row: T) => string;
+    /** Color classes for the card's top accent border (e.g. "border-t-green-500"), not a full background. */
+    getAccentClassName?: (row: T) => string;
     renderActions?: (row: T) => ReactNode;
     emptyMessage: string;
 };
@@ -22,7 +23,7 @@ const EntityCardList = <T,>({
     columns,
     rows,
     getRowKey,
-    getCardClassName,
+    getAccentClassName,
     renderActions,
     emptyMessage,
 }: EntityCardListProps<T>) => {
@@ -39,7 +40,7 @@ const EntityCardList = <T,>({
             {rows.map((row) => (
                 <div
                     key={getRowKey(row)}
-                    className={cn("rounded-lg border bg-background p-3", getCardClassName?.(row))}
+                    className={cn("rounded-lg border border-t-4 bg-background p-3", getAccentClassName?.(row))}
                 >
                     <dl className="flex flex-col gap-1.5">
                         {columns.map((column) => (

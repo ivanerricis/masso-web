@@ -2,14 +2,16 @@ import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
 
-const subscribeToViewportChange = (onChange: () => void) => {
-  const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+const subscribeToViewportChange = (breakpoint: number, onChange: () => void) => {
+  const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`)
   mql.addEventListener("change", onChange)
   return () => mql.removeEventListener("change", onChange)
 }
 
-const getIsMobileSnapshot = () => window.innerWidth < MOBILE_BREAKPOINT
-
-export function useIsMobile() {
-  return React.useSyncExternalStore(subscribeToViewportChange, getIsMobileSnapshot, () => false)
+export function useIsMobile(breakpoint: number = MOBILE_BREAKPOINT) {
+  return React.useSyncExternalStore(
+    (onChange) => subscribeToViewportChange(breakpoint, onChange),
+    () => window.innerWidth < breakpoint,
+    () => false
+  )
 }

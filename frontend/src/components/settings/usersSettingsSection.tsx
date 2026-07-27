@@ -133,6 +133,55 @@ const UsersSettingsSection = () => {
         }
     };
 
+    const renderUserActions = (user: UserDto) => (
+        <>
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setUserPendingRegeneration(user)}
+            >
+                <KeyRound className="size-4" />
+                Rigenera password
+            </Button>
+            {user.id !== currentUser?.id ? (
+                <>
+                    {user.active ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setUserPendingDisable(user)}
+                        >
+                            <UserX className="size-4" />
+                            Disabilita
+                        </Button>
+                    ) : (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={isTogglingActive}
+                            onClick={() => void handleEnable(user)}
+                        >
+                            <ShieldCheck className="size-4" />
+                            Riabilita
+                        </Button>
+                    )}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUserPendingDelete(user)}
+                    >
+                        <Trash2 className="size-4" />
+                        Elimina
+                    </Button>
+                </>
+            ) : null}
+        </>
+    );
+
     return (
         <Card size="sm" className="border-primary/15 shadow-sm">
             <CardHeader className="flex-row items-start justify-between gap-2 border-b border-primary/10 bg-muted/20">
@@ -151,7 +200,8 @@ const UsersSettingsSection = () => {
                         Caricamento utenti...
                     </div>
                 ) : (
-                    <Table>
+                    <>
+                    <Table className="hidden sm:table">
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Nome utente</TableHead>
@@ -177,56 +227,42 @@ const UsersSettingsSection = () => {
                                     <TableCell>{formatDateTime(user.createdAt)}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setUserPendingRegeneration(user)}
-                                            >
-                                                <KeyRound className="size-4" />
-                                                Rigenera password
-                                            </Button>
-                                            {user.id !== currentUser?.id ? (
-                                                <>
-                                                    {user.active ? (
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => setUserPendingDisable(user)}
-                                                        >
-                                                            <UserX className="size-4" />
-                                                            Disabilita
-                                                        </Button>
-                                                    ) : (
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            disabled={isTogglingActive}
-                                                            onClick={() => void handleEnable(user)}
-                                                        >
-                                                            <ShieldCheck className="size-4" />
-                                                            Riabilita
-                                                        </Button>
-                                                    )}
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setUserPendingDelete(user)}
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                        Elimina
-                                                    </Button>
-                                                </>
-                                            ) : null}
+                                            {renderUserActions(user)}
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
+
+                    <div className="flex flex-col gap-3 sm:hidden">
+                        {users.map((user) => (
+                            <div key={user.id} className="rounded-lg border border-t-4 bg-background p-3">
+                                <div className="flex flex-col gap-1.5 text-sm">
+                                    <span className="font-medium">
+                                        {user.username}
+                                        {user.id === currentUser?.id ? (
+                                            <span className="ml-2 text-xs text-muted-foreground">(tu)</span>
+                                        ) : null}
+                                        {user.isAdmin ? (
+                                            <span className="ml-2 text-xs text-muted-foreground">(admin)</span>
+                                        ) : null}
+                                        {!user.active ? (
+                                            <span className="ml-2 text-xs text-destructive">(disabilitato)</span>
+                                        ) : null}
+                                    </span>
+                                    <div className="flex items-baseline justify-between gap-3">
+                                        <span className="text-muted-foreground">Creato il</span>
+                                        <span className="text-right font-medium">{formatDateTime(user.createdAt)}</span>
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t pt-3">
+                                    {renderUserActions(user)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    </>
                 )}
             </CardContent>
 

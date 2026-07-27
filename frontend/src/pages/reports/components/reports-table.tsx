@@ -15,10 +15,7 @@ type ReportsTableProps = {
     onDeleteReport: (report: ReportDto) => void;
 };
 
-const getCardClassName = (row: ReportDto) =>
-    row.closed
-        ? "bg-green-500/30 dark:bg-green-500/15"
-        : "bg-red-500/30 dark:bg-red-500/15";
+const getAccentClassName = (row: ReportDto) => (row.closed ? "border-t-green-500" : "border-t-red-500");
 
 const ReportsTable = ({
     columns,
@@ -117,7 +114,7 @@ const ReportsTable = ({
             columns={columns.filter((column) => column.key !== "actions")}
             rows={rows}
             getRowKey={(row) => row.id}
-            getCardClassName={getCardClassName}
+            getAccentClassName={getAccentClassName}
             renderActions={renderRowActions}
             emptyMessage="Nessun rapporto disponibile."
         />

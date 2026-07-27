@@ -2,8 +2,11 @@ import SearchInput from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FilterX } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { FilterX, ListFilter } from "lucide-react";
 import type { ReportVisibilityFilter } from "./types";
+
+const COMPACT_BREAKPOINT = 640;
 
 type ReportsFiltersProps = {
     searchText: string;
@@ -26,17 +29,19 @@ const ReportsFilters = ({
     dateTo,
     onDateToChange,
 }: ReportsFiltersProps) => {
+    const isCompact = useIsMobile(COMPACT_BREAKPOINT);
+
     const handleClearDates = () => {
         onDateFromChange(undefined);
         onDateToChange(undefined);
     };
 
     return (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <SearchInput value={searchText} onValueChange={onSearchTextChange} placeholder="Cerca rapporto..." />
             <Select value={visibilityFilter} onValueChange={(value) => onVisibilityFilterChange(value as ReportVisibilityFilter)}>
-                <SelectTrigger className="w-full sm:w-56">
-                    <SelectValue placeholder="Filtra per stato" />
+                <SelectTrigger className={isCompact ? "w-auto px-2" : "w-56"} aria-label="Filtra per stato">
+                    {isCompact ? <ListFilter className="size-4" /> : <SelectValue placeholder="Filtra per stato" />}
                 </SelectTrigger>
                 <SelectContent position="popper">
                     <SelectItem value="all">Tutti i rapportini</SelectItem>
@@ -52,7 +57,7 @@ const ReportsFilters = ({
                     value={dateFrom ?? ""}
                     max={dateTo}
                     onChange={(event) => onDateFromChange(event.target.value || undefined)}
-                    className="w-full sm:w-40"
+                    className="w-36 sm:w-40"
                 />
                 <span className="text-sm text-muted-foreground">-</span>
                 <Input
@@ -61,18 +66,19 @@ const ReportsFilters = ({
                     value={dateTo ?? ""}
                     min={dateFrom}
                     onChange={(event) => onDateToChange(event.target.value || undefined)}
-                    className="w-full sm:w-40"
+                    className="w-36 sm:w-40"
                 />
             </div>
 
             {dateFrom || dateTo ? (
                 <Button
                     variant="ghost"
-                    className="w-full gap-2 sm:w-auto sm:ml-auto"
+                    className="gap-2 px-2 sm:ml-auto sm:px-4"
                     onClick={handleClearDates}
+                    aria-label="Pulisci date"
                 >
                     <FilterX className="size-4" />
-                    Pulisci date
+                    <span className="hidden sm:inline">Pulisci date</span>
                 </Button>
             ) : null}
         </div>

@@ -22,10 +22,10 @@ const rowClassNameByStatus: Record<InterventionDto["status"], string> = {
     completato: "bg-green-500/30 hover:bg-green-500/40 dark:bg-green-500/15 dark:hover:bg-green-500/20",
 };
 
-const cardClassNameByStatus: Record<InterventionDto["status"], string> = {
-    programmato: "bg-red-500/30 dark:bg-red-500/15",
-    in_lavorazione: "bg-yellow-400/30 dark:bg-yellow-400/15",
-    completato: "bg-green-500/30 dark:bg-green-500/15",
+const accentClassNameByStatus: Record<InterventionDto["status"], string> = {
+    programmato: "border-t-red-500",
+    in_lavorazione: "border-t-yellow-400",
+    completato: "border-t-green-500",
 };
 
 const InterventionsTable = ({
@@ -128,7 +128,7 @@ const InterventionsTable = ({
             columns={columns.filter((column) => column.key !== "actions")}
             rows={rows}
             getRowKey={(row) => row.id}
-            getCardClassName={(row) => cardClassNameByStatus[row.status]}
+            getAccentClassName={(row) => accentClassNameByStatus[row.status]}
             renderActions={renderRowActions}
             emptyMessage="Nessun intervento disponibile."
         />
