@@ -13,6 +13,7 @@ export type InterventionPrintData = {
     labLogoUrl: string;
     customerName: string;
     customerPhone: string;
+    customerEmail: string;
     collaboratorName: string;
     type: InterventionType;
     status: InterventionStatus;
@@ -88,6 +89,31 @@ const formatTime = (value: string | null) => (value ? value.slice(0, 5) : "-");
 const descriptionLabel = (type: InterventionType) =>
     type === "consegna_materiale" ? "Materiali consegnati" : "Assistenza effettuata";
 
+const parseTimeToMinutes = (value: string | null) => {
+    if (!value) {
+        return null;
+    }
+
+    const [hours, minutes] = value.split(":").map(Number);
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+        return null;
+    }
+
+    return hours * 60 + minutes;
+};
+
+const formatHoursWorked = (startTime: string | null, endTime: string | null) => {
+    const start = parseTimeToMinutes(startTime);
+    const end = parseTimeToMinutes(endTime);
+
+    if (start == null || end == null || end <= start) {
+        return null;
+    }
+
+    return ((end - start) / 60).toFixed(2).replace(".", ",");
+};
+
 const tableLayout = {
     hLineWidth: () => 1,
     vLineWidth: () => 1,
@@ -99,150 +125,114 @@ const tableLayout = {
     paddingBottom: () => 4,
 };
 
-const pairRow = (label: string, value: string) => [
-    { text: label, style: "label" },
-    { text: value, style: "value" },
+const sectionBarRow = (title: string, colSpan: number) => {
+    const row = new Array(colSpan).fill({});
+    row[0] = { text: title, style: "sectionBar", colSpan, alignment: "center", fillColor: "#E7ECF3" };
+    return row;
+};
+
+const dualFieldRow = (label1: string, value1: string, label2: string, value2: string) => [
+    { text: label1, style: "label" },
+    { text: value1, style: "value" },
+    { text: label2, style: "label" },
+    { text: value2, style: "value" },
 ];
-
-const buildGridTable = (rows: Array<[string, string]>) => ({
-    table: {
-        widths: [120, "*"],
-        body: rows.map((row) => pairRow(row[0], row[1])),
-    },
-    layout: tableLayout,
-    margin: [0, 0, 0, 7],
-});
-
-const buildSection = (title: string, rows: Array<[string, string]>) => ({
-    stack: [
-        { text: title, style: "sectionTitle", margin: [0, 0, 0, 3] },
-        buildGridTable(rows),
-    ],
-    margin: [0, 0, 0, 8],
-});
-
-const buildMetaBlock = (intervention: InterventionPrintData) => ({
-    table: {
-        widths: [130],
-        body: [[
-            {
-                stack: [
-                    { text: `Intervento #${intervention.id}`, style: "metaTitle", alignment: "right" },
-                    { text: intervention.createdAtLabel, style: "metaDate", alignment: "right" },
-                ],
-            },
-        ]],
-    },
-    layout: {
-        hLineWidth: () => 1,
-        vLineWidth: () => 1,
-        hLineColor: () => "#2A75B9",
-        vLineColor: () => "#2A75B9",
-        paddingLeft: () => 8,
-        paddingRight: () => 8,
-        paddingTop: () => 4,
-        paddingBottom: () => 4,
-    },
-    margin: [0, 0, 0, 0],
-});
 
 const buildHeader = (intervention: InterventionPrintData, logoDataUrl: string | null) => ({
     columns: [
+        logoDataUrl
+            ? { width: 56, image: logoDataUrl, fit: [52, 52] }
+            : { width: 56, text: "" },
         {
             width: "*",
-            columns: [
-                ...(logoDataUrl
-                    ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
-                    : [{ width: 56, text: "" }]),
+            alignment: "right",
+            stack: [
+                { text: intervention.labName, style: "brandName", alignment: "right" },
                 {
-                    width: "*",
-                    stack: [
-                        { text: intervention.labName, style: "brandName" },
-                        { text: `${intervention.labAddress}\n${intervention.labEmail}\n${intervention.labPhone}`, style: "brandInfo" },
-                    ],
-                    margin: [0, 0, 0, 0],
+                    text: `${intervention.labAddress}\n${intervention.labEmail}\n${intervention.labPhone}`,
+                    style: "brandInfo",
+                    alignment: "right",
                 },
             ],
         },
-        {
-            width: "auto",
-            ...buildMetaBlock(intervention),
-        },
     ],
     columnGap: 12,
-    margin: [0, 0, 0, 10],
+    margin: [0, 0, 0, 12],
 });
 
 const buildCustomerSection = (intervention: InterventionPrintData) => ({
-    stack: [
-        { text: "Cliente e collaboratore", style: "sectionTitle", margin: [0, 0, 0, 3] },
-        {
-            table: {
-                widths: [112, "*", 112, "*"],
-                body: [[
-                    { text: "Cliente", style: "label" },
-                    { text: intervention.customerName, style: "value" },
-                    { text: "Telefono", style: "label" },
-                    { text: intervention.customerPhone, style: "value" },
-                ], [
-                    { text: "Collaboratore", style: "label" },
-                    { text: intervention.collaboratorName, style: "value" },
-                    { text: "Tipo intervento", style: "label" },
-                    { text: formatInterventionType(intervention.type), style: "value" },
-                ]],
-            },
-            layout: tableLayout,
-        },
-    ],
+    table: {
+        widths: [90, "*", 90, "*"],
+        body: [
+            sectionBarRow("CLIENTE", 4),
+            dualFieldRow("Cliente", intervention.customerName, "Telefono", intervention.customerPhone),
+            dualFieldRow("Email", intervention.customerEmail || "-", "Collaboratore", intervention.collaboratorName),
+        ],
+    },
+    layout: tableLayout,
     margin: [0, 0, 0, 8],
 });
 
-const buildScheduleSection = (intervention: InterventionPrintData) => {
+const buildActivitySection = (intervention: InterventionPrintData) => ({
+    table: {
+        widths: [90, "*", 90, "*"],
+        body: [
+            sectionBarRow("RAPPORTO ATTIVITÀ", 4),
+            dualFieldRow("Codice", `#${intervention.id}`, "Data", intervention.interventionDateLabel ?? intervention.createdAtLabel),
+            dualFieldRow("Tipologia", formatInterventionType(intervention.type), "Stato", formatInterventionStatus(intervention.status)),
+            [
+                { text: descriptionLabel(intervention.type), style: "label", colSpan: 4, margin: [0, 4, 0, 2] },
+                {},
+                {},
+                {},
+            ],
+            [
+                { text: intervention.description, style: "value", colSpan: 4, margin: [0, 0, 0, 4] },
+                {},
+                {},
+                {},
+            ],
+        ],
+    },
+    layout: tableLayout,
+    margin: [0, 0, 0, 8],
+});
+
+const buildTechnicianHoursSection = (intervention: InterventionPrintData) => {
     if (intervention.type === "consegna_materiale") {
         return null;
     }
 
-    return buildSection("Tempo di assistenza", [
-        ["Data intervento", intervention.interventionDateLabel ?? "-"],
-        ["Ora inizio", formatTime(intervention.startTime)],
-        ["Ora fine", formatTime(intervention.endTime)],
-    ]);
+    const scheduleLabel = intervention.interventionDateLabel
+        ? `${intervention.interventionDateLabel} ${formatTime(intervention.startTime)} - ${formatTime(intervention.endTime)}`
+        : "-";
+    const hoursWorked = formatHoursWorked(intervention.startTime, intervention.endTime);
+
+    return {
+        table: {
+            widths: [180, "*"],
+            body: [
+                sectionBarRow("ORE TECNICI", 2),
+                [
+                    { text: "Tecnico", style: "label" },
+                    { text: "Orario", style: "label" },
+                ],
+                [
+                    { text: intervention.collaboratorName, style: "value" },
+                    { text: scheduleLabel, style: "value" },
+                ],
+                ...(hoursWorked
+                    ? [[
+                        { text: "Ore lavorate", style: "label" },
+                        { text: hoursWorked, style: "value" },
+                    ]]
+                    : []),
+            ],
+        },
+        layout: tableLayout,
+        margin: [0, 0, 0, 8],
+    };
 };
-
-const buildStatusSection = (intervention: InterventionPrintData) => ({
-    stack: [
-        { text: "Stato", style: "sectionTitle", margin: [0, 0, 0, 3] },
-        {
-            table: {
-                widths: ["*"],
-                body: [[
-                    {
-                        text: formatInterventionStatus(intervention.status),
-                        alignment: "center",
-                        bold: true,
-                        margin: [0, 8, 0, 8],
-                    },
-                ]],
-            },
-            layout: tableLayout,
-        },
-    ],
-    margin: [0, 0, 0, 8],
-});
-
-const buildDescriptionSection = (intervention: InterventionPrintData) => ({
-    stack: [
-        { text: descriptionLabel(intervention.type), style: "sectionTitle", margin: [0, 0, 0, 3] },
-        {
-            table: {
-                widths: ["*"],
-                body: [[{ text: intervention.description, margin: [0, 6, 0, 6] }]],
-            },
-            layout: tableLayout,
-        },
-    ],
-    margin: [0, 0, 0, 8],
-});
 
 const buildSignatureSection = () => ({
     columns: [
@@ -415,7 +405,7 @@ const loadImageDataUrl = async (imageUrl: string) => {
 
 export const createInterventionPdfBuffer = async (intervention: InterventionPrintData) => {
     const logoDataUrl = await loadImageDataUrl(intervention.labLogoUrl);
-    const scheduleSection = buildScheduleSection(intervention);
+    const hoursSection = buildTechnicianHoursSection(intervention);
 
     const documentDefinition = {
         pageSize: "A4",
@@ -428,9 +418,8 @@ export const createInterventionPdfBuffer = async (intervention: InterventionPrin
         content: [
             buildHeader(intervention, logoDataUrl),
             buildCustomerSection(intervention),
-            ...(scheduleSection ? [scheduleSection] : []),
-            buildStatusSection(intervention),
-            buildDescriptionSection(intervention),
+            buildActivitySection(intervention),
+            ...(hoursSection ? [hoursSection] : []),
             buildSignatureSection(),
         ],
         styles: {
@@ -443,16 +432,13 @@ export const createInterventionPdfBuffer = async (intervention: InterventionPrin
                 fontSize: 10.5,
                 lineHeight: 1.25,
             },
-            metaTitle: {
-                fontSize: 13,
+            sectionTitle: {
+                fontSize: 11,
                 bold: true,
                 color: "#2A75B9",
             },
-            metaDate: {
+            sectionBar: {
                 fontSize: 10.5,
-            },
-            sectionTitle: {
-                fontSize: 11,
                 bold: true,
                 color: "#2A75B9",
             },

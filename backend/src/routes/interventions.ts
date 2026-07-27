@@ -178,6 +178,7 @@ const loadInterventionPrintContext = async (id: number, req: { protocol: string;
             labLogoUrl,
             customerName,
             customerPhone: customerPhoneLabel,
+            customerEmail: intervention.customerEmail?.trim() || "-",
             collaboratorName,
             type: intervention.type as InterventionType,
             status: intervention.status as (typeof interventionStatuses)[number],
