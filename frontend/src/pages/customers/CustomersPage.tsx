@@ -1,6 +1,7 @@
 import CreateEntityButton from "@/components/create-entity-button";
 import CreateCustomerDialog from "@/components/dialogs/create/createCustomerDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
+import PrintRangeDialog from "@/components/dialogs/printRangeDialog";
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
@@ -31,6 +32,8 @@ const CustomersPage = () => {
     const [customerToEdit, setCustomerToEdit] = useState<CustomerDto | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<CustomerDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [printReportsCustomerId, setPrintReportsCustomerId] = useState<number | null>(null);
+    const [printInterventionsCustomerId, setPrintInterventionsCustomerId] = useState<number | null>(null);
     const pageSize = 10;
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
     const { customerRows, totalItems, totalPages, isLoading, loadCustomers } = useCustomersRows({
@@ -91,11 +94,43 @@ const CustomersPage = () => {
     };
 
     const handlePrintCustomerReports = (id: number) => {
-        window.open(getCustomerReportsPrintUrl(id), "_blank", "noopener,noreferrer");
+        setPrintReportsCustomerId(id);
+    };
+
+    const handleConfirmPrintCustomerReports = (range: { dateFrom?: string; dateTo?: string }) => {
+        if (printReportsCustomerId == null) {
+            return;
+        }
+
+        const printWindow = window.open(
+            getCustomerReportsPrintUrl(printReportsCustomerId, range),
+            "_blank",
+            "noopener,noreferrer"
+        );
+
+        if (!printWindow) {
+            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
+        }
     };
 
     const handlePrintCustomerInterventions = (id: number) => {
-        window.open(getCustomerInterventionsPrintUrl(id), "_blank", "noopener,noreferrer");
+        setPrintInterventionsCustomerId(id);
+    };
+
+    const handleConfirmPrintCustomerInterventions = (range: { dateFrom?: string; dateTo?: string }) => {
+        if (printInterventionsCustomerId == null) {
+            return;
+        }
+
+        const printWindow = window.open(
+            getCustomerInterventionsPrintUrl(printInterventionsCustomerId, range),
+            "_blank",
+            "noopener,noreferrer"
+        );
+
+        if (!printWindow) {
+            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
+        }
     };
 
     const handleDeleteCustomer = async () => {
@@ -151,6 +186,28 @@ const CustomersPage = () => {
                     onSubmit={handleEditCustomer}
                 />
             )}
+
+            <PrintRangeDialog
+                open={printReportsCustomerId != null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setPrintReportsCustomerId(null);
+                    }
+                }}
+                title="Stampa resoconto report"
+                onConfirm={handleConfirmPrintCustomerReports}
+            />
+
+            <PrintRangeDialog
+                open={printInterventionsCustomerId != null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setPrintInterventionsCustomerId(null);
+                    }
+                }}
+                title="Stampa resoconto interventi"
+                onConfirm={handleConfirmPrintCustomerInterventions}
+            />
 
             {isDeleteDialogOpen && (
                 <ConfirmDeleteDialog

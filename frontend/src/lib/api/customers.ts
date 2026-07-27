@@ -48,8 +48,25 @@ export const updateCustomer = async (id: number, payload: CustomerUpdateInput) =
 export const deleteCustomer = async (id: number) =>
     mapEntityTimestamps((await api.delete<EntityWithRawTimestamps<CustomerDto>>(`/customers/${id}`)).data);
 
-export const getCustomerReportsPrintUrl = (id: number) =>
-    api.getUri({ url: `/customers/${id}/reports/print` });
+export type CustomerPrintRangeParams = {
+    dateFrom?: string;
+    dateTo?: string;
+};
 
-export const getCustomerInterventionsPrintUrl = (id: number) =>
-    api.getUri({ url: `/customers/${id}/interventions/print` });
+export const getCustomerReportsPrintUrl = (id: number, params?: CustomerPrintRangeParams) =>
+    api.getUri({
+        url: `/customers/${id}/reports/print`,
+        params: {
+            dateFrom: params?.dateFrom,
+            dateTo: params?.dateTo,
+        },
+    });
+
+export const getCustomerInterventionsPrintUrl = (id: number, params?: CustomerPrintRangeParams) =>
+    api.getUri({
+        url: `/customers/${id}/interventions/print`,
+        params: {
+            dateFrom: params?.dateFrom,
+            dateTo: params?.dateTo,
+        },
+    });

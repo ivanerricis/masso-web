@@ -42,6 +42,7 @@ export type CustomerReportsPrintData = {
     labAddress: string;
     labPhone: string;
     labLogoUrl: string;
+    rangeLabel?: string;
     reportCount: number;
     reports: CustomerReportSummaryItem[];
 };
@@ -218,6 +219,7 @@ const buildCustomerSummaryMetaBlock = (customer: CustomerReportsPrintData) => ({
             {
                 stack: [
                     { text: `Cliente #${customer.customerId}`, style: "metaTitle", alignment: "right" },
+                    ...(customer.rangeLabel ? [{ text: customer.rangeLabel, style: "metaDate", alignment: "right" as const }] : []),
                     { text: `${customer.reportCount} report`, style: "metaDate", alignment: "right" },
                 ],
             },
