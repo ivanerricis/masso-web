@@ -38,6 +38,7 @@ export const reportTable = pgTable("report", {
     index("report_password_trgm_idx").using("gin", sql`${table.password} gin_trgm_ops`),
     index("report_issue_description_trgm_idx").using("gin", sql`${table.issueDescription} gin_trgm_ops`),
     index("report_service_description_trgm_idx").using("gin", sql`${table.serviceDescription} gin_trgm_ops`),
+    index("report_created_at_idx").on(table.created_at),
 ]);
 
 export const customerTable = pgTable("customer", {
@@ -52,6 +53,7 @@ export const customerTable = pgTable("customer", {
     index("customer_phone_number_trgm_idx").using("gin", sql`${table.phoneNumber} gin_trgm_ops`),
     index("customer_phone_number_secondary_trgm_idx").using("gin", sql`${table.phoneNumberSecondary} gin_trgm_ops`),
     index("customer_email_trgm_idx").using("gin", sql`${table.email} gin_trgm_ops`),
+    index("customer_created_at_idx").on(table.created_at),
 ])
 
 export const collaboratorTable = pgTable("collaborator", {
@@ -82,6 +84,7 @@ export const deviceTable = pgTable("device", {
     ...timestamps
 }, (table) => [
     index("device_name_trgm_idx").using("gin", sql`${table.name} gin_trgm_ops`),
+    index("device_created_at_idx").on(table.created_at),
 ])
 
 export const IssueTable = pgTable("issue", {
@@ -140,4 +143,5 @@ export const interventionTable = pgTable("intervention", {
     index("intervention_type_idx").on(table.type),
     index("intervention_status_idx").on(table.status),
     index("intervention_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`),
+    index("intervention_created_at_idx").on(table.created_at),
 ]);
