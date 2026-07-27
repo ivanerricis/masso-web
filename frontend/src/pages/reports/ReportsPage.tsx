@@ -30,6 +30,7 @@ import ReportsTable from "./components/reports-table";
 import type { ReportVisibilityFilter } from "./components/types";
 import { useReportsRows } from "./hooks/useReportsRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { openPrintWindow } from "@/lib/utils";
 
 const parseVisibilityFilter = (value: string | null): ReportVisibilityFilter => {
     if (value === "all" || value === "open" || value === "closed") {
@@ -323,19 +324,11 @@ const ReportsPage = () => {
     };
 
     const handlePrintReport = (id: number) => {
-        const printWindow = window.open(getReportPrintUrl(id), "_blank", "noopener,noreferrer");
-
-        if (!printWindow) {
-            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-        }
+        openPrintWindow(getReportPrintUrl(id));
     };
 
     const handlePrintReportsRange = () => {
-        const printWindow = window.open(getReportsRangePrintUrl({ dateFrom, dateTo }), "_blank", "noopener,noreferrer");
-
-        if (!printWindow) {
-            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-        }
+        openPrintWindow(getReportsRangePrintUrl({ dateFrom, dateTo }));
     };
 
     return (

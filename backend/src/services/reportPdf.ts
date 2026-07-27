@@ -238,40 +238,29 @@ const buildCustomerSummaryMetaBlock = (customer: CustomerReportsPrintData) => ({
     margin: [0, 0, 0, 0],
 });
 
-const buildCustomerSummaryHeader = (customer: CustomerReportsPrintData, logoDataUrl: string | null, compact = false) => ({
-    columns: compact
-        ? [
-              {
-                  width: "*",
-                  text: "",
-              },
-              {
-                  width: "auto",
-                  ...buildCustomerSummaryMetaBlock(customer),
-              },
-          ]
-        : [
-              {
-                  width: "*",
-                  columns: [
-                      ...(logoDataUrl
-                          ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
-                          : [{ width: 56, text: "" }]),
-                      {
-                          width: "*",
-                          stack: [
-                              { text: customer.labName, style: "brandName" },
-                              { text: `${customer.labAddress}\n${customer.labEmail}\n${customer.labPhone}`, style: "brandInfo" },
-                          ],
-                          margin: [0, 0, 0, 0],
-                      },
-                  ],
-              },
-              {
-                  width: "auto",
-                  ...buildCustomerSummaryMetaBlock(customer),
-              },
-          ],
+const buildCustomerSummaryHeader = (customer: CustomerReportsPrintData, logoDataUrl: string | null) => ({
+    columns: [
+        {
+            width: "*",
+            columns: [
+                ...(logoDataUrl
+                    ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
+                    : [{ width: 56, text: "" }]),
+                {
+                    width: "*",
+                    stack: [
+                        { text: customer.labName, style: "brandName" },
+                        { text: `${customer.labAddress}\n${customer.labEmail}\n${customer.labPhone}`, style: "brandInfo" },
+                    ],
+                    margin: [0, 0, 0, 0],
+                },
+            ],
+        },
+        {
+            width: "auto",
+            ...buildCustomerSummaryMetaBlock(customer),
+        },
+    ],
     columnGap: 12,
     margin: [0, 0, 0, 8],
 });
@@ -729,22 +718,7 @@ export const createCustomerReportsPdfBuffer = async (customer: CustomerReportsPr
             color: "#111111",
         },
         content: [
-            buildCustomerSummaryHeader(customer, logoDataUrl, false),
-            {
-                canvas: [
-                    {
-                        type: "line",
-                        x1: 0,
-                        y1: 0,
-                        x2: 555,
-                        y2: 0,
-                        lineWidth: 1,
-                        dash: { length: 4, space: 3 },
-                    },
-                ],
-                margin: [0, 4, 0, 6],
-            },
-            buildCustomerSummaryHeader(customer, logoDataUrl, true),
+            buildCustomerSummaryHeader(customer, logoDataUrl),
             buildCustomerSummaryInfoSection(customer),
             {
                 stack: [
@@ -814,20 +788,6 @@ export const createReportsRangePdfBuffer = async (data: ReportsRangePrintData) =
         },
         content: [
             buildRangeHeader(data, logoDataUrl),
-            {
-                canvas: [
-                    {
-                        type: "line",
-                        x1: 0,
-                        y1: 0,
-                        x2: 555,
-                        y2: 0,
-                        lineWidth: 1,
-                        dash: { length: 4, space: 3 },
-                    },
-                ],
-                margin: [0, 4, 0, 10],
-            },
             buildReportsRangeTable(data.reports),
         ],
         styles: {

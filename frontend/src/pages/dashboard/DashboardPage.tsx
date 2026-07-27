@@ -18,7 +18,7 @@ import {
     listDevices,
     listIssues,
 } from "@/lib/api";
-import { cn, formatEuro } from "@/lib/utils";
+import { cn, formatEuro, openPrintWindow } from "@/lib/utils";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -205,10 +205,7 @@ const DashboardPage = () => {
         await loadDashboardMetrics(selectedRevenueMonth);
 
         if (window.confirm("Rapporto creato. Vuoi stamparlo adesso?")) {
-            const printWindow = window.open(getReportPrintUrl(createdReport.id), "_blank", "noopener,noreferrer");
-            if (!printWindow) {
-                toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-            }
+            openPrintWindow(getReportPrintUrl(createdReport.id));
         }
     };
 

@@ -110,7 +110,6 @@ const UpdateSettingsPanel = () => {
         const previousCommit = status?.currentCommit ?? null;
         setIsUpdating(true);
         setGlobalUpdating(true);
-        const toastId = toast.loading("Aggiornamento in corso...");
 
         try {
             await runUpdateNow();
@@ -118,7 +117,6 @@ const UpdateSettingsPanel = () => {
             for (let attempt = 0; attempt < UPDATE_MAX_ATTEMPTS; attempt += 1) {
                 await sleep(POLL_INTERVAL_MS);
                 if (cancelledRef.current) {
-                    toast.dismiss(toastId);
                     return;
                 }
 
@@ -127,13 +125,13 @@ const UpdateSettingsPanel = () => {
 
                     if (result.state === "failed") {
                         setStatus(result);
-                        toast.error(result.lastError ?? "Aggiornamento non riuscito", { id: toastId });
+                        toast.error(result.lastError ?? "Aggiornamento non riuscito");
                         return;
                     }
 
                     if (result.state === "success" && result.currentCommit !== previousCommit) {
                         setStatus(result);
-                        toast.success("Aggiornamento completato. Ricarico la pagina...", { id: toastId });
+                        toast.success("Aggiornamento completato. Ricarico la pagina...");
                         await sleep(1500);
                         window.location.reload();
                         return;
@@ -143,9 +141,9 @@ const UpdateSettingsPanel = () => {
                 }
             }
 
-            toast.error("Aggiornamento in corso da troppo tempo, controlla lo stato del server", { id: toastId });
+            toast.error("Aggiornamento in corso da troppo tempo, controlla lo stato del server");
         } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile avviare l'aggiornamento"), { id: toastId });
+            toast.error(getApiErrorMessage(error, "Impossibile avviare l'aggiornamento"));
         } finally {
             if (!cancelledRef.current) {
                 setIsUpdating(false);

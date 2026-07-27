@@ -12,7 +12,7 @@ import {
     type InterventionEntityDto,
     updateIntervention,
 } from "@/lib/api";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate, formatDateTime, openPrintWindow } from "@/lib/utils";
 import { formatInterventionStatus, formatInterventionTime, formatInterventionType, isOnSiteInterventionType } from "@/lib/interventions";
 import { ArrowLeft, Pencil, Printer } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -64,10 +64,7 @@ const InterventionPage = () => {
             return;
         }
 
-        const printWindow = window.open(getInterventionPrintUrl(details.intervention.id), "_blank", "noopener,noreferrer");
-        if (!printWindow) {
-            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-        }
+        openPrintWindow(getInterventionPrintUrl(details.intervention.id));
     };
 
     const loadDetails = useCallback(async () => {

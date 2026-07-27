@@ -25,6 +25,7 @@ import InterventionsTable from "./components/interventions-table";
 import type { InterventionStatusFilter, InterventionTypeFilter } from "./components/types";
 import { useInterventionsRows } from "./hooks/useInterventionsRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { openPrintWindow } from "@/lib/utils";
 
 const formatCustomerOption = (
     firstName: string,
@@ -206,19 +207,11 @@ const InterventionsPage = () => {
     };
 
     const handlePrintIntervention = (id: number) => {
-        const printWindow = window.open(getInterventionPrintUrl(id), "_blank", "noopener,noreferrer");
-
-        if (!printWindow) {
-            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-        }
+        openPrintWindow(getInterventionPrintUrl(id));
     };
 
     const handlePrintInterventionsRange = () => {
-        const printWindow = window.open(getInterventionsRangePrintUrl({ dateFrom, dateTo }), "_blank", "noopener,noreferrer");
-
-        if (!printWindow) {
-            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-        }
+        openPrintWindow(getInterventionsRangePrintUrl({ dateFrom, dateTo }));
     };
 
     const handleSendEmailIntervention = async (id: number) => {

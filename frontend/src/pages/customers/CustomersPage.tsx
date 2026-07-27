@@ -22,6 +22,7 @@ import CustomersFilters from "./components/customers-filters";
 import CustomersTable from "./components/customers-table";
 import { useCustomersRows } from "./hooks/useCustomersRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { openPrintWindow } from "@/lib/utils";
 
 const CustomersPage = () => {
     const navigate = useNavigate();
@@ -102,15 +103,7 @@ const CustomersPage = () => {
             return;
         }
 
-        const printWindow = window.open(
-            getCustomerReportsPrintUrl(printReportsCustomerId, range),
-            "_blank",
-            "noopener,noreferrer"
-        );
-
-        if (!printWindow) {
-            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-        }
+        openPrintWindow(getCustomerReportsPrintUrl(printReportsCustomerId, range));
     };
 
     const handlePrintCustomerInterventions = (id: number) => {
@@ -122,15 +115,7 @@ const CustomersPage = () => {
             return;
         }
 
-        const printWindow = window.open(
-            getCustomerInterventionsPrintUrl(printInterventionsCustomerId, range),
-            "_blank",
-            "noopener,noreferrer"
-        );
-
-        if (!printWindow) {
-            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-        }
+        openPrintWindow(getCustomerInterventionsPrintUrl(printInterventionsCustomerId, range));
     };
 
     const handleDeleteCustomer = async () => {

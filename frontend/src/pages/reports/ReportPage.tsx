@@ -19,7 +19,7 @@ import {
     updateReport,
     updateReportTechnician,
 } from "@/lib/api";
-import { formatDateTime, formatEuro } from "@/lib/utils";
+import { formatDateTime, formatEuro, openPrintWindow } from "@/lib/utils";
 import { ArrowLeft, Pencil, Printer } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -97,10 +97,7 @@ const ReportPage = () => {
             return;
         }
 
-        const printWindow = window.open(getReportPrintUrl(details.report.id), "_blank", "noopener,noreferrer");
-        if (!printWindow) {
-            toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.");
-        }
+        openPrintWindow(getReportPrintUrl(details.report.id));
     };
 
     const loadDetails = useCallback(async () => {

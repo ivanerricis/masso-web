@@ -1,8 +1,23 @@
 import { clsx, type ClassValue } from "clsx"
+import { toast } from "sonner"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+export function openPrintWindow(url: string) {
+  // "noopener"/"noreferrer" as window features make window.open() always return null,
+  // even when the popup opens fine, so that can't be used to detect real blocking.
+  const printWindow = window.open(url, "_blank")
+
+  if (!printWindow) {
+    toast.error("Popup bloccato dal browser. Consenti i popup per aprire la stampa.")
+    return null
+  }
+
+  printWindow.opener = null
+  return printWindow
 }
 
 export function formatDateTime(value: string | null | undefined) {
