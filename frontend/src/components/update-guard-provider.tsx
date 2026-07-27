@@ -1,11 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
-
-type UpdateGuardContextValue = {
-    setIsUpdating: (value: boolean) => void;
-};
-
-const UpdateGuardContext = createContext<UpdateGuardContextValue | null>(null);
+import { UpdateGuardContext } from "@/components/update-guard-context";
 
 export const UpdateGuardProvider = ({ children }: { children: ReactNode }) => {
     const [isUpdating, setIsUpdating] = useState(false);
@@ -44,14 +39,4 @@ export const UpdateGuardProvider = ({ children }: { children: ReactNode }) => {
             ) : null}
         </UpdateGuardContext.Provider>
     );
-};
-
-export const useUpdateGuard = () => {
-    const context = useContext(UpdateGuardContext);
-
-    if (!context) {
-        throw new Error("useUpdateGuard deve essere usato dentro UpdateGuardProvider");
-    }
-
-    return context;
 };

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
+import InterventionsCalendar from "@/pages/calendar/components/interventions-calendar";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
@@ -244,7 +245,7 @@ const DashboardPage = () => {
                     iconColor="text-green-400"
                     onClick={() => goToReportsPage("closed")}
                 />
-                <Card className="flex flex-col gap-3! border bg-card p-6 shadow w-72 rounded-lg border-primary/20">
+                <Card className="flex flex-col gap-3! border bg-card p-6 shadow w-60 rounded-lg border-primary/20">
                     <CardHeader className="p-0 pb-1">
                         <div className="flex items-center justify-between gap-3">
                             <CardTitle className="text-primary">Incassi mese</CardTitle>
@@ -338,6 +339,8 @@ const DashboardPage = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            <InterventionsCalendar className="h-[calc(100vh-24rem)] min-h-[28rem]" />
 
             {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
 

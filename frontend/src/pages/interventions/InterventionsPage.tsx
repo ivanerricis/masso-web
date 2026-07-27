@@ -9,7 +9,6 @@ import {
     deleteIntervention,
     getApiErrorMessage,
     getInterventionPrintUrl,
-    getInterventionsRangePrintUrl,
     listCustomers,
     sendInterventionEmail,
     updateIntervention,
@@ -210,10 +209,6 @@ const InterventionsPage = () => {
         openPrintWindow(getInterventionPrintUrl(id));
     };
 
-    const handlePrintInterventionsRange = () => {
-        openPrintWindow(getInterventionsRangePrintUrl({ dateFrom, dateTo }));
-    };
-
     const handleSendEmailIntervention = async (id: number) => {
         try {
             const result = await sendInterventionEmail(id);
@@ -281,7 +276,6 @@ const InterventionsPage = () => {
                     onDateFromChange={setDateFrom}
                     dateTo={dateTo}
                     onDateToChange={setDateTo}
-                    onPrintRange={handlePrintInterventionsRange}
                 />
 
                 <div className="flex flex-col gap-4">

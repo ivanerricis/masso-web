@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { interventionTypeOptions, interventionStatusOptions } from "@/lib/interventions";
-import { FilterX, Printer } from "lucide-react";
+import { FilterX } from "lucide-react";
 import type { InterventionStatusFilter, InterventionTypeFilter } from "./types";
 
 type InterventionsFiltersProps = {
@@ -17,7 +17,6 @@ type InterventionsFiltersProps = {
     onDateFromChange: (value: string | undefined) => void;
     dateTo: string | undefined;
     onDateToChange: (value: string | undefined) => void;
-    onPrintRange: () => void;
 };
 
 const InterventionsFilters = ({
@@ -31,7 +30,6 @@ const InterventionsFilters = ({
     onDateFromChange,
     dateTo,
     onDateToChange,
-    onPrintRange,
 }: InterventionsFiltersProps) => {
     const handleClearDates = () => {
         onDateFromChange(undefined);
@@ -93,22 +91,13 @@ const InterventionsFilters = ({
             {dateFrom || dateTo ? (
                 <Button
                     variant="ghost"
-                    className="w-full gap-2 sm:w-auto"
+                    className="w-full gap-2 sm:w-auto sm:ml-auto"
                     onClick={handleClearDates}
                 >
                     <FilterX className="size-4" />
                     Pulisci date
                 </Button>
             ) : null}
-
-            <Button
-                variant="outline"
-                className="w-full gap-2 sm:w-auto sm:ml-auto"
-                onClick={onPrintRange}
-            >
-                <Printer className="size-4" />
-                {dateFrom || dateTo ? "Stampa resoconto periodo" : "Stampa resoconto completo"}
-            </Button>
         </div>
     );
 };

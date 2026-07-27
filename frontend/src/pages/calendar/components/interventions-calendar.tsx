@@ -1,16 +1,17 @@
 import LoadingPage from "@/components/loadingPage";
-import PageHeader from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { getStoredCalendarView, setStoredCalendarView } from "@/lib/calendarView";
 import type { InterventionStatus } from "@/types/dtos";
 import { format, getDay, parse, startOfWeek } from "date-fns";
 import { it } from "date-fns/locale";
-import { useMemo } from "react";
-import { Calendar, dateFnsLocalizer, type EventPropGetter, type Messages } from "react-big-calendar";
+import { useMemo, useState } from "react";
+import { Calendar, dateFnsLocalizer, type EventPropGetter, type Messages, type View } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import "./calendar-theme.css";
-import CalendarEventPopover from "./components/calendar-event-popover";
+import "../calendar-theme.css";
+import CalendarEventPopover from "./calendar-event-popover";
 import { useNavigate } from "react-router-dom";
-import { useCalendarInterventions, type InterventionCalendarEvent } from "./hooks/useCalendarInterventions";
+import { useCalendarInterventions, type InterventionCalendarEvent } from "../hooks/useCalendarInterventions";
 
 const locales = { it };
 
@@ -51,9 +52,14 @@ const statusEventStyle: Record<InterventionStatus, { backgroundColor: string; co
 
 const components = { event: CalendarEventPopover };
 
-const CalendarPage = () => {
+type Props = Readonly<{
+    className?: string;
+}>;
+
+const InterventionsCalendar = ({ className }: Props) => {
     const navigate = useNavigate();
     const { events, isLoading } = useCalendarInterventions();
+    const [view, setView] = useState<View>(() => getStoredCalendarView());
 
     const eventPropGetter = useMemo<EventPropGetter<InterventionCalendarEvent>>(
         () => (event) => ({
@@ -62,32 +68,32 @@ const CalendarPage = () => {
         []
     );
 
-    return (
-        <div className="relative flex flex-col gap-4 w-full h-full">
-            <PageHeader
-                title="Calendario"
-                description="Visualizza gli interventi in sede e da remoto già programmati e le consegne materiale in base alla data prevista. Clicca su un intervento per vederne i dettagli."
-            />
+    const handleViewChange = (nextView: View) => {
+        setView(nextView);
+        setStoredCalendarView(nextView);
+    };
 
-            <Card className="flex-1">
-                <CardContent className="h-[calc(100vh-14rem)]">
-                    <Calendar
-                        localizer={localizer}
-                        culture="it"
-                        events={events}
-                        messages={messages}
-                        eventPropGetter={eventPropGetter}
-                        components={components}
-                        onSelectEvent={(event) => navigate(`/interventions/${event.id}`)}
-                        popup
-                        style={{ height: "100%" }}
-                    />
-                </CardContent>
-            </Card>
+    return (
+        <Card className={cn("relative flex flex-col", className)}>
+            <CardContent className="h-full">
+                <Calendar
+                    localizer={localizer}
+                    culture="it"
+                    events={events}
+                    messages={messages}
+                    view={view}
+                    onView={handleViewChange}
+                    eventPropGetter={eventPropGetter}
+                    components={components}
+                    onSelectEvent={(event) => navigate(`/interventions/${event.id}`)}
+                    popup
+                    style={{ height: "100%" }}
+                />
+            </CardContent>
 
             {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
-        </div>
+        </Card>
     );
 };
 
-export default CalendarPage;
+export default InterventionsCalendar;

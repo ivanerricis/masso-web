@@ -15,7 +15,6 @@ import {
     listDevices,
     listIssues,
     getReportPrintUrl,
-    getReportsRangePrintUrl,
     updateReport,
     updateReportTechnician,
 } from "@/lib/api";
@@ -327,10 +326,6 @@ const ReportsPage = () => {
         openPrintWindow(getReportPrintUrl(id));
     };
 
-    const handlePrintReportsRange = () => {
-        openPrintWindow(getReportsRangePrintUrl({ dateFrom, dateTo }));
-    };
-
     return (
         <div className="relative flex flex-col gap-4 w-full h-full">
             <>
@@ -387,7 +382,6 @@ const ReportsPage = () => {
                     onDateFromChange={setDateFrom}
                     dateTo={dateTo}
                     onDateToChange={setDateTo}
-                    onPrintRange={handlePrintReportsRange}
                 />
 
                 <div className="flex flex-col gap-4">

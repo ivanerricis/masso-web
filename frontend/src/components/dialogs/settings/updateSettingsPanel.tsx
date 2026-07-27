@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import CustomDialog from "@/components/dialogs/customDialog";
-import { useUpdateGuard } from "@/components/update-guard-provider";
+import { useUpdateGuard } from "@/components/use-update-guard";
 import {
     checkForUpdates,
     getApiErrorMessage,
