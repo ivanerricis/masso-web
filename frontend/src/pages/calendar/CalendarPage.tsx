@@ -41,9 +41,9 @@ const messages: Messages = {
 };
 
 const statusEventClass: Record<InterventionStatus, string> = {
-    completato: "bg-emerald-600 dark:bg-emerald-500",
-    in_lavorazione: "bg-amber-600 dark:bg-amber-500",
-    programmato: "bg-rose-600 dark:bg-rose-500",
+    completato: "bg-green-500 text-white",
+    in_lavorazione: "bg-yellow-400 text-black",
+    programmato: "bg-red-500 text-white",
 };
 
 const CalendarPage = () => {
@@ -52,7 +52,7 @@ const CalendarPage = () => {
 
     const eventPropGetter = useMemo<EventPropGetter<InterventionCalendarEvent>>(
         () => (event) => ({
-            className: `${statusEventClass[event.resource.status]} text-white`,
+            className: statusEventClass[event.resource.status],
         }),
         []
     );
