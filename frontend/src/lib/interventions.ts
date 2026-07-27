@@ -25,10 +25,3 @@ export const interventionDescriptionLabel = (value: InterventionType) =>
     value === "consegna_materiale" ? "Materiali da consegnare" : "Assistenza effettuata";
 
 export const formatInterventionTime = (value: string | null) => (value ? value.slice(0, 5) : "-");
-
-export const interventionTimeOptions: string[] = Array.from({ length: 24 * 2 }, (_, index) => {
-    const totalMinutes = index * 30;
-    const hours = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
-    const minutes = String(totalMinutes % 60).padStart(2, "0");
-    return `${hours}:${minutes}`;
-});
