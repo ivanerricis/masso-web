@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import { Calendar, dateFnsLocalizer, type EventPropGetter, type Messages } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./calendar-theme.css";
+import CalendarEventPopover from "./components/calendar-event-popover";
 import { useNavigate } from "react-router-dom";
 import { useCalendarInterventions, type InterventionCalendarEvent } from "./hooks/useCalendarInterventions";
 
@@ -48,6 +49,8 @@ const statusEventStyle: Record<InterventionStatus, { backgroundColor: string; co
     programmato: { backgroundColor: "var(--color-red-500)", color: "#fff" },
 };
 
+const components = { event: CalendarEventPopover };
+
 const CalendarPage = () => {
     const navigate = useNavigate();
     const { events, isLoading } = useCalendarInterventions();
@@ -63,7 +66,7 @@ const CalendarPage = () => {
         <div className="relative flex flex-col gap-4 w-full h-full">
             <PageHeader
                 title="Calendario"
-                description="Visualizza gli interventi in sede e da remoto già programmati e le consegne materiale in base alla data prevista."
+                description="Visualizza gli interventi in sede e da remoto già programmati e le consegne materiale in base alla data prevista. Clicca su un intervento per vederne i dettagli."
             />
 
             <Card className="flex-1">
@@ -74,6 +77,7 @@ const CalendarPage = () => {
                         events={events}
                         messages={messages}
                         eventPropGetter={eventPropGetter}
+                        components={components}
                         onSelectEvent={(event) => navigate(`/interventions/${event.id}`)}
                         popup
                         style={{ height: "100%" }}
