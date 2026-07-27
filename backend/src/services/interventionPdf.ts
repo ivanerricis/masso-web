@@ -234,6 +234,21 @@ const buildTechnicianHoursSection = (intervention: InterventionPrintData) => {
     };
 };
 
+const buildLegalNoticeSection = () => ({
+    stack: [
+        {
+            text: "I dati del ricevente verranno trattati in base alla normativa europea UE 2016/679 del 27 aprile 2016 (GDPR).",
+            style: "fineprint",
+        },
+        {
+            text: "Si dichiara che i lavori sono stati eseguiti ed i materiali installati nel rispetto delle vigenti normative tecniche.",
+            style: "fineprint",
+            margin: [0, 2, 0, 0],
+        },
+    ],
+    margin: [0, 4, 0, 0],
+});
+
 const buildSignatureSection = () => ({
     columns: [
         {
@@ -420,6 +435,7 @@ export const createInterventionPdfBuffer = async (intervention: InterventionPrin
             buildCustomerSection(intervention),
             buildActivitySection(intervention),
             ...(hoursSection ? [hoursSection] : []),
+            buildLegalNoticeSection(),
             buildSignatureSection(),
         ],
         styles: {
@@ -449,6 +465,11 @@ export const createInterventionPdfBuffer = async (intervention: InterventionPrin
             value: {
                 fontSize: 11.75,
                 bold: true,
+            },
+            fineprint: {
+                fontSize: 7.5,
+                italics: true,
+                color: "#555555",
             },
         },
     };
