@@ -2,6 +2,7 @@ import { startTransition, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { toast } from "sonner";
 import CustomDialog from "@/components/dialogs/customDialog";
+import { useAuth } from "@/components/use-auth";
 import { useBusyGuard } from "@/components/use-busy-guard";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,6 +63,7 @@ const defaultForm: BackupSettingsInput = {
 
 const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     const { setBusy } = useBusyGuard();
+    const { logout } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isRunningBackup, setIsRunningBackup] = useState(false);
@@ -347,9 +349,18 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             setPendingRestore(null);
             setRestoreConfirmText("");
             setRestoreUploadFile(null);
+            setIsRestoring(false);
+            setBusy(null);
+
+            // I dati utente/sessione ripristinati non coincidono più con quelli con cui si è
+            // effettuato l'accesso: forziamo un nuovo login per ripartire da uno stato coerente.
+            try {
+                await logout();
+            } catch {
+                // La sessione corrente potrebbe già non esistere più nel database ripristinato.
+            }
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Ripristino database non riuscito"));
-        } finally {
             setIsRestoring(false);
             setBusy(null);
         }
