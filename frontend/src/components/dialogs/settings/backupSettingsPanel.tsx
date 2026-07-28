@@ -1,5 +1,6 @@
 import { startTransition, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import CustomDialog from "@/components/dialogs/customDialog";
 import { useAuth } from "@/components/use-auth";
@@ -64,6 +65,7 @@ const defaultForm: BackupSettingsInput = {
 const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     const { setBusy } = useBusyGuard();
     const { logout } = useAuth();
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isRunningBackup, setIsRunningBackup] = useState(false);
@@ -354,6 +356,10 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
 
             // I dati utente/sessione ripristinati non coincidono più con quelli con cui si è
             // effettuato l'accesso: forziamo un nuovo login per ripartire da uno stato coerente.
+            // Navighiamo prima (senza "from" in state) così dopo il login si atterra sulla
+            // dashboard e non sulla stessa pagina impostazioni da cui è partito il ripristino.
+            navigate("/login", { replace: true });
+
             try {
                 await logout();
             } catch {
