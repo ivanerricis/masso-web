@@ -94,6 +94,8 @@ const foreignKeyViolationMessage = ({ constraint, message, detail }: PgError): s
     return isDeleteBlockedByReference ? known.onDeleteParent : known.onInvalidReference;
 };
 
+const GENERIC_ERROR_MESSAGE = "Si è verificato un errore imprevisto. Riprova più tardi.";
+
 export const errorHandler = (
     error: unknown,
     _req: express.Request,
@@ -124,8 +126,10 @@ export const errorHandler = (
         return;
     }
 
+    // Il dettaglio Postgres (nomi di tabelle/colonne, frammenti di valori) resta
+    // nei log lato server, mentre al client va un messaggio generico: su un errore
+    // non gestito non sappiamo cosa contenga `detail`, quindi non è mostrabile.
     console.error(error);
-    const apiErrorMessage = detail ?? message ?? "Internal server error";
-    res.locals.apiErrorMessage = apiErrorMessage;
-    res.status(500).json({ message: apiErrorMessage });
+    res.locals.apiErrorMessage = detail ?? message ?? GENERIC_ERROR_MESSAGE;
+    res.status(500).json({ message: GENERIC_ERROR_MESSAGE });
 };
