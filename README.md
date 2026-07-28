@@ -197,7 +197,9 @@ docker compose -f docker-compose.dev.yml down
 
 ## Restore database
 
-Per ripristinare un dump SQL nel database Postgres usa lo script dedicato.
+Il ripristino è disponibile anche da Impostazioni > Backup database (solo per utenti amministratore): si può scegliere un dump già presente sul server oppure caricarne uno da file, con l'opzione per svuotare prima lo schema `public`. Richiede di digitare `RESTORE` per confermare, essendo un'operazione irreversibile.
+
+In alternativa, per ripristinare un dump SQL nel database Postgres via terminale usa lo script dedicato.
 
 ```bash
 ./scripts/restore-db.sh --dump-path /path/to/db-dump-YYYYMMDD-HHMMSS.sql

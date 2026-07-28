@@ -1,5 +1,7 @@
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import { toast } from "sonner";
+import CustomDialog from "@/components/dialogs/customDialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -11,6 +13,8 @@ import {
     getBackupDumpDownloadUrl,
     getBackupSettings,
     listBackupDumps,
+    restoreBackupFromExisting,
+    restoreBackupFromUpload,
     runBackupNow,
     testSmbConnection,
     updateBackupSettings,
@@ -18,6 +22,10 @@ import {
     type BackupSettingsInput,
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
+
+const restoreConfirmKeyword = "RESTORE";
+
+type PendingRestore = { type: "existing"; fileName: string } | { type: "upload"; file: File };
 
 const formatFileSize = (sizeBytes: number) => {
     if (sizeBytes < 1024) {
@@ -70,6 +78,18 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     const [smbLastError, setSmbLastError] = useState<string | null>(null);
     const [isTestingSmb, setIsTestingSmb] = useState(false);
 
+    const [restoreDumpFileName, setRestoreDumpFileName] = useState<string>("");
+    const [restoreUploadFile, setRestoreUploadFile] = useState<File | null>(null);
+    const [resetSchemaOnRestore, setResetSchemaOnRestore] = useState(false);
+    const [isRestoring, setIsRestoring] = useState(false);
+    const [pendingRestore, setPendingRestore] = useState<PendingRestore | null>(null);
+    const [restoreConfirmText, setRestoreConfirmText] = useState("");
+    const [lastRestoreAt, setLastRestoreAt] = useState<string | null>(null);
+    const [lastRestoreStatus, setLastRestoreStatus] = useState<"idle" | "success" | "failed">("idle");
+    const [lastRestoreError, setLastRestoreError] = useState<string | null>(null);
+    const [lastRestoreFileName, setLastRestoreFileName] = useState<string | null>(null);
+    const restoreFileInputRef = useRef<HTMLInputElement>(null);
+
     const loadSettings = async () => {
         setIsLoading(true);
 
@@ -99,6 +119,10 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             setSmbLastRunAt(settings.smbLastRunAt);
             setSmbLastStatus(settings.smbLastStatus);
             setSmbLastError(settings.smbLastError);
+            setLastRestoreAt(settings.lastRestoreAt);
+            setLastRestoreStatus(settings.lastRestoreStatus);
+            setLastRestoreError(settings.lastRestoreError);
+            setLastRestoreFileName(settings.lastRestoreFileName);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare le impostazioni backup"));
         } finally {
@@ -113,6 +137,9 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             const dumps = await listBackupDumps();
             setDumpFiles(dumps);
             setSelectedDumpFileName((current) =>
+                current && dumps.some((dump) => dump.fileName === current) ? current : dumps[0]?.fileName ?? ""
+            );
+            setRestoreDumpFileName((current) =>
                 current && dumps.some((dump) => dump.fileName === current) ? current : dumps[0]?.fileName ?? ""
             );
         } catch (error) {
@@ -277,7 +304,51 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         }
     };
 
+    const handleRestoreFileSelected = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+
+        if (!file) {
+            return;
+        }
+
+        setRestoreUploadFile(file);
+    };
+
+    const openRestoreConfirm = (source: PendingRestore) => {
+        setPendingRestore(source);
+        setRestoreConfirmText("");
+    };
+
+    const handleConfirmRestore = async () => {
+        if (!pendingRestore || isRestoring) {
+            return;
+        }
+
+        try {
+            setIsRestoring(true);
+            const result =
+                pendingRestore.type === "existing"
+                    ? await restoreBackupFromExisting(pendingRestore.fileName, resetSchemaOnRestore)
+                    : await restoreBackupFromUpload(pendingRestore.file, resetSchemaOnRestore);
+
+            setLastRestoreAt(result.lastRestoreAt);
+            setLastRestoreStatus(result.lastRestoreStatus);
+            setLastRestoreError(result.lastRestoreError);
+            setLastRestoreFileName(result.lastRestoreFileName);
+            toast.success(result.message);
+            setPendingRestore(null);
+            setRestoreConfirmText("");
+            setRestoreUploadFile(null);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Ripristino database non riuscito"));
+        } finally {
+            setIsRestoring(false);
+        }
+    };
+
     return (
+        <>
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <Card size="sm" className="border-primary/15 shadow-sm">
                 <CardHeader className="border-b border-primary/10 bg-muted/20">
@@ -607,6 +678,148 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                 </CardContent>
             </Card>
         </div>
+
+        <Card size="sm" className="border-destructive/30 shadow-sm">
+            <CardHeader className="border-b border-destructive/15 bg-destructive/5">
+                <CardTitle>Ripristino database</CardTitle>
+                <CardDescription>
+                    Sovrascrive i dati attuali con quelli del dump scelto. Operazione irreversibile: valuta di eseguire
+                    prima un dump del database corrente.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 pt-4">
+                {isLoading ? (
+                    <div className="rounded-md border border-dashed border-destructive/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
+                        Caricamento impostazioni...
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid gap-3 rounded-md border border-destructive/15 bg-muted/20 p-3">
+                            <div className="flex items-center gap-3">
+                                <Checkbox
+                                    id="resetSchemaOnRestore"
+                                    checked={resetSchemaOnRestore}
+                                    onCheckedChange={(checked) => setResetSchemaOnRestore(Boolean(checked))}
+                                />
+                                <Label htmlFor="resetSchemaOnRestore" className="cursor-pointer">
+                                    Svuota lo schema prima del ripristino (consigliato se il dump contiene l&apos;intero
+                                    database)
+                                </Label>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="restoreDumpSelect">Ripristina da un dump presente sul server</Label>
+                                    {dumpFiles.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">Nessun dump disponibile sul server.</p>
+                                    ) : (
+                                        <Select value={restoreDumpFileName} onValueChange={setRestoreDumpFileName}>
+                                            <SelectTrigger id="restoreDumpSelect" className="w-full">
+                                                <SelectValue placeholder="Seleziona un dump" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {dumpFiles.map((dump) => (
+                                                    <SelectItem key={dump.fileName} value={dump.fileName}>
+                                                        {`${dump.fileName} — ${formatDateTime(dump.createdAt)} — ${formatFileSize(dump.sizeBytes)}`}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    disabled={!restoreDumpFileName || isRestoring}
+                                    onClick={() => openRestoreConfirm({ type: "existing", fileName: restoreDumpFileName })}
+                                >
+                                    Ripristina da questo dump
+                                </Button>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="restoreUpload">Oppure carica un file .sql</Label>
+                                    <Input
+                                        id="restoreUpload"
+                                        type="file"
+                                        accept=".sql,text/plain,application/sql"
+                                        ref={restoreFileInputRef}
+                                        disabled={isRestoring}
+                                        onChange={handleRestoreFileSelected}
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    disabled={!restoreUploadFile || isRestoring}
+                                    onClick={() =>
+                                        restoreUploadFile && openRestoreConfirm({ type: "upload", file: restoreUploadFile })
+                                    }
+                                >
+                                    Ripristina da questo file
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-2 rounded-md border border-destructive/15 bg-muted/20 p-3 text-sm">
+                            <p>Ultimo ripristino: {formatDateTime(lastRestoreAt)}</p>
+                            <p>Stato ultimo ripristino: {lastRestoreStatus}</p>
+                            <p>Dump utilizzato: {lastRestoreFileName ?? "-"}</p>
+                            {lastRestoreError ? (
+                                <p className="text-destructive">Ultimo errore: {lastRestoreError}</p>
+                            ) : null}
+                        </div>
+                    </>
+                )}
+            </CardContent>
+        </Card>
+
+        <CustomDialog
+            open={pendingRestore !== null}
+            onOpenChange={(open) => {
+                if (!open && !isRestoring) {
+                    setPendingRestore(null);
+                    setRestoreConfirmText("");
+                }
+            }}
+            title="Conferma ripristino database"
+            description={
+                pendingRestore?.type === "existing"
+                    ? `Stai per sovrascrivere il database con il dump "${pendingRestore.fileName}". L'operazione è irreversibile.`
+                    : pendingRestore?.type === "upload"
+                      ? `Stai per sovrascrivere il database con il file caricato "${pendingRestore.file.name}". L'operazione è irreversibile.`
+                      : ""
+            }
+            content={
+                <div className="grid gap-2 py-2">
+                    <Label htmlFor="restoreConfirmText">
+                        Digita <span className="font-semibold">{restoreConfirmKeyword}</span> per confermare
+                    </Label>
+                    <Input
+                        id="restoreConfirmText"
+                        value={restoreConfirmText}
+                        disabled={isRestoring}
+                        onChange={(event) => setRestoreConfirmText(event.target.value)}
+                        autoComplete="off"
+                    />
+                </div>
+            }
+            confirmLabel={isRestoring ? "Ripristino in corso..." : "Ripristina"}
+            cancelLabel="Annulla"
+            onCancel={() => {
+                if (!isRestoring) {
+                    setPendingRestore(null);
+                    setRestoreConfirmText("");
+                }
+            }}
+            onConfirm={() => void handleConfirmRestore()}
+            cancelDisabled={isRestoring}
+            confirmDisabled={isRestoring || restoreConfirmText !== restoreConfirmKeyword}
+            preventOutsideClose={isRestoring}
+            destructive
+        />
+        </>
     );
 };
 

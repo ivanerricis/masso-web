@@ -3,11 +3,14 @@ import { type Response, Router } from "express";
 import multer from "multer";
 import { z } from "zod";
 import { validate } from "./validation";
+import { requireAdmin } from "../middleware/requireAuth";
 import {
     BackupManagerError,
     getBackupDumpPath,
     getBackupSettings,
     listBackupDumps,
+    restoreBackupFromExisting,
+    restoreBackupFromUpload,
     runBackupNow,
     testSmbConnection,
     updateBackupSettings,
@@ -19,6 +22,7 @@ import { UpdateManagerError, getUpdateStatus, requestUpdate, requestUpdateCheck 
 
 const settingsRouter = Router();
 const logoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const dumpUpload = multer({ storage: multer.memoryStorage() });
 
 const handleBackupError = (error: unknown, res: Response) => {
     if (error instanceof BackupManagerError) {
@@ -84,6 +88,11 @@ const backupSettingsSchema = z.object({
     smbPort: z.coerce.number().int().min(1).max(65535),
     smbUsername: z.string().trim().max(255),
     smbPassword: z.string().max(512).optional(),
+}).strict();
+
+const backupRestoreSchema = z.object({
+    fileName: z.string().trim().min(1).max(255),
+    resetSchema: z.boolean(),
 }).strict();
 
 const smbTestSchema = z.object({
@@ -352,6 +361,47 @@ settingsRouter.get("/backup/download/:fileName", async (req, res, next) => {
         next(error);
     }
 });
+
+settingsRouter.post(
+    "/backup/restore",
+    requireAdmin,
+    validate({ body: backupRestoreSchema }),
+    async (req, res, next) => {
+        try {
+            const { fileName, resetSchema } = req.body as { fileName: string; resetSchema: boolean };
+            const result = await restoreBackupFromExisting(fileName, resetSchema);
+            res.json(result);
+        } catch (error) {
+            if (handleBackupError(error, res)) {
+                return;
+            }
+            next(error);
+        }
+    }
+);
+
+settingsRouter.post(
+    "/backup/restore/upload",
+    requireAdmin,
+    dumpUpload.single("dump"),
+    async (req, res, next) => {
+        try {
+            if (!req.file) {
+                res.status(400).json({ message: "Nessun file caricato" });
+                return;
+            }
+
+            const resetSchema = req.body.resetSchema === "true";
+            const result = await restoreBackupFromUpload(req.file.buffer, req.file.originalname, resetSchema);
+            res.json(result);
+        } catch (error) {
+            if (handleBackupError(error, res)) {
+                return;
+            }
+            next(error);
+        }
+    }
+);
 
 settingsRouter.get("/update", async (_req, res, next) => {
     try {

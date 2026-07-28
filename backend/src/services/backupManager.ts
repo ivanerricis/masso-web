@@ -35,6 +35,10 @@ export type BackupSettingsState = {
     smbLastRunAt: string | null;
     smbLastStatus: "idle" | "success" | "failed";
     smbLastError: string | null;
+    lastRestoreAt: string | null;
+    lastRestoreStatus: "idle" | "success" | "failed";
+    lastRestoreError: string | null;
+    lastRestoreFileName: string | null;
 };
 
 export type SmbConnectionConfig = {
@@ -78,10 +82,15 @@ const defaultState: BackupSettingsState = {
     smbLastRunAt: null,
     smbLastStatus: "idle",
     smbLastError: null,
+    lastRestoreAt: null,
+    lastRestoreStatus: "idle",
+    lastRestoreError: null,
+    lastRestoreFileName: null,
 };
 
 let cachedState: BackupSettingsState | null = null;
 let dumpInProgress = false;
+let restoreInProgress = false;
 let schedulerStarted = false;
 let schedulerTimer: NodeJS.Timeout | null = null;
 
@@ -195,6 +204,15 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
                 ? input.smbLastStatus
                 : defaultState.smbLastStatus,
         smbLastError: typeof input.smbLastError === "string" ? input.smbLastError : null,
+        lastRestoreAt: typeof input.lastRestoreAt === "string" ? input.lastRestoreAt : null,
+        lastRestoreStatus:
+            input.lastRestoreStatus === "success" ||
+            input.lastRestoreStatus === "failed" ||
+            input.lastRestoreStatus === "idle"
+                ? input.lastRestoreStatus
+                : defaultState.lastRestoreStatus,
+        lastRestoreError: typeof input.lastRestoreError === "string" ? input.lastRestoreError : null,
+        lastRestoreFileName: typeof input.lastRestoreFileName === "string" ? input.lastRestoreFileName : null,
     };
 };
 
@@ -301,6 +319,49 @@ const runPgDump = async (outputPath: string) => {
             reject(new BackupManagerError(message, 500));
         });
     });
+};
+
+const runPsql = async (args: string[]) => {
+    const { host, port, user, password, databaseName } = parseDatabaseUrl();
+
+    const fullArgs = ["-h", host, "-p", port, "-U", user, "-d", databaseName, "-v", "ON_ERROR_STOP=1", ...args];
+
+    const env = {
+        ...process.env,
+        PGPASSWORD: password,
+    };
+
+    await new Promise<void>((resolve, reject) => {
+        const child = spawn("psql", fullArgs, { env });
+        let stderr = "";
+
+        child.stderr.on("data", (chunk) => {
+            stderr += chunk.toString();
+        });
+
+        child.on("error", (error: NodeJS.ErrnoException) => {
+            if (error.code === "ENOENT") {
+                reject(new BackupManagerError("psql non trovato. Installa postgresql-client nel backend", 500));
+                return;
+            }
+
+            reject(new BackupManagerError(`Errore avvio psql: ${error.message}`, 500));
+        });
+
+        child.on("close", (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+
+            const message = stderr.trim() || `psql terminato con codice ${code}`;
+            reject(new BackupManagerError(message, 500));
+        });
+    });
+};
+
+const resetPublicSchema = async () => {
+    await runPsql(["-c", "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO public;"]);
 };
 
 const smbTarget = (config: SmbConnectionConfig) => `//${config.host}/${config.share}`;
@@ -549,6 +610,72 @@ export const getBackupDumpPath = async (fileName: string) => {
     return filePath;
 };
 
+const performRestore = async (filePath: string, resetSchema: boolean, sourceFileName: string) => {
+    const state = await loadState();
+
+    if (dumpInProgress || restoreInProgress) {
+        throw new BackupManagerError("E gia in corso un'operazione sul database", 409);
+    }
+
+    restoreInProgress = true;
+    const now = new Date();
+
+    try {
+        if (resetSchema) {
+            await resetPublicSchema();
+        }
+
+        await runPsql(["-f", filePath]);
+
+        state.lastRestoreAt = now.toISOString();
+        state.lastRestoreStatus = "success";
+        state.lastRestoreError = null;
+        state.lastRestoreFileName = sourceFileName;
+        await persistState(state);
+
+        return {
+            ...toPublicState(state),
+            message: "Ripristino completato con successo",
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Errore durante il ripristino del database";
+        state.lastRestoreAt = now.toISOString();
+        state.lastRestoreStatus = "failed";
+        state.lastRestoreError = message;
+        state.lastRestoreFileName = sourceFileName;
+        await persistState(state);
+
+        throw error;
+    } finally {
+        restoreInProgress = false;
+    }
+};
+
+export const restoreBackupFromExisting = async (fileName: string, resetSchema: boolean) => {
+    const filePath = await getBackupDumpPath(fileName);
+    return performRestore(filePath, resetSchema, fileName);
+};
+
+const uploadedDumpNamePattern = /\.sql$/i;
+
+export const restoreBackupFromUpload = async (buffer: Buffer, originalFileName: string, resetSchema: boolean) => {
+    if (!uploadedDumpNamePattern.test(originalFileName)) {
+        throw new BackupManagerError("Il file caricato deve avere estensione .sql", 400);
+    }
+
+    const tempDir = path.join(process.cwd(), "data", "tmp-restore");
+    await fs.promises.mkdir(tempDir, { recursive: true });
+    const tempFilePath = path.join(tempDir, `upload-${Date.now()}.sql`);
+
+    await fs.promises.writeFile(tempFilePath, buffer);
+
+    try {
+        return await performRestore(tempFilePath, resetSchema, originalFileName);
+    } finally {
+        await fs.promises.unlink(tempFilePath).catch(() => {});
+    }
+};
+
 export const runBackupNow = async (origin: "manual" | "auto") => {
     const state = await loadState();
 
@@ -556,8 +683,8 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
         throw new BackupManagerError("Il dump automatico non e abilitato nelle impostazioni", 400);
     }
 
-    if (dumpInProgress) {
-        throw new BackupManagerError("E gia in corso un dump database", 409);
+    if (dumpInProgress || restoreInProgress) {
+        throw new BackupManagerError("E gia in corso un'operazione sul database", 409);
     }
 
     dumpInProgress = true;

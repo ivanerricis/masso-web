@@ -23,6 +23,10 @@ export type BackupSettingsDto = {
     smbLastRunAt: string | null;
     smbLastStatus: "idle" | "success" | "failed";
     smbLastError: string | null;
+    lastRestoreAt: string | null;
+    lastRestoreStatus: "idle" | "success" | "failed";
+    lastRestoreError: string | null;
+    lastRestoreFileName: string | null;
 };
 
 export type BackupSettingsInput = Pick<
@@ -74,6 +78,24 @@ export const listBackupDumps = async () =>
 
 export const getBackupDumpDownloadUrl = (fileName: string) =>
     api.getUri({ url: `/settings/backup/download/${encodeURIComponent(fileName)}` });
+
+export type RestoreBackupResult = BackupSettingsDto & { message: string };
+
+export const restoreBackupFromExisting = async (fileName: string, resetSchema: boolean) =>
+    (
+        await api.post<RestoreBackupResult>("/settings/backup/restore", {
+            fileName,
+            resetSchema,
+        })
+    ).data;
+
+export const restoreBackupFromUpload = async (file: File, resetSchema: boolean) => {
+    const formData = new FormData();
+    formData.append("dump", file);
+    formData.append("resetSchema", String(resetSchema));
+
+    return (await api.post<RestoreBackupResult>("/settings/backup/restore/upload", formData)).data;
+};
 
 export type LogoStatusDto = {
     hasCustomLogo: boolean;
