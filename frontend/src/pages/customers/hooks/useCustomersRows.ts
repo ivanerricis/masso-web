@@ -1,8 +1,7 @@
-import { getApiErrorMessage, listCustomers } from "@/lib/api";
+import { listCustomers } from "@/lib/api";
 import type { CustomerDto } from "@/types/dtos";
-import { startTransition, useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { usePaginatedRows } from "@/hooks/usePaginatedRows";
 
 type UseCustomersRowsParams = {
     searchText: string;
@@ -11,37 +10,18 @@ type UseCustomersRowsParams = {
 };
 
 export const useCustomersRows = ({ searchText, currentPage, pageSize }: UseCustomersRowsParams) => {
-    const [customerRows, setCustomerRows] = useState<CustomerDto[]>([]);
-    const [totalItems, setTotalItems] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(true);
     const debouncedSearchText = useDebouncedValue(searchText);
-
-    const loadCustomers = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const response = await listCustomers({ page: currentPage, pageSize, search: debouncedSearchText });
-            setCustomerRows(response.items);
-            setTotalItems(response.totalItems);
-            setTotalPages(response.totalPages);
-        } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile caricare i clienti"));
-        } finally {
-            setIsLoading(false);
-        }
-    }, [currentPage, pageSize, debouncedSearchText]);
-
-    useEffect(() => {
-        startTransition(() => {
-            void loadCustomers();
-        });
-    }, [loadCustomers]);
+    const { rows, totalItems, totalPages, isLoading, reload } = usePaginatedRows<CustomerDto>({
+        fetchRows: () => listCustomers({ page: currentPage, pageSize, search: debouncedSearchText }),
+        queryKey: [currentPage, pageSize, debouncedSearchText],
+        errorMessage: "Impossibile caricare i clienti",
+    });
 
     return {
-        customerRows,
+        customerRows: rows,
         totalItems,
         totalPages,
         isLoading,
-        loadCustomers,
+        loadCustomers: reload,
     };
 };

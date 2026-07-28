@@ -1,8 +1,8 @@
-import { getApiErrorMessage, listInterventions } from "@/lib/api";
+import { listInterventions } from "@/lib/api";
 import type { InterventionDto } from "@/types/dtos";
-import { startTransition, useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useCallback } from "react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { usePaginatedRows } from "@/hooks/usePaginatedRows";
 import type { InterventionStatusFilter, InterventionTypeFilter } from "../components/types";
 
 type UseInterventionsRowsParams = {
@@ -24,56 +24,45 @@ export const useInterventionsRows = ({
     currentPage,
     pageSize,
 }: UseInterventionsRowsParams) => {
-    const [interventionRows, setInterventionRows] = useState<InterventionDto[]>([]);
-    const [totalItems, setTotalItems] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
     const debouncedSearchText = useDebouncedValue(searchText);
-
-    const loadInterventions = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const response = await listInterventions({
-                page: currentPage,
+    const { rows, totalItems, totalPages, isLoading, reload, updateRow } =
+        usePaginatedRows<InterventionDto>({
+            fetchRows: () =>
+                listInterventions({
+                    page: currentPage,
+                    pageSize,
+                    search: debouncedSearchText,
+                    status: statusFilter,
+                    type: typeFilter,
+                    dateFrom,
+                    dateTo,
+                }),
+            queryKey: [
+                currentPage,
                 pageSize,
-                search: debouncedSearchText,
-                status: statusFilter,
-                type: typeFilter,
+                debouncedSearchText,
+                statusFilter,
+                typeFilter,
                 dateFrom,
                 dateTo,
-            });
-
-            setInterventionRows(response.items);
-            setTotalItems(response.totalItems);
-            setTotalPages(response.totalPages);
-        } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile caricare gli interventi"));
-        } finally {
-            setIsLoading(false);
-        }
-    }, [currentPage, pageSize, debouncedSearchText, statusFilter, typeFilter, dateFrom, dateTo]);
-
-    useEffect(() => {
-        startTransition(() => {
-            void loadInterventions();
+            ],
+            errorMessage: "Impossibile caricare gli interventi",
+            initialLoading: false,
         });
-    }, [loadInterventions]);
 
     const updateInterventionRow = useCallback(
         (interventionId: number, updater: (intervention: InterventionDto) => InterventionDto) => {
-            setInterventionRows((currentRows) =>
-                currentRows.map((intervention) => (intervention.id === interventionId ? updater(intervention) : intervention))
-            );
+            updateRow((intervention) => intervention.id === interventionId, updater);
         },
-        []
+        [updateRow]
     );
 
     return {
-        interventionRows,
+        interventionRows: rows,
         totalItems,
         totalPages,
         isLoading,
-        loadInterventions,
+        loadInterventions: reload,
         updateInterventionRow,
     };
 };

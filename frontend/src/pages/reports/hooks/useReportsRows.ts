@@ -1,8 +1,8 @@
-import { getApiErrorMessage, listReports } from "@/lib/api";
+import { listReports } from "@/lib/api";
 import type { ReportDto } from "@/types/dtos";
-import { startTransition, useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useCallback } from "react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { usePaginatedRows } from "@/hooks/usePaginatedRows";
 import type { ReportVisibilityFilter } from "../components/types";
 
 type UseReportsRowsParams = {
@@ -22,53 +22,35 @@ export const useReportsRows = ({
     currentPage,
     pageSize,
 }: UseReportsRowsParams) => {
-    const [reportRows, setReportRows] = useState<ReportDto[]>([]);
-    const [totalItems, setTotalItems] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
     const debouncedSearchText = useDebouncedValue(searchText);
-
-    const loadReports = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const response = await listReports({
+    const { rows, totalItems, totalPages, isLoading, reload, updateRow } = usePaginatedRows<ReportDto>({
+        fetchRows: () =>
+            listReports({
                 page: currentPage,
                 pageSize,
                 search: debouncedSearchText,
                 visibility: visibilityFilter,
                 dateFrom,
                 dateTo,
-            });
-
-            setReportRows(response.items);
-            setTotalItems(response.totalItems);
-            setTotalPages(response.totalPages);
-        } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile caricare i rapporti"));
-        } finally {
-            setIsLoading(false);
-        }
-    }, [currentPage, pageSize, debouncedSearchText, dateFrom, dateTo, visibilityFilter]);
-
-    useEffect(() => {
-        startTransition(() => {
-            void loadReports();
-        });
-    }, [loadReports]);
+            }),
+        queryKey: [currentPage, pageSize, debouncedSearchText, visibilityFilter, dateFrom, dateTo],
+        errorMessage: "Impossibile caricare i rapporti",
+        initialLoading: false,
+    });
 
     const updateReportRow = useCallback(
         (reportId: number, updater: (report: ReportDto) => ReportDto) => {
-            setReportRows((currentRows) => currentRows.map((report) => (report.id === reportId ? updater(report) : report)));
+            updateRow((report) => report.id === reportId, updater);
         },
-        []
+        [updateRow]
     );
 
     return {
-        reportRows,
+        reportRows: rows,
         totalItems,
         totalPages,
         isLoading,
-        loadReports,
+        loadReports: reload,
         updateReportRow,
     };
 };

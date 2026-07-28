@@ -1,7 +1,7 @@
 import { getApiErrorMessage, listInterventions } from "@/lib/api";
 import { formatInterventionType } from "@/lib/interventions";
 import type { InterventionDto } from "@/types/dtos";
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export type InterventionCalendarEvent = {
@@ -49,15 +49,33 @@ export const useCalendarInterventions = () => {
     const [events, setEvents] = useState<InterventionCalendarEvent[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Come in usePaginatedRows: un reload richiesto dopo una modifica può risolversi
+    // prima di quello che ha superato, quindi vale solo la risposta più recente.
+    const latestRequestIdRef = useRef(0);
+
     const loadEvents = useCallback(async () => {
+        const requestId = latestRequestIdRef.current + 1;
+        latestRequestIdRef.current = requestId;
         setIsLoading(true);
+
         try {
             const interventions = await listInterventions();
+
+            if (requestId !== latestRequestIdRef.current) {
+                return;
+            }
+
             setEvents(interventions.map(toCalendarEvent));
         } catch (error) {
+            if (requestId !== latestRequestIdRef.current) {
+                return;
+            }
+
             toast.error(getApiErrorMessage(error, "Impossibile caricare gli interventi"));
         } finally {
-            setIsLoading(false);
+            if (requestId === latestRequestIdRef.current) {
+                setIsLoading(false);
+            }
         }
     }, []);
 

@@ -1,8 +1,7 @@
-import { getApiErrorMessage, listDevices } from "@/lib/api";
+import { listDevices } from "@/lib/api";
 import type { DeviceDto } from "@/types/dtos";
-import { startTransition, useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { usePaginatedRows } from "@/hooks/usePaginatedRows";
 
 type UseDevicesRowsParams = {
     searchText: string;
@@ -11,37 +10,18 @@ type UseDevicesRowsParams = {
 };
 
 export const useDevicesRows = ({ searchText, currentPage, pageSize }: UseDevicesRowsParams) => {
-    const [deviceRows, setDeviceRows] = useState<DeviceDto[]>([]);
-    const [totalItems, setTotalItems] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(true);
     const debouncedSearchText = useDebouncedValue(searchText);
-
-    const loadDevices = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const response = await listDevices({ page: currentPage, pageSize, search: debouncedSearchText });
-            setDeviceRows(response.items);
-            setTotalItems(response.totalItems);
-            setTotalPages(response.totalPages);
-        } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile caricare i dispositivi"));
-        } finally {
-            setIsLoading(false);
-        }
-    }, [currentPage, pageSize, debouncedSearchText]);
-
-    useEffect(() => {
-        startTransition(() => {
-            void loadDevices();
-        });
-    }, [loadDevices]);
+    const { rows, totalItems, totalPages, isLoading, reload } = usePaginatedRows<DeviceDto>({
+        fetchRows: () => listDevices({ page: currentPage, pageSize, search: debouncedSearchText }),
+        queryKey: [currentPage, pageSize, debouncedSearchText],
+        errorMessage: "Impossibile caricare i dispositivi",
+    });
 
     return {
-        deviceRows,
+        deviceRows: rows,
         totalItems,
         totalPages,
         isLoading,
-        loadDevices,
+        loadDevices: reload,
     };
 };

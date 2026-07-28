@@ -1,8 +1,7 @@
-import { getApiErrorMessage, listCollaborators } from "@/lib/api";
+import { listCollaborators } from "@/lib/api";
 import type { CollaboratorDto } from "@/types/dtos";
-import { startTransition, useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { usePaginatedRows } from "@/hooks/usePaginatedRows";
 
 type UseCollaboratorsRowsParams = {
     searchText: string;
@@ -11,37 +10,18 @@ type UseCollaboratorsRowsParams = {
 };
 
 export const useCollaboratorsRows = ({ searchText, currentPage, pageSize }: UseCollaboratorsRowsParams) => {
-    const [collaboratorRows, setCollaboratorRows] = useState<CollaboratorDto[]>([]);
-    const [totalItems, setTotalItems] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
-    const [isLoading, setIsLoading] = useState(true);
     const debouncedSearchText = useDebouncedValue(searchText);
-
-    const loadCollaborators = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const response = await listCollaborators({ page: currentPage, pageSize, search: debouncedSearchText });
-            setCollaboratorRows(response.items);
-            setTotalItems(response.totalItems);
-            setTotalPages(response.totalPages);
-        } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile caricare i collaboratori"));
-        } finally {
-            setIsLoading(false);
-        }
-    }, [currentPage, pageSize, debouncedSearchText]);
-
-    useEffect(() => {
-        startTransition(() => {
-            void loadCollaborators();
-        });
-    }, [loadCollaborators]);
+    const { rows, totalItems, totalPages, isLoading, reload } = usePaginatedRows<CollaboratorDto>({
+        fetchRows: () => listCollaborators({ page: currentPage, pageSize, search: debouncedSearchText }),
+        queryKey: [currentPage, pageSize, debouncedSearchText],
+        errorMessage: "Impossibile caricare i collaboratori",
+    });
 
     return {
-        collaboratorRows,
+        collaboratorRows: rows,
         totalItems,
         totalPages,
         isLoading,
-        loadCollaborators,
+        loadCollaborators: reload,
     };
 };
