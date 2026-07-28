@@ -18,8 +18,11 @@ FROM node:24-alpine
 WORKDIR /app
 
 ENV NODE_ENV=production
+# tzdata: senza questo pacchetto Alpine non conosce le regole DST dei fusi orari
+# nominati (es. Europe/Rome) e Node.js ricade su UTC nonostante TZ sia impostata.
+ENV TZ=Europe/Rome
 
-RUN apk add --no-cache postgresql16-client samba-client
+RUN apk add --no-cache postgresql16-client samba-client tzdata
 
 COPY package*.json ./
 RUN npm ci --omit=dev
