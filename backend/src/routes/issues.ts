@@ -1,4 +1,3 @@
-import { Router } from "express";
 import { z } from "zod";
 import {
     createIssue,
@@ -7,19 +6,7 @@ import {
     listIssues,
     updateIssueById,
 } from "../db/queries/issue";
-import { validate } from "./validation";
-
-const issuesRouter = Router();
-
-const issueIdParamsSchema = z.object({
-    id: z.coerce.number().int().positive(),
-});
-
-const issueListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).optional(),
-    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
-    search: z.string().trim().max(255).optional(),
-});
+import { createCrudRouter } from "./crudRouter";
 
 const issueCreateBodySchema = z
     .object({
@@ -33,80 +20,17 @@ const issueUpdateBodySchema = issueCreateBodySchema
         message: "At least one field is required",
     });
 
-issuesRouter.get("/", validate({ query: issueListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search } = req.query as unknown as {
-        page?: number;
-        pageSize?: number;
-        search?: string;
-    };
-
-    const issues = await listIssues({ page, pageSize, search });
-
-    if (page == null || pageSize == null) {
-        res.json(issues);
-        return;
-    }
-
-    if (Array.isArray(issues)) {
-        res.json(issues);
-        return;
-    }
-
-    const { items, totalItems } = issues;
-
-    res.json({
-        items,
-        totalItems,
-        page,
-        pageSize,
-        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
-    });
-});
-
-issuesRouter.get("/:id", validate({ params: issueIdParamsSchema }), async (req, res) => {
-    const { id } = req.params as unknown as { id: number };
-    const issues = await getIssueById(id);
-
-    if (issues.length === 0) {
-        res.status(404).json({ message: "Issue not found" });
-        return;
-    }
-
-    res.json(issues[0]);
-});
-
-issuesRouter.post("/", validate({ body: issueCreateBodySchema }), async (req, res) => {
-    const createdIssue = await createIssue(req.body);
-
-    res.status(201).json(createdIssue[0]);
-});
-
-issuesRouter.put(
-    "/:id",
-    validate({ params: issueIdParamsSchema, body: issueUpdateBodySchema }),
-    async (req, res) => {
-        const { id } = req.params as unknown as { id: number };
-        const updatedIssue = await updateIssueById(id, req.body);
-
-        if (updatedIssue.length === 0) {
-            res.status(404).json({ message: "Issue not found" });
-            return;
-        }
-
-        res.json(updatedIssue[0]);
-    }
-);
-
-issuesRouter.delete("/:id", validate({ params: issueIdParamsSchema }), async (req, res) => {
-    const { id } = req.params as unknown as { id: number };
-    const deletedIssue = await deleteIssueById(id);
-
-    if (deletedIssue.length === 0) {
-        res.status(404).json({ message: "Issue not found" });
-        return;
-    }
-
-    res.json(deletedIssue[0]);
+const issuesRouter = createCrudRouter({
+    notFoundMessage: "Issue not found",
+    createBodySchema: issueCreateBodySchema,
+    updateBodySchema: issueUpdateBodySchema,
+    queries: {
+        list: listIssues,
+        getById: getIssueById,
+        create: createIssue,
+        update: updateIssueById,
+        remove: deleteIssueById,
+    },
 });
 
 export default issuesRouter;

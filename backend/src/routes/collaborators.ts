@@ -1,4 +1,3 @@
-import { Router } from "express";
 import { z } from "zod";
 import {
     createCollaborator,
@@ -7,19 +6,7 @@ import {
     listCollaborators,
     updateCollaboratorById,
 } from "../db/queries/collaborator";
-import { validate } from "./validation";
-
-const collaboratorsRouter = Router();
-
-const collaboratorIdParamsSchema = z.object({
-    id: z.coerce.number().int().positive(),
-});
-
-const collaboratorListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).optional(),
-    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
-    search: z.string().trim().max(255).optional(),
-});
+import { createCrudRouter } from "./crudRouter";
 
 const collaboratorCreateBodySchema = z
     .object({
@@ -35,80 +22,17 @@ const collaboratorUpdateBodySchema = collaboratorCreateBodySchema
         message: "At least one field is required",
     });
 
-collaboratorsRouter.get("/", validate({ query: collaboratorListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search } = req.query as unknown as {
-        page?: number;
-        pageSize?: number;
-        search?: string;
-    };
-
-    const collaborators = await listCollaborators({ page, pageSize, search });
-
-    if (page == null || pageSize == null) {
-        res.json(collaborators);
-        return;
-    }
-
-    if (Array.isArray(collaborators)) {
-        res.json(collaborators);
-        return;
-    }
-
-    const { items, totalItems } = collaborators;
-
-    res.json({
-        items,
-        totalItems,
-        page,
-        pageSize,
-        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
-    });
-});
-
-collaboratorsRouter.get("/:id", validate({ params: collaboratorIdParamsSchema }), async (req, res) => {
-    const { id } = req.params as unknown as { id: number };
-    const collaborators = await getCollaboratorById(id);
-
-    if (collaborators.length === 0) {
-        res.status(404).json({ message: "Collaborator not found" });
-        return;
-    }
-
-    res.json(collaborators[0]);
-});
-
-collaboratorsRouter.post("/", validate({ body: collaboratorCreateBodySchema }), async (req, res) => {
-    const createdCollaborator = await createCollaborator(req.body);
-
-    res.status(201).json(createdCollaborator[0]);
-});
-
-collaboratorsRouter.put(
-    "/:id",
-    validate({ params: collaboratorIdParamsSchema, body: collaboratorUpdateBodySchema }),
-    async (req, res) => {
-        const { id } = req.params as unknown as { id: number };
-        const updatedCollaborator = await updateCollaboratorById(id, req.body);
-
-        if (updatedCollaborator.length === 0) {
-            res.status(404).json({ message: "Collaborator not found" });
-            return;
-        }
-
-        res.json(updatedCollaborator[0]);
-    }
-);
-
-collaboratorsRouter.delete("/:id", validate({ params: collaboratorIdParamsSchema }), async (req, res) => {
-    const { id } = req.params as unknown as { id: number };
-    const deletedCollaborator = await deleteCollaboratorById(id);
-
-    if (deletedCollaborator.length === 0) {
-        res.status(404).json({ message: "Collaborator not found" });
-        return;
-    }
-
-    res.json(deletedCollaborator[0]);
+const collaboratorsRouter = createCrudRouter({
+    notFoundMessage: "Collaborator not found",
+    createBodySchema: collaboratorCreateBodySchema,
+    updateBodySchema: collaboratorUpdateBodySchema,
+    queries: {
+        list: listCollaborators,
+        getById: getCollaboratorById,
+        create: createCollaborator,
+        update: updateCollaboratorById,
+        remove: deleteCollaboratorById,
+    },
 });
 
 export default collaboratorsRouter;

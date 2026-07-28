@@ -17,6 +17,9 @@ import {
     reportTable,
 } from "../db/schema";
 import { createReportPdfBuffer, createReportsRangePdfBuffer } from "../services/reportPdf";
+import { getLabConfig } from "../config/lab";
+import { buildDateRangeLabel, formatDateLabel, formatPhoneLabel } from "./formatting";
+import { sendListResponse } from "./crudRouter";
 import { validate } from "./validation";
 
 const reportsRouter = Router();
@@ -92,25 +95,7 @@ reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, r
         dateTo,
     });
 
-    if (page == null || pageSize == null) {
-        res.json(reports);
-        return;
-    }
-
-    if (Array.isArray(reports)) {
-        res.json(reports);
-        return;
-    }
-
-    const { items, totalItems } = reports;
-
-    res.json({
-        items,
-        totalItems,
-        page,
-        pageSize,
-        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
-    });
+    sendListResponse(res, reports, page, pageSize);
 });
 
 const reportStatsQuerySchema = z.object({
@@ -129,38 +114,15 @@ const reportsRangePrintQuerySchema = z.object({
     dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
-const formatRangeDateLabel = (value: string) =>
-    new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${value}T00:00:00`));
-
-const buildReportsRangeLabel = (dateFrom?: string, dateTo?: string) => {
-    if (dateFrom && dateTo) {
-        return `Dal ${formatRangeDateLabel(dateFrom)} al ${formatRangeDateLabel(dateTo)}`;
-    }
-
-    if (dateFrom) {
-        return `Dal ${formatRangeDateLabel(dateFrom)}`;
-    }
-
-    if (dateTo) {
-        return `Fino al ${formatRangeDateLabel(dateTo)}`;
-    }
-
-    return "Tutti i rapporti";
-};
+const buildReportsRangeLabel = (dateFrom?: string, dateTo?: string) =>
+    buildDateRangeLabel(dateFrom, dateTo, "Tutti i rapporti");
 
 reportsRouter.get("/print", validate({ query: reportsRangePrintQuerySchema }), async (req, res) => {
     const { dateFrom, dateTo } = req.query as unknown as { dateFrom?: string; dateTo?: string };
 
     const reportsResult = await listReports({ visibility: "all", dateFrom, dateTo });
     const reports = Array.isArray(reportsResult) ? reportsResult : reportsResult.items;
-    const labName = process.env.LAB_NAME ?? "Masso";
-    const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
-    const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
-    const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
-    const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
-    const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
-        ? configuredLogoUrl
-        : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
+    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = getLabConfig(req);
 
     const pdfBuffer = await createReportsRangePdfBuffer({
         labName,
@@ -172,9 +134,7 @@ reportsRouter.get("/print", validate({ query: reportsRangePrintQuerySchema }), a
         reportCount: reports.length,
         reports: reports.map((report) => ({
             id: report.id,
-            createdAtLabel: new Intl.DateTimeFormat("it-IT", {
-                dateStyle: "medium",
-            }).format(report.createdAt),
+            createdAtLabel: formatDateLabel(report.createdAt),
             customerName: report.customer,
             deviceName: report.device,
             issueDescription: report.issue,
@@ -227,19 +187,8 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
 
     const report = reportRows[0];
     const customerName = `${report.customerFirstName} ${report.customerLastName ?? ""}`.trim();
-    const labName = process.env.LAB_NAME ?? "Masso";
-    const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
-    const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
-    const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
-    const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
-    const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
-        ? configuredLogoUrl
-        : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
-    const customerPhonePrimary = report.customerPhone?.trim() ?? "";
-    const customerPhoneSecondary = report.customerPhoneSecondary?.trim() ?? "";
-    const customerPhoneLabel = customerPhonePrimary && customerPhoneSecondary
-        ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
-        : customerPhonePrimary || customerPhoneSecondary || "N/D";
+    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = getLabConfig(req);
+    const customerPhoneLabel = formatPhoneLabel(report.customerPhone, report.customerPhoneSecondary);
     const technicianPrice = Number(technicianPriceRows[0]?.technicianPrice ?? 0);
     const totalPrice = Number(report.price ?? 0) + technicianPrice;
 
@@ -260,9 +209,7 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
         charger: report.charger,
         alerted: report.alerted,
         totalPrice,
-        createdAtLabel: new Intl.DateTimeFormat("it-IT", {
-            dateStyle: "medium",
-        }).format(report.createdAt),
+        createdAtLabel: formatDateLabel(report.createdAt),
     });
 
     res.setHeader("Content-Type", "application/pdf");

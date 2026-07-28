@@ -12,6 +12,15 @@ import { db } from "../db";
 import { collaboratorTable, customerTable, interventionTable } from "../db/schema";
 import { EmailManagerError, sendEmail } from "../services/emailManager";
 import { createInterventionPdfBuffer, createInterventionsRangePdfBuffer } from "../services/interventionPdf";
+import { getLabConfig } from "../config/lab";
+import {
+    buildDateRangeLabel,
+    formatDateLabel,
+    formatDayLabel,
+    formatPhoneLabel,
+    formatScheduleLabel,
+} from "./formatting";
+import { sendListResponse } from "./crudRouter";
 import { validate } from "./validation";
 
 const interventionsRouter = Router();
@@ -102,25 +111,7 @@ interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), a
         scheduledDate,
     });
 
-    if (page == null || pageSize == null) {
-        res.json(interventions);
-        return;
-    }
-
-    if (Array.isArray(interventions)) {
-        res.json(interventions);
-        return;
-    }
-
-    const { items, totalItems } = interventions;
-
-    res.json({
-        items,
-        totalItems,
-        page,
-        pageSize,
-        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
-    });
+    sendListResponse(res, interventions, page, pageSize);
 });
 
 const loadInterventionPrintContext = async (id: number, req: { protocol: string; get: (name: string) => string | undefined }) => {
@@ -154,19 +145,11 @@ const loadInterventionPrintContext = async (id: number, req: { protocol: string;
     const intervention = interventionRows[0];
     const customerName = `${intervention.customerFirstName} ${intervention.customerLastName ?? ""}`.trim();
     const collaboratorName = `${intervention.collaboratorFirstName} ${intervention.collaboratorLastName ?? ""}`.trim();
-    const labName = process.env.LAB_NAME ?? "Masso";
-    const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
-    const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
-    const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
-    const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
-    const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
-        ? configuredLogoUrl
-        : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
-    const customerPhonePrimary = intervention.customerPhone?.trim() ?? "";
-    const customerPhoneSecondary = intervention.customerPhoneSecondary?.trim() ?? "";
-    const customerPhoneLabel = customerPhonePrimary && customerPhoneSecondary
-        ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
-        : customerPhonePrimary || customerPhoneSecondary || "N/D";
+    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = getLabConfig(req);
+    const customerPhoneLabel = formatPhoneLabel(
+        intervention.customerPhone,
+        intervention.customerPhoneSecondary
+    );
 
     return {
         customerName,
@@ -187,11 +170,11 @@ const loadInterventionPrintContext = async (id: number, req: { protocol: string;
             status: intervention.status as (typeof interventionStatuses)[number],
             description: intervention.description,
             interventionDateLabel: intervention.interventionDate
-                ? new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${intervention.interventionDate}T00:00:00`))
+                ? formatDayLabel(intervention.interventionDate)
                 : null,
             startTime: intervention.startTime,
             endTime: intervention.endTime,
-            createdAtLabel: new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(intervention.createdAt),
+            createdAtLabel: formatDateLabel(intervention.createdAt),
         },
     };
 };
@@ -210,38 +193,15 @@ const interventionsRangePrintQuerySchema = z.object({
     dateTo: z.string().regex(dateRegex).optional(),
 });
 
-const formatRangeDateLabel = (value: string) =>
-    new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${value}T00:00:00`));
-
-const buildInterventionsRangeLabel = (dateFrom?: string, dateTo?: string) => {
-    if (dateFrom && dateTo) {
-        return `Dal ${formatRangeDateLabel(dateFrom)} al ${formatRangeDateLabel(dateTo)}`;
-    }
-
-    if (dateFrom) {
-        return `Dal ${formatRangeDateLabel(dateFrom)}`;
-    }
-
-    if (dateTo) {
-        return `Fino al ${formatRangeDateLabel(dateTo)}`;
-    }
-
-    return "Tutti gli interventi";
-};
+const buildInterventionsRangeLabel = (dateFrom?: string, dateTo?: string) =>
+    buildDateRangeLabel(dateFrom, dateTo, "Tutti gli interventi");
 
 interventionsRouter.get("/print", validate({ query: interventionsRangePrintQuerySchema }), async (req, res) => {
     const { dateFrom, dateTo } = req.query as unknown as { dateFrom?: string; dateTo?: string };
 
     const interventionsResult = await listInterventions({ status: "all", type: "all", dateFrom, dateTo });
     const interventions = Array.isArray(interventionsResult) ? interventionsResult : interventionsResult.items;
-    const labName = process.env.LAB_NAME ?? "Masso";
-    const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
-    const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
-    const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
-    const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
-    const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
-        ? configuredLogoUrl
-        : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
+    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = getLabConfig(req);
 
     const pdfBuffer = await createInterventionsRangePdfBuffer({
         labName,
@@ -253,23 +213,16 @@ interventionsRouter.get("/print", validate({ query: interventionsRangePrintQuery
         interventionCount: interventions.length,
         interventions: interventions.map((intervention) => ({
             id: intervention.id,
-            createdAtLabel: new Intl.DateTimeFormat("it-IT", {
-                dateStyle: "medium",
-            }).format(intervention.createdAt),
+            createdAtLabel: formatDateLabel(intervention.createdAt),
             customerName: intervention.customer,
             type: intervention.type as InterventionType,
             status: intervention.status as (typeof interventionStatuses)[number],
             description: intervention.description,
-            scheduleLabel: intervention.interventionDate
-                ? [
-                      new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${intervention.interventionDate}T00:00:00`)),
-                      intervention.startTime && intervention.endTime
-                          ? `${intervention.startTime.slice(0, 5)}-${intervention.endTime.slice(0, 5)}`
-                          : null,
-                  ]
-                      .filter(Boolean)
-                      .join(" ")
-                : null,
+            scheduleLabel: formatScheduleLabel(
+                intervention.interventionDate,
+                intervention.startTime,
+                intervention.endTime
+            ),
         })),
     });
 

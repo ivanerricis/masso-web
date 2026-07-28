@@ -1,4 +1,4 @@
-import { Router } from "express";
+import type { Request } from "express";
 import { z } from "zod";
 import {
     createCustomer,
@@ -11,42 +11,19 @@ import { listReports } from "../db/queries/report";
 import { listInterventions } from "../db/queries/intervention";
 import { createCustomerReportsPdfBuffer } from "../services/reportPdf";
 import { createCustomerInterventionsPdfBuffer } from "../services/interventionPdf";
+import { getLabConfig } from "../config/lab";
+import {
+    buildDateRangeLabel,
+    formatDateLabel,
+    formatPhoneLabel,
+    formatScheduleLabel,
+} from "./formatting";
+import { createCrudRouter, idParamsSchema } from "./crudRouter";
 import { validate } from "./validation";
 
-const customersRouter = Router();
-
-const customerIdParamsSchema = z.object({
-    id: z.coerce.number().int().positive(),
-});
-
-const customerPrintRangeQuerySchema = z.object({
+const printRangeQuerySchema = z.object({
     dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-});
-
-const formatRangeDateLabel = (value: string) =>
-    new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${value}T00:00:00`));
-
-const buildCustomerPrintRangeLabel = (dateFrom?: string, dateTo?: string) => {
-    if (dateFrom && dateTo) {
-        return `Dal ${formatRangeDateLabel(dateFrom)} al ${formatRangeDateLabel(dateTo)}`;
-    }
-
-    if (dateFrom) {
-        return `Dal ${formatRangeDateLabel(dateFrom)}`;
-    }
-
-    if (dateTo) {
-        return `Fino al ${formatRangeDateLabel(dateTo)}`;
-    }
-
-    return undefined;
-};
-
-const customerListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).optional(),
-    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
-    search: z.string().trim().max(255).optional(),
 });
 
 const customerBodySchemaBase = z.object({
@@ -83,215 +60,129 @@ const customerUpdateBodySchema = customerBodySchemaBase
         message: "At least one field is required",
     });
 
-customersRouter.get("/", validate({ query: customerListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search } = req.query as unknown as {
-        page?: number;
-        pageSize?: number;
-        search?: string;
-    };
-
-    const customers = await listCustomers({ page, pageSize, search });
-
-    if (page == null || pageSize == null) {
-        res.json(customers);
-        return;
-    }
-
-    if (Array.isArray(customers)) {
-        res.json(customers);
-        return;
-    }
-
-    const { items, totalItems } = customers;
-
-    res.json({
-        items,
-        totalItems,
-        page,
-        pageSize,
-        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
-    });
-});
-
-customersRouter.get("/:id", validate({ params: customerIdParamsSchema }), async (req, res) => {
-    const { id } = req.params as unknown as { id: number };
+// Intestazione condivisa dai due resoconti PDF del cliente (rapporti e interventi).
+const loadCustomerPrintContext = async (req: Request, id: number) => {
     const customers = await getCustomerById(id);
 
     if (customers.length === 0) {
-        res.status(404).json({ message: "Customer not found" });
-        return;
+        return null;
     }
 
-    res.json(customers[0]);
-});
+    const [customer] = customers;
 
-customersRouter.get(
-    "/:id/reports/print",
-    validate({ params: customerIdParamsSchema, query: customerPrintRangeQuerySchema }),
-    async (req, res) => {
-        const { id } = req.params as unknown as { id: number };
-        const { dateFrom, dateTo } = req.query as unknown as { dateFrom?: string; dateTo?: string };
-        const customers = await getCustomerById(id);
+    return {
+        customerId: customer.id,
+        customerName: `${customer.firstName} ${customer.lastName ?? ""}`.trim(),
+        customerPhone: formatPhoneLabel(customer.phoneNumber, customer.phoneNumberSecondary),
+        customerEmail: customer.email ?? "-",
+        ...getLabConfig(req),
+    };
+};
 
-        if (customers.length === 0) {
-            res.status(404).json({ message: "Customer not found" });
-            return;
-        }
+const customersRouter = createCrudRouter({
+    notFoundMessage: "Customer not found",
+    createBodySchema: customerCreateBodySchema,
+    updateBodySchema: customerUpdateBodySchema,
+    queries: {
+        list: listCustomers,
+        getById: getCustomerById,
+        create: createCustomer,
+        update: updateCustomerById,
+        remove: deleteCustomerById,
+    },
+    extraRoutes: (router) => {
+        router.get(
+            "/:id/reports/print",
+            validate({ params: idParamsSchema, query: printRangeQuerySchema }),
+            async (req, res) => {
+                const { id } = req.params as unknown as { id: number };
+                const { dateFrom, dateTo } = req.query as unknown as {
+                    dateFrom?: string;
+                    dateTo?: string;
+                };
+                const context = await loadCustomerPrintContext(req, id);
 
-        const [customer] = customers;
-        const reportsResult = await listReports({ customerId: id, dateFrom, dateTo });
-        const reports = Array.isArray(reportsResult) ? reportsResult : reportsResult.items;
-        const customerName = `${customer.firstName} ${customer.lastName ?? ""}`.trim();
-        const customerPhonePrimary = customer.phoneNumber?.trim() ?? "";
-        const customerPhoneSecondary = customer.phoneNumberSecondary?.trim() ?? "";
-        const customerPhone =
-            customerPhonePrimary && customerPhoneSecondary
-                ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
-                : customerPhonePrimary || customerPhoneSecondary || "N/D";
-        const labName = process.env.LAB_NAME ?? "Masso";
-        const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
-        const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
-        const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
-        const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
-        const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
-            ? configuredLogoUrl
-            : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
+                if (!context) {
+                    res.status(404).json({ message: "Customer not found" });
+                    return;
+                }
 
-        const pdfBuffer = await createCustomerReportsPdfBuffer({
-            customerId: customer.id,
-            customerName,
-            customerPhone,
-            customerEmail: customer.email ?? "-",
-            labName,
-            labEmail,
-            labAddress,
-            labPhone,
-            labLogoUrl,
-            rangeLabel: buildCustomerPrintRangeLabel(dateFrom, dateTo),
-            reportCount: reports.length,
-            reports: reports.map((report) => ({
-                id: report.id,
-                createdAtLabel: new Intl.DateTimeFormat("it-IT", {
-                    dateStyle: "medium",
-                }).format(report.createdAt),
-                deviceName: report.device,
-                issueDescription: report.issue,
-                closed: report.closed,
-                alerted: report.alerted,
-                paymentMethod: report.paymentMethod as "non_paid" | "cash" | "card",
-                totalPrice: report.totalPrice,
-            })),
-        });
+                const reportsResult = await listReports({ customerId: id, dateFrom, dateTo });
+                const reports = Array.isArray(reportsResult) ? reportsResult : reportsResult.items;
 
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename=customer-${id}-reports.pdf`);
-        res.send(pdfBuffer);
-    }
-);
+                const pdfBuffer = await createCustomerReportsPdfBuffer({
+                    ...context,
+                    rangeLabel: buildDateRangeLabel(dateFrom, dateTo),
+                    reportCount: reports.length,
+                    reports: reports.map((report) => ({
+                        id: report.id,
+                        createdAtLabel: formatDateLabel(report.createdAt),
+                        deviceName: report.device,
+                        issueDescription: report.issue,
+                        closed: report.closed,
+                        alerted: report.alerted,
+                        paymentMethod: report.paymentMethod as "non_paid" | "cash" | "card",
+                        totalPrice: report.totalPrice,
+                    })),
+                });
 
-customersRouter.get(
-    "/:id/interventions/print",
-    validate({ params: customerIdParamsSchema, query: customerPrintRangeQuerySchema }),
-    async (req, res) => {
-        const { id } = req.params as unknown as { id: number };
-        const { dateFrom, dateTo } = req.query as unknown as { dateFrom?: string; dateTo?: string };
-        const customers = await getCustomerById(id);
+                res.setHeader("Content-Type", "application/pdf");
+                res.setHeader("Content-Disposition", `inline; filename=customer-${id}-reports.pdf`);
+                res.send(pdfBuffer);
+            }
+        );
 
-        if (customers.length === 0) {
-            res.status(404).json({ message: "Customer not found" });
-            return;
-        }
+        router.get(
+            "/:id/interventions/print",
+            validate({ params: idParamsSchema, query: printRangeQuerySchema }),
+            async (req, res) => {
+                const { id } = req.params as unknown as { id: number };
+                const { dateFrom, dateTo } = req.query as unknown as {
+                    dateFrom?: string;
+                    dateTo?: string;
+                };
+                const context = await loadCustomerPrintContext(req, id);
 
-        const [customer] = customers;
-        const interventionsResult = await listInterventions({ customerId: id, dateFrom, dateTo });
-        const interventions = Array.isArray(interventionsResult) ? interventionsResult : interventionsResult.items;
-        const customerName = `${customer.firstName} ${customer.lastName ?? ""}`.trim();
-        const customerPhonePrimary = customer.phoneNumber?.trim() ?? "";
-        const customerPhoneSecondary = customer.phoneNumberSecondary?.trim() ?? "";
-        const customerPhone =
-            customerPhonePrimary && customerPhoneSecondary
-                ? `${customerPhonePrimary} - ${customerPhoneSecondary}`
-                : customerPhonePrimary || customerPhoneSecondary || "N/D";
-        const labName = process.env.LAB_NAME ?? "Masso";
-        const labEmail = process.env.LAB_EMAIL ?? "info@masso.local";
-        const labAddress = process.env.LAB_ADDRESS ?? "Indirizzo laboratorio";
-        const labPhone = process.env.LAB_PHONE ?? "+39 000 000 0000";
-        const configuredLogoUrl = process.env.LAB_LOGO_URL ?? "/assets/logo.jpg";
-        const labLogoUrl = configuredLogoUrl.startsWith("http://") || configuredLogoUrl.startsWith("https://")
-            ? configuredLogoUrl
-            : `${req.protocol}://${req.get("host")}${configuredLogoUrl.startsWith("/") ? configuredLogoUrl : `/${configuredLogoUrl}`}`;
+                if (!context) {
+                    res.status(404).json({ message: "Customer not found" });
+                    return;
+                }
 
-        const pdfBuffer = await createCustomerInterventionsPdfBuffer({
-            customerId: customer.id,
-            customerName,
-            customerPhone,
-            customerEmail: customer.email ?? "-",
-            labName,
-            labEmail,
-            labAddress,
-            labPhone,
-            labLogoUrl,
-            rangeLabel: buildCustomerPrintRangeLabel(dateFrom, dateTo),
-            interventionCount: interventions.length,
-            interventions: interventions.map((intervention) => ({
-                id: intervention.id,
-                createdAtLabel: new Intl.DateTimeFormat("it-IT", {
-                    dateStyle: "medium",
-                }).format(intervention.createdAt),
-                type: intervention.type as "consegna_materiale" | "intervento_sede" | "intervento_remoto",
-                status: intervention.status as "programmato" | "in_lavorazione" | "completato",
-                description: intervention.description,
-                scheduleLabel: intervention.interventionDate
-                    ? [
-                          new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(`${intervention.interventionDate}T00:00:00`)),
-                          intervention.startTime && intervention.endTime
-                              ? `${intervention.startTime.slice(0, 5)}-${intervention.endTime.slice(0, 5)}`
-                              : null,
-                      ]
-                          .filter(Boolean)
-                          .join(" ")
-                    : null,
-            })),
-        });
+                const interventionsResult = await listInterventions({ customerId: id, dateFrom, dateTo });
+                const interventions = Array.isArray(interventionsResult)
+                    ? interventionsResult
+                    : interventionsResult.items;
 
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename=customer-${id}-interventions.pdf`);
-        res.send(pdfBuffer);
-    }
-);
+                const pdfBuffer = await createCustomerInterventionsPdfBuffer({
+                    ...context,
+                    rangeLabel: buildDateRangeLabel(dateFrom, dateTo),
+                    interventionCount: interventions.length,
+                    interventions: interventions.map((intervention) => ({
+                        id: intervention.id,
+                        createdAtLabel: formatDateLabel(intervention.createdAt),
+                        type: intervention.type as
+                            | "consegna_materiale"
+                            | "intervento_sede"
+                            | "intervento_remoto",
+                        status: intervention.status as "programmato" | "in_lavorazione" | "completato",
+                        description: intervention.description,
+                        scheduleLabel: formatScheduleLabel(
+                            intervention.interventionDate,
+                            intervention.startTime,
+                            intervention.endTime
+                        ),
+                    })),
+                });
 
-customersRouter.post("/", validate({ body: customerCreateBodySchema }), async (req, res) => {
-    const createdCustomer = await createCustomer(req.body);
-
-    res.status(201).json(createdCustomer[0]);
-});
-
-customersRouter.put(
-    "/:id",
-    validate({ params: customerIdParamsSchema, body: customerUpdateBodySchema }),
-    async (req, res) => {
-        const { id } = req.params as unknown as { id: number };
-        const updatedCustomer = await updateCustomerById(id, req.body);
-
-        if (updatedCustomer.length === 0) {
-            res.status(404).json({ message: "Customer not found" });
-            return;
-        }
-
-        res.json(updatedCustomer[0]);
-    }
-);
-
-customersRouter.delete("/:id", validate({ params: customerIdParamsSchema }), async (req, res) => {
-    const { id } = req.params as unknown as { id: number };
-    const deletedCustomer = await deleteCustomerById(id);
-
-    if (deletedCustomer.length === 0) {
-        res.status(404).json({ message: "Customer not found" });
-        return;
-    }
-
-    res.json(deletedCustomer[0]);
+                res.setHeader("Content-Type", "application/pdf");
+                res.setHeader(
+                    "Content-Disposition",
+                    `inline; filename=customer-${id}-interventions.pdf`
+                );
+                res.send(pdfBuffer);
+            }
+        );
+    },
 });
 
 export default customersRouter;
