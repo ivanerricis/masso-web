@@ -195,23 +195,75 @@ Oppure, per la modalita dev:
 docker compose -f docker-compose.dev.yml down
 ```
 
+## Cosa contiene un backup
+
+Ogni backup produce un archivio `db-backup-YYYYMMDD-HHMMSS.tar.gz`:
+
+| Contenuto | Note |
+|---|---|
+| `dump.sql` | tutti i dati: clienti, rapporti, interventi, utenti |
+| `data/email-settings.json` | server SMTP, porta, utente, mittente |
+| `data/backup-settings.json` | pianificazione, destinazione NAS, retention |
+| `data/logo/` | logo del laboratorio usato nei PDF |
+
+**Non** è incluso, di proposito:
+
+- **`data/secret.key`**, la chiave che cifra le password SMTP e NAS. Includerla significherebbe mettere nello stesso archivio sia i segreti cifrati sia la chiave per aprirli — e quell'archivio viene copiato anche su una condivisione di rete. Conseguenza: ripristinando su una macchina diversa quelle due password non sono più leggibili e vanno reinserite a mano (l'app dice quali).
+- **`data/initial-admin-password.txt`**, credenziale in chiaro utile solo al primo avvio.
+- **`.env`**, che non è scritto dall'applicazione: va ricreato a mano sul server nuovo. Conviene tenerne una copia nel proprio gestore di password.
+
+> I backup nel formato storico `db-dump-YYYYMMDD-HHMMSS.sql` (solo database) restano elencabili, scaricabili e ripristinabili.
+
 ## Restore database
 
-Il ripristino è disponibile anche da Impostazioni > Backup database (solo per utenti amministratore): si può scegliere un dump già presente sul server oppure caricarne uno da file, con l'opzione per svuotare prima lo schema `public`. Richiede di digitare `RESTORE` per confermare, essendo un'operazione irreversibile.
+Il ripristino è disponibile da Impostazioni > Backup database (solo per utenti amministratore): si può scegliere un backup già presente sul server oppure caricarne uno da file, con l'opzione per svuotare prima lo schema `public`. Richiede di digitare `RESTORE` per confermare, essendo un'operazione irreversibile.
 
-In alternativa, per ripristinare un dump SQL nel database Postgres via terminale usa lo script dedicato.
+In alternativa, da terminale:
 
 ```bash
-./scripts/restore-db.sh --dump-path /path/to/db-dump-YYYYMMDD-HHMMSS.sql
+./scripts/restore-db.sh --dump-path /path/to/db-backup-YYYYMMDD-HHMMSS.tar.gz
 ```
 
-Se non passi il percorso del dump, lo script prova a usare l'ultimo `.sql` trovato nella directory backup configurata in `.env` tramite `BACKUP_HOST_DIR`, oppure in `backups/` se la variabile non è presente.
+Se non passi il percorso, lo script usa il backup più recente (`.tar.gz` o `.sql`) trovato nella directory configurata in `.env` tramite `BACKUP_HOST_DIR`, oppure in `backups/` se la variabile non è presente. Con un archivio ripristina anche le impostazioni e riavvia il backend per farle rileggere.
 
 Opzione distruttiva (svuota prima lo schema `public` nel database target):
 
 ```bash
-./scripts/restore-db.sh --dump-path /path/to/db-dump.sql --reset-database
+./scripts/restore-db.sh --dump-path /path/to/db-backup.tar.gz --reset-database
 ```
+
+## Migrazione su un nuovo server
+
+Procedura per ricostruire l'installazione altrove partendo da un backup: cambio di macchina, guasto del disco, o passaggio a una VM nuova.
+
+**1. Recupera l'archivio.** Dal NAS oppure dalla directory `BACKUP_HOST_DIR` del vecchio server. Serve un file `db-backup-*.tar.gz`.
+
+**2. Installa da zero** seguendo [Installazione su Proxmox VM (prima volta)](#installazione-su-proxmox-vm-prima-volta) fino al primo avvio incluso.
+
+**3. Ricrea `.env`.** Non è nel backup. Conta soprattutto per i campi `LAB_*` (nome, email, indirizzo, telefono del laboratorio), che compaiono nell'intestazione di ogni PDF. Le credenziali `POSTGRES_*` **non devono coincidere** con quelle del vecchio server: il dump è generato con `--no-owner --no-privileges` e si ripristina su qualsiasi utente.
+
+**4. Accedi con l'amministratore temporaneo.** Il ripristino da interfaccia richiede una sessione admin, e a questo punto esiste solo l'utente creato al primo avvio:
+
+```bash
+docker compose logs backend | grep -A3 "Utente amministratore"
+# oppure
+docker cp backend:/app/data/initial-admin-password.txt .
+```
+
+**5. Ripristina**, da Impostazioni > Backup database (caricando l'archivio o dopo averlo copiato in `BACKUP_HOST_DIR`), oppure da terminale con `./scripts/restore-db.sh`. **Attiva il reset dello schema**: le migrazioni hanno già creato le tabelle al primo avvio e senza reset il dump andrebbe in conflitto.
+
+**6. Rientra con le vecchie credenziali.** Il ripristino sostituisce la tabella utenti, quindi l'amministratore temporaneo del passo 4 non esiste più e l'app forza il logout. Usa un utente del vecchio server.
+
+**7. Reinserisci le due password**, che il pannello Backup elenca in un riquadro giallo:
+
+- Impostazioni > Email > password SMTP
+- Impostazioni > Backup > password NAS
+
+L'avviso sparisce da solo quando entrambe tornano leggibili.
+
+**8. Verifica**: logo presente nei PDF, test connessione email, test connessione NAS, e prossima esecuzione del backup automatico valorizzata.
+
+> Tutto il resto della configurazione — server SMTP, porta, utente, mittente, indirizzo NAS, condivisione, percorso, dominio, pianificazione, logo — viene ripristinato dall'archivio: le due password sono l'unico intervento manuale.
 
 ## Reset password utente
 
@@ -274,3 +326,16 @@ Alcuni accorgimenti per limitare lo spazio occupato su una VM di produzione a lu
 - `frontend/nginx.conf`: reverse proxy frontend verso backend
 - `ops/systemd/`: unit systemd (template) usate da `scripts/install-updater.sh` sulla VM Proxmox per l'aggiornamento da UI
 - `ops/update/`: cartella condivisa (bind mount, non versionata) tra backend e host per il meccanismo di aggiornamento
+
+### Volumi persistenti (produzione)
+
+Sopravvivono a `docker compose down` e agli aggiornamenti; si perdono solo con `down -v` o con la macchina.
+
+| Volume | Percorso | Contenuto |
+|---|---|---|
+| `postgres_data` | `/var/lib/postgresql/data` | database |
+| `backend_data` | `/app/data` | chiave di cifratura, impostazioni email/backup, logo |
+| `backend_logs` | `/app/logs` | log azioni utente |
+| *(bind mount)* | `/app/backups` | archivi di backup, in `BACKUP_HOST_DIR` |
+
+`backend_logs` è un volume proprio perché senza di esso i log starebbero nel layer scrivibile del container, che viene ricreato ad ogni `up --build`: si azzererebbero ad ogni aggiornamento.
