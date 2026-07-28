@@ -773,6 +773,12 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                         disabled={isRestoring}
                                         onChange={handleRestoreFileSelected}
                                     />
+                                    {restoreUploadFile ? (
+                                        <p className="text-xs text-muted-foreground">
+                                            File selezionato: {restoreUploadFile.name} (
+                                            {formatFileSize(restoreUploadFile.size)})
+                                        </p>
+                                    ) : null}
                                 </div>
                                 <Button
                                     type="button"
