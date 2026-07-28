@@ -5,7 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-COPY tsconfig.json ./
+# tsconfig.build.json estende tsconfig.json: servono entrambi, altrimenti
+# `npm run build` fallisce con TS5058.
+COPY tsconfig.json tsconfig.build.json ./
 COPY drizzle.config.ts ./
 COPY src ./src
 
