@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import CustomDialog from "@/components/dialogs/customDialog";
-import { useUpdateGuard } from "@/components/use-update-guard";
+import { useBusyGuard } from "@/components/use-busy-guard";
 import {
     checkForUpdates,
     getApiErrorMessage,
@@ -20,7 +20,7 @@ const UPDATE_MAX_ATTEMPTS = 120; // ~6 minutes
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const UpdateSettingsPanel = () => {
-    const { setIsUpdating: setGlobalUpdating } = useUpdateGuard();
+    const { setBusy } = useBusyGuard();
     const [status, setStatus] = useState<UpdateStatusDto | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
@@ -109,7 +109,10 @@ const UpdateSettingsPanel = () => {
         setIsConfirmOpen(false);
         const previousCommit = status?.currentCommit ?? null;
         setIsUpdating(true);
-        setGlobalUpdating(true);
+        setBusy({
+            title: "Aggiornamento in corso...",
+            description: "Non chiudere o ricaricare la pagina: l'applicazione si ricaricherà automaticamente al termine.",
+        });
 
         try {
             await runUpdateNow();
@@ -148,7 +151,7 @@ const UpdateSettingsPanel = () => {
             if (!cancelledRef.current) {
                 setIsUpdating(false);
             }
-            setGlobalUpdating(false);
+            setBusy(null);
         }
     };
 

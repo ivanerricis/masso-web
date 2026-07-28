@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import AppErrorBoundary from "@/components/app-error-boundary"
 import { ThemeProvider } from "./components/theme-provider"
 import { AuthProvider } from "./components/auth-provider"
-import { UpdateGuardProvider } from "@/components/update-guard-provider"
+import { BusyGuardProvider } from "@/components/busy-guard-provider"
 import RequireAuth from "@/components/require-auth"
 import { Toaster } from "./components/ui/sonner"
 import { TooltipProvider } from "./components/ui/tooltip"
@@ -31,7 +31,7 @@ const SettingsPage = lazy(() => import("./pages/settings/SettingsPage"))
 export function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <UpdateGuardProvider>
+      <BusyGuardProvider>
         <TooltipProvider>
           <BrowserRouter>
             <AppErrorBoundary>
@@ -80,7 +80,7 @@ export function App() {
               closeButton: "[&>svg]:h-4 [&>svg]:w-4 w-6! h-6!",
             }
           }} />
-      </UpdateGuardProvider>
+      </BusyGuardProvider>
     </ThemeProvider>
   )
 }

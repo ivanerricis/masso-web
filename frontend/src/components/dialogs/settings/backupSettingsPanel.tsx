@@ -2,6 +2,7 @@ import { startTransition, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { toast } from "sonner";
 import CustomDialog from "@/components/dialogs/customDialog";
+import { useBusyGuard } from "@/components/use-busy-guard";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,7 @@ const defaultForm: BackupSettingsInput = {
 };
 
 const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
+    const { setBusy } = useBusyGuard();
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isRunningBackup, setIsRunningBackup] = useState(false);
@@ -327,6 +329,11 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
 
         try {
             setIsRestoring(true);
+            setBusy({
+                title: "Ripristino database in corso...",
+                description: "Non chiudere o ricaricare la pagina: l'operazione può richiedere alcuni minuti in base alla dimensione del dump.",
+            });
+
             const result =
                 pendingRestore.type === "existing"
                     ? await restoreBackupFromExisting(pendingRestore.fileName, resetSchemaOnRestore)
@@ -344,6 +351,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             toast.error(getApiErrorMessage(error, "Ripristino database non riuscito"));
         } finally {
             setIsRestoring(false);
+            setBusy(null);
         }
     };
 
