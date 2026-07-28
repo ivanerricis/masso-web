@@ -2,12 +2,27 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { decryptSecret, encryptSecret } from "./secretCrypto";
+import { invalidateEmailSettingsCache, isStoredEmailPasswordUsable } from "./emailManager";
 
 const settingsDir = path.join(process.cwd(), "data");
 const settingsFilePath = path.join(settingsDir, "backup-settings.json");
 const defaultOutputDir = "backups";
 const defaultMaxBackupsToKeep = 14;
-const dumpFileNamePattern = /^db-dump-\d{8}-\d{6}\.sql$/;
+// Formato storico: solo il dump SQL. Ancora accettato in lettura/ripristino.
+const legacyDumpFileNamePattern = /^db-dump-\d{8}-\d{6}\.sql$/;
+// Formato attuale: archivio con il dump più le impostazioni scritte dall'app.
+const archiveFileNamePattern = /^db-backup-\d{8}-\d{6}\.tar\.gz$/;
+const isBackupFileName = (fileName: string) =>
+    legacyDumpFileNamePattern.test(fileName) || archiveFileNamePattern.test(fileName);
+const isArchiveFileName = (fileName: string) => /\.tar\.gz$/i.test(fileName);
+
+const archiveDumpEntry = "dump.sql";
+const archiveDataEntry = "data";
+// Elenco esplicito invece di una lista di esclusioni: un file nuovo in data/ non
+// finisce nel backup per sbaglio. `secret.key` è escluso di proposito (aprirebbe i
+// segreti cifrati custoditi nello stesso archivio, che finisce anche su NAS), e con
+// esso `initial-admin-password.txt`, che è una credenziale in chiaro.
+const backedUpDataEntries = ["email-settings.json", "backup-settings.json", "logo"];
 const defaultSmbPort = 445;
 const smbTestTimeoutMs = 15_000;
 const smbMkdirTimeoutMs = 15_000;
@@ -117,9 +132,9 @@ const getDayTimestamp = (date: Date) => {
     return `${year}${month}${day}-${hours}${minutes}${seconds}`;
 };
 
-const buildDumpFilePath = (outputDir: string, now: Date) => {
+const buildArchiveFilePath = (outputDir: string, now: Date) => {
     const absoluteOutputDir = toAbsoluteOutputDir(outputDir);
-    const fileName = `db-dump-${getDayTimestamp(now)}.sql`;
+    const fileName = `db-backup-${getDayTimestamp(now)}.tar.gz`;
 
     return path.join(absoluteOutputDir, fileName);
 };
@@ -316,6 +331,59 @@ const runPgDump = async (outputPath: string) => {
     });
 };
 
+const runTar = async (args: string[]) => {
+    await new Promise<void>((resolve, reject) => {
+        const child = spawn("tar", args);
+        let stderr = "";
+
+        child.stderr.on("data", (chunk) => {
+            stderr += chunk.toString();
+        });
+
+        child.on("error", (error: NodeJS.ErrnoException) => {
+            if (error.code === "ENOENT") {
+                reject(new BackupManagerError("tar non trovato nel container backend", 500));
+                return;
+            }
+
+            reject(new BackupManagerError(`Errore avvio tar: ${error.message}`, 500));
+        });
+
+        child.on("close", (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+
+            reject(new BackupManagerError(stderr.trim() || `tar terminato con codice ${code}`, 500));
+        });
+    });
+};
+
+// Assembla dump + impostazioni in una cartella temporanea e la comprime.
+const createBackupArchive = async (archivePath: string) => {
+    const stagingDir = path.join(settingsDir, `tmp-backup-${Date.now()}`);
+    const stagingDataDir = path.join(stagingDir, archiveDataEntry);
+
+    try {
+        await fs.promises.mkdir(stagingDataDir, { recursive: true });
+        await runPgDump(path.join(stagingDir, archiveDumpEntry));
+
+        for (const entry of backedUpDataEntries) {
+            // `force: false` di default: le voci assenti (es. email mai configurata)
+            // vengono semplicemente saltate.
+            await fs.promises
+                .cp(path.join(settingsDir, entry), path.join(stagingDataDir, entry), { recursive: true })
+                .catch(() => {});
+        }
+
+        await fs.promises.mkdir(path.dirname(archivePath), { recursive: true });
+        await runTar(["-czf", archivePath, "-C", stagingDir, archiveDumpEntry, archiveDataEntry]);
+    } finally {
+        await fs.promises.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
+    }
+};
+
 const runPsql = async (args: string[]) => {
     const { host, port, user, password, databaseName } = parseDatabaseUrl();
 
@@ -477,7 +545,7 @@ const pruneOldBackups = async (outputDir: string, keep: number) => {
         return;
     }
 
-    const dumpFiles = entries.filter((name) => dumpFileNamePattern.test(name)).sort();
+    const dumpFiles = entries.filter(isBackupFileName).sort();
     const filesToDelete = dumpFiles.slice(0, Math.max(0, dumpFiles.length - keep));
 
     await Promise.all(
@@ -498,11 +566,21 @@ const setNextRunIfNeeded = (state: BackupSettingsState, reference: Date) => {
 
 export type BackupSettingsPublic = Omit<BackupSettingsState, "smbPasswordEncrypted"> & {
     smbPasswordSet: boolean;
+    /** Segreti che con la chiave presente non sono leggibili e vanno reinseriti. */
+    restoreSecretsToReconfigure: string[];
 };
 
-const toPublicState = (state: BackupSettingsState): BackupSettingsPublic => {
+// Calcolato a ogni lettura invece di essere persistito: così l'avviso sparisce da
+// solo appena la password viene reinserita, senza doverlo azzerare esplicitamente
+// da ogni punto che salva le impostazioni.
+const toPublicState = async (state: BackupSettingsState): Promise<BackupSettingsPublic> => {
     const { smbPasswordEncrypted, ...rest } = state;
-    return { ...rest, smbPasswordSet: Boolean(smbPasswordEncrypted) };
+
+    return {
+        ...rest,
+        smbPasswordSet: Boolean(smbPasswordEncrypted),
+        restoreSecretsToReconfigure: await findSecretsToReconfigure(state),
+    };
 };
 
 export const getBackupSettings = async (): Promise<BackupSettingsPublic> => {
@@ -561,7 +639,7 @@ export const updateBackupSettings = async (input: BackupSettingsInput) => {
     setNextRunIfNeeded(current, new Date());
     await persistState(current);
 
-    return toPublicState(current);
+    return await toPublicState(current);
 };
 
 export type BackupDumpFile = {
@@ -581,7 +659,7 @@ export const listBackupDumps = async (): Promise<BackupDumpFile[]> => {
         return [];
     }
 
-    const dumpFiles = entries.filter((name) => dumpFileNamePattern.test(name));
+    const dumpFiles = entries.filter(isBackupFileName);
 
     const stats = await Promise.all(
         dumpFiles.map(async (fileName) => {
@@ -594,7 +672,7 @@ export const listBackupDumps = async (): Promise<BackupDumpFile[]> => {
 };
 
 export const getBackupDumpPath = async (fileName: string) => {
-    if (!dumpFileNamePattern.test(fileName)) {
+    if (!isBackupFileName(fileName)) {
         throw new BackupManagerError("Nome file dump non valido", 400);
     }
 
@@ -610,8 +688,85 @@ export const getBackupDumpPath = async (fileName: string) => {
     return filePath;
 };
 
+// Estrae l'archivio e restituisce dove trovare dump e impostazioni. Per il formato
+// storico (.sql puro) non c'è nulla da estrarre e non ci sono impostazioni.
+const prepareRestoreSource = async (filePath: string, sourceFileName: string) => {
+    if (!isArchiveFileName(sourceFileName)) {
+        return { sqlPath: filePath, dataDir: null as string | null, cleanup: async () => {} };
+    }
+
+    const extractDir = path.join(settingsDir, `tmp-extract-${Date.now()}`);
+    await fs.promises.mkdir(extractDir, { recursive: true });
+
+    try {
+        await runTar(["-xzf", filePath, "-C", extractDir]);
+    } catch (error) {
+        await fs.promises.rm(extractDir, { recursive: true, force: true }).catch(() => {});
+        throw error;
+    }
+
+    const sqlPath = path.join(extractDir, archiveDumpEntry);
+
+    try {
+        await fs.promises.access(sqlPath);
+    } catch {
+        await fs.promises.rm(extractDir, { recursive: true, force: true }).catch(() => {});
+        throw new BackupManagerError(`Archivio non valido: manca ${archiveDumpEntry}`, 400);
+    }
+
+    return {
+        sqlPath,
+        dataDir: path.join(extractDir, archiveDataEntry),
+        cleanup: async () => {
+            await fs.promises.rm(extractDir, { recursive: true, force: true }).catch(() => {});
+        },
+    };
+};
+
+// Riporta le impostazioni dell'archivio in data/. `secret.key` non è nell'archivio
+// e non viene toccata: quella presente sulla macchina resta valida.
+const restoreDataEntries = async (dataDir: string) => {
+    for (const entry of backedUpDataEntries) {
+        const source = path.join(dataDir, entry);
+
+        try {
+            await fs.promises.access(source);
+        } catch {
+            continue;
+        }
+
+        await fs.promises.rm(path.join(settingsDir, entry), { recursive: true, force: true }).catch(() => {});
+        await fs.promises.cp(source, path.join(settingsDir, entry), { recursive: true });
+    }
+
+    // I file sono cambiati sotto le cache in memoria dei due manager.
+    cachedState = null;
+    invalidateEmailSettingsCache();
+};
+
+// I segreti sono cifrati con data/secret.key, esclusa dai backup di proposito. Su una
+// macchina con chiave diversa restano illeggibili: va detto subito e per iscritto,
+// invece di lasciarlo scoprire al primo invio email o al primo upload su NAS.
+const findSecretsToReconfigure = async (state: BackupSettingsState) => {
+    const toReconfigure: string[] = [];
+
+    if (!(await isStoredEmailPasswordUsable())) {
+        toReconfigure.push("Password email (SMTP)");
+    }
+
+    if (state.smbPasswordEncrypted) {
+        try {
+            await decryptSecret(state.smbPasswordEncrypted);
+        } catch {
+            toReconfigure.push("Password NAS (SMB)");
+        }
+    }
+
+    return toReconfigure;
+};
+
 const performRestore = async (filePath: string, resetSchema: boolean, sourceFileName: string) => {
-    const state = await loadState();
+    let state = await loadState();
 
     if (dumpInProgress || restoreInProgress) {
         throw new BackupManagerError("E gia in corso un'operazione sul database", 409);
@@ -619,13 +774,23 @@ const performRestore = async (filePath: string, resetSchema: boolean, sourceFile
 
     restoreInProgress = true;
     const now = new Date();
+    const source = await prepareRestoreSource(filePath, sourceFileName);
 
     try {
         if (resetSchema) {
             await resetPublicSchema();
         }
 
-        await runPsql(["-f", filePath]);
+        await runPsql(["-f", source.sqlPath]);
+
+        if (source.dataDir) {
+            await restoreDataEntries(source.dataDir);
+            // Le impostazioni appena riportate hanno sostituito quelle in memoria:
+            // i campi di esito vanno scritti sopra lo stato ripristinato.
+            state = await loadState();
+        }
+
+        const secretsToReconfigure = await findSecretsToReconfigure(state);
 
         state.lastRestoreAt = now.toISOString();
         state.lastRestoreStatus = "success";
@@ -634,8 +799,11 @@ const performRestore = async (filePath: string, resetSchema: boolean, sourceFile
         await persistState(state);
 
         return {
-            ...toPublicState(state),
-            message: "Ripristino completato con successo",
+            ...(await toPublicState(state)),
+            message:
+                secretsToReconfigure.length > 0
+                    ? `Ripristino completato. Reinserisci a mano: ${secretsToReconfigure.join(", ")}.`
+                    : "Ripristino completato con successo",
         };
     } catch (error) {
         const message = error instanceof Error ? error.message : "Errore durante il ripristino del database";
@@ -648,6 +816,7 @@ const performRestore = async (filePath: string, resetSchema: boolean, sourceFile
         throw error;
     } finally {
         restoreInProgress = false;
+        await source.cleanup();
     }
 };
 
@@ -656,16 +825,17 @@ export const restoreBackupFromExisting = async (fileName: string, resetSchema: b
     return performRestore(filePath, resetSchema, fileName);
 };
 
-const uploadedDumpNamePattern = /\.sql$/i;
+const uploadedDumpNamePattern = /\.(sql|tar\.gz)$/i;
 
 export const restoreBackupFromUpload = async (buffer: Buffer, originalFileName: string, resetSchema: boolean) => {
     if (!uploadedDumpNamePattern.test(originalFileName)) {
-        throw new BackupManagerError("Il file caricato deve avere estensione .sql", 400);
+        throw new BackupManagerError("Il file caricato deve avere estensione .sql o .tar.gz", 400);
     }
 
     const tempDir = path.join(process.cwd(), "data", "tmp-restore");
     await fs.promises.mkdir(tempDir, { recursive: true });
-    const tempFilePath = path.join(tempDir, `upload-${Date.now()}.sql`);
+    const suffix = isArchiveFileName(originalFileName) ? "tar.gz" : "sql";
+    const tempFilePath = path.join(tempDir, `upload-${Date.now()}.${suffix}`);
 
     await fs.promises.writeFile(tempFilePath, buffer);
 
@@ -691,9 +861,8 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
     const now = new Date();
 
     try {
-        const outputPath = buildDumpFilePath(getConfiguredOutputDir(), now);
-        await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
-        await runPgDump(outputPath);
+        const outputPath = buildArchiveFilePath(getConfiguredOutputDir(), now);
+        await createBackupArchive(outputPath);
         await pruneOldBackups(getConfiguredOutputDir(), state.maxBackupsToKeep);
 
         state.lastRunAt = now.toISOString();
@@ -734,7 +903,7 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
         await persistState(state);
 
         return {
-            ...toPublicState(state),
+            ...(await toPublicState(state)),
             message,
         };
     } catch (error) {

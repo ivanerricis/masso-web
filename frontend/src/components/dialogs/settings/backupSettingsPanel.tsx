@@ -94,6 +94,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     const [lastRestoreStatus, setLastRestoreStatus] = useState<"idle" | "success" | "failed">("idle");
     const [lastRestoreError, setLastRestoreError] = useState<string | null>(null);
     const [lastRestoreFileName, setLastRestoreFileName] = useState<string | null>(null);
+    const [secretsToReconfigure, setSecretsToReconfigure] = useState<string[]>([]);
     const restoreFileInputRef = useRef<HTMLInputElement>(null);
 
     const loadSettings = async () => {
@@ -129,6 +130,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             setLastRestoreStatus(settings.lastRestoreStatus);
             setLastRestoreError(settings.lastRestoreError);
             setLastRestoreFileName(settings.lastRestoreFileName);
+            setSecretsToReconfigure(settings.restoreSecretsToReconfigure);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare le impostazioni backup"));
         } finally {
@@ -347,7 +349,14 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             setLastRestoreStatus(result.lastRestoreStatus);
             setLastRestoreError(result.lastRestoreError);
             setLastRestoreFileName(result.lastRestoreFileName);
-            toast.success(result.message);
+            setSecretsToReconfigure(result.restoreSecretsToReconfigure);
+
+            if (result.restoreSecretsToReconfigure.length > 0) {
+                toast.warning(result.message, { richColors: true });
+            } else {
+                toast.success(result.message);
+            }
+
             setPendingRestore(null);
             setRestoreConfirmText("");
             setRestoreUploadFile(null);
@@ -764,11 +773,11 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
 
                             <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="restoreUpload">Oppure carica un file .sql</Label>
+                                    <Label htmlFor="restoreUpload">Oppure carica un file .tar.gz o .sql</Label>
                                     <Input
                                         id="restoreUpload"
                                         type="file"
-                                        accept=".sql,text/plain,application/sql"
+                                        accept=".sql,.gz,.tar.gz,text/plain,application/sql,application/gzip"
                                         ref={restoreFileInputRef}
                                         disabled={isRestoring}
                                         onChange={handleRestoreFileSelected}
@@ -792,6 +801,22 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                 </Button>
                             </div>
                         </div>
+
+                        {secretsToReconfigure.length > 0 ? (
+                            <div className="grid gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                                <p className="font-medium">Password da reinserire dopo il ripristino</p>
+                                <p className="text-muted-foreground">
+                                    Le password sono cifrate con una chiave che resta sul server e non viene
+                                    inclusa nei backup. Ripristinando su un'altra macchina non sono più
+                                    leggibili e vanno riscritte:
+                                </p>
+                                <ul className="list-disc pl-5">
+                                    {secretsToReconfigure.map((secret) => (
+                                        <li key={secret}>{secret}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ) : null}
 
                         <div className="grid gap-2 rounded-md border border-destructive/15 bg-muted/20 p-3 text-sm">
                             <p>Ultimo ripristino: {formatDateTime(lastRestoreAt)}</p>

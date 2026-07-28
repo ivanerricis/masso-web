@@ -27,6 +27,8 @@ export type BackupSettingsDto = {
     lastRestoreStatus: "idle" | "success" | "failed";
     lastRestoreError: string | null;
     lastRestoreFileName: string | null;
+    /** Segreti che il ripristino non ha potuto rileggere e vanno reinseriti a mano. */
+    restoreSecretsToReconfigure: string[];
 };
 
 export type BackupSettingsInput = Pick<

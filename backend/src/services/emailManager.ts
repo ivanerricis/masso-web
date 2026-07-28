@@ -93,6 +93,30 @@ const loadState = async () => {
     return cachedState;
 };
 
+// Dopo un ripristino il file delle impostazioni è stato riscritto da fuori:
+// la cache in memoria non rispecchia più il disco.
+export const invalidateEmailSettingsCache = () => {
+    cachedState = null;
+};
+
+// La password è cifrata con data/secret.key, che di proposito non finisce nei
+// backup. Se il backup viene ripristinato dove la chiave è diversa, il valore
+// resta illeggibile: va rilevato subito e non al primo invio di email.
+export const isStoredEmailPasswordUsable = async () => {
+    const state = await loadState();
+
+    if (!state.passwordEncrypted) {
+        return true;
+    }
+
+    try {
+        await decryptSecret(state.passwordEncrypted);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 export type EmailSettingsPublic = Omit<EmailSettingsState, "passwordEncrypted"> & {
     passwordSet: boolean;
 };

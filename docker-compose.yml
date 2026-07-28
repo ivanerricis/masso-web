@@ -42,6 +42,10 @@ services:
       - ${BACKUP_HOST_DIR}:/app/backups
       - ./ops/update:/app/update-signal
       - backend_data:/app/data
+      # Senza questo volume i log azioni utente stanno nel layer scrivibile del
+      # container, che viene ricreato a ogni `up --build`: si perderebbero a ogni
+      # aggiornamento automatico.
+      - backend_logs:/app/logs
     command: >-
       sh -c 'echo "DATABASE_URL=$$DATABASE_URL"; node migrate.js; if [ $$? -ne 0 ]; then exit 1; fi; npm run start'
     depends_on:
@@ -65,3 +69,4 @@ services:
 volumes:
   postgres_data:
   backend_data:
+  backend_logs:
