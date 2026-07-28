@@ -43,3 +43,18 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  # I job qui sopra compilano nella working copy, dove ogni file è presente per
+  # definizione: non accorgerebbero che il Dockerfile non copia un file di config
+  # nuovo. Questo job costruisce le immagini reali con lo stesso comando usato
+  # dall'aggiornamento automatico (scripts/update-server.sh), quindi una build di
+  # produzione rotta fallisce qui invece che sul server.
+  images:
+    name: Production images (docker compose build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # docker compose interpola le variabili del compose file anche per `build`.
+      # .env.example le fornisce tutte senza introdurre segreti reali, e di
+      # riflesso verifica che resti allineato a docker-compose.yml.
+      - run: docker compose --env-file .env.example build
