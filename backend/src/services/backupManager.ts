@@ -96,11 +96,6 @@ let schedulerTimer: NodeJS.Timeout | null = null;
 
 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-const normalizeOutputDir = (value: string) => {
-    const trimmed = value.trim();
-    return trimmed === "" ? defaultOutputDir : trimmed;
-};
-
 const getConfiguredOutputDir = () => defaultOutputDir;
 
 const toAbsoluteOutputDir = (outputDir: string) => {
