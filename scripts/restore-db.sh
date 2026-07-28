@@ -73,10 +73,10 @@ if [ "$confirmation" != "RESTORE" ]; then
 fi
 
 if [ "$RESET_DATABASE" = true ]; then
-    echo "Reset schema public prima del restore..."
+    echo "Reset schema public e drizzle prima del restore..."
     docker compose -f "$COMPOSE_FILE" exec -T db psql -v ON_ERROR_STOP=1 \
         -U "$POSTGRES_USER_VALUE" -d "$POSTGRES_DB_VALUE" \
-        -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO public;'
+        -c 'DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO public;'
 fi
 
 echo "Esecuzione restore..."

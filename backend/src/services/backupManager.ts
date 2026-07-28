@@ -361,7 +361,12 @@ const runPsql = async (args: string[]) => {
 };
 
 const resetPublicSchema = async () => {
-    await runPsql(["-c", "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO public;"]);
+    // Il dump include anche lo schema "drizzle" (tracking migrazioni di drizzle-orm), che il
+    // container backend ricrea ad ogni avvio: va svuotato anche lui, non solo "public".
+    await runPsql([
+        "-c",
+        "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO public;",
+    ]);
 };
 
 const smbTarget = (config: SmbConnectionConfig) => `//${config.host}/${config.share}`;
