@@ -13,7 +13,6 @@ import {
     restoreBackupFromUpload,
     runBackupNow,
     testSmbConnection,
-    uploadBackupToSmb,
     updateBackupSettings,
 } from "../services/backupManager";
 import { EmailManagerError, getEmailSettings, testEmailConnection, updateEmailSettings } from "../services/emailManager";
@@ -243,22 +242,6 @@ settingsRouter.post("/backup/run", async (_req, res, next) => {
         next(error);
     }
 });
-
-settingsRouter.post(
-    "/backup/smb/upload",
-    validate({ body: z.object({ fileName: z.string().trim().min(1).max(255) }) }),
-    async (req, res, next) => {
-        try {
-            res.json(await uploadBackupToSmb(req.body.fileName));
-        } catch (error) {
-            if (handleBackupError(error, res)) {
-                return;
-            }
-
-            next(error);
-        }
-    }
-);
 
 settingsRouter.post("/backup/smb/test", validate({ body: smbTestSchema }), async (req, res, next) => {
     try {

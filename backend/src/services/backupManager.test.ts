@@ -7,7 +7,6 @@ import {
     isAlreadyExistsSmbError,
     restoreBackupFromUpload,
     sortBackupFileNamesByAge,
-    uploadBackupToSmb,
 } from "./backupManager";
 
 // Il nome file è l'unico filtro fra la richiesta e il filesystem: questi test
@@ -129,18 +128,6 @@ describe("isAlreadyExistsSmbError", () => {
     it("non scambia per collisione un errore diverso", () => {
         expect(isAlreadyExistsSmbError("NT_STATUS_ACCESS_DENIED")).toBe(false);
         expect(isAlreadyExistsSmbError("smbclient terminato con codice 1")).toBe(false);
-    });
-});
-
-describe("uploadBackupToSmb", () => {
-    it("valida il nome file prima di toccare la configurazione NAS", async () => {
-        await expect(uploadBackupToSmb("../../etc/passwd")).rejects.toThrow("Nome file dump non valido");
-    });
-
-    it("rifiuta un backup inesistente", async () => {
-        await expect(uploadBackupToSmb("db-backup-20260101-000000.tar.gz")).rejects.toThrow(
-            "File di dump non trovato"
-        );
     });
 });
 

@@ -953,68 +953,6 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
     }
 };
 
-const buildSmbConfig = async (state: BackupSettingsState): Promise<SmbConnectionConfig> => {
-    if (!state.smbEnabled) {
-        throw new BackupManagerError("La destinazione NAS non e abilitata nelle impostazioni", 400);
-    }
-
-    if (!state.smbPasswordEncrypted) {
-        throw new BackupManagerError("Password NAS non impostata nelle impostazioni", 400);
-    }
-
-    let password: string;
-
-    try {
-        password = await decryptSecret(state.smbPasswordEncrypted);
-    } catch {
-        throw new BackupManagerError(
-            "La password NAS non e leggibile con la chiave presente su questo server: reinseriscila nelle impostazioni",
-            400
-        );
-    }
-
-    return {
-        host: state.smbHost,
-        share: state.smbShare,
-        path: state.smbPath,
-        domain: state.smbDomain,
-        port: state.smbPort,
-        username: state.smbUsername,
-        password,
-    };
-};
-
-// Copia sul NAS un backup gia presente sul server, senza generarne uno nuovo:
-// serve a ritentare dopo una copia fallita o a spedire un archivio piu vecchio.
-export const uploadBackupToSmb = async (fileName: string) => {
-    const filePath = await getBackupDumpPath(fileName);
-    const state = await loadState();
-    const smbConfig = await buildSmbConfig(state);
-    const now = new Date();
-
-    try {
-        await uploadDumpToSmb(smbConfig, filePath);
-
-        state.smbLastRunAt = now.toISOString();
-        state.smbLastStatus = "success";
-        state.smbLastError = null;
-        await persistState(state);
-
-        return {
-            ...(await toPublicState(state)),
-            message: `Copia di ${fileName} sul NAS completata`,
-        };
-    } catch (error) {
-        const message = error instanceof Error ? error.message : "Errore durante la copia su NAS";
-        state.smbLastRunAt = now.toISOString();
-        state.smbLastStatus = "failed";
-        state.smbLastError = message;
-        await persistState(state);
-
-        throw error instanceof BackupManagerError ? error : new BackupManagerError(message, 502);
-    }
-};
-
 export const startBackupScheduler = () => {
     if (schedulerStarted) {
         return;
