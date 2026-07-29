@@ -288,6 +288,13 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
 
         try {
             setIsRunningBackup(true);
+            setBusy({
+                title: "Backup in corso...",
+                description: formValues.smbEnabled
+                    ? "Non chiudere o ricaricare la pagina: il database viene esportato e copiato sul NAS. Può richiedere alcuni minuti in base alla dimensione dei dati."
+                    : "Non chiudere o ricaricare la pagina: l'operazione può richiedere alcuni minuti in base alla dimensione dei dati.",
+            });
+
             const result = await runBackupNow();
             setLastRunAt(result.lastRunAt);
             setLastRunStatus(result.lastRunStatus);
@@ -309,6 +316,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
             toast.error(getApiErrorMessage(error, "Dump database non riuscito"));
         } finally {
             setIsRunningBackup(false);
+            setBusy(null);
         }
     };
 
