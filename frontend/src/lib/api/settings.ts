@@ -69,6 +69,14 @@ export type SmbConnectionTestInput = {
 export const testSmbConnection = async (payload: SmbConnectionTestInput) =>
     (await api.post<{ message: string }>("/settings/backup/smb/test", payload)).data;
 
+/** Copia sul NAS un backup gia presente sul server, senza generarne uno nuovo. */
+export const uploadBackupToSmb = async (fileName: string) =>
+    (
+        await api.post<BackupSettingsDto & { message: string }>("/settings/backup/smb/upload", {
+            fileName,
+        })
+    ).data;
+
 export type BackupDumpFileDto = {
     fileName: string;
     sizeBytes: number;

@@ -19,6 +19,7 @@ import {
     restoreBackupFromExisting,
     restoreBackupFromUpload,
     runBackupNow,
+    uploadBackupToSmb,
     testSmbConnection,
     updateBackupSettings,
     type BackupDumpFileDto,
@@ -81,6 +82,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     const [smbPasswordSet, setSmbPasswordSet] = useState(false);
     const [smbLastRunAt, setSmbLastRunAt] = useState<string | null>(null);
     const [smbLastStatus, setSmbLastStatus] = useState<"idle" | "success" | "failed">("idle");
+    const [isUploadingToSmb, setIsUploadingToSmb] = useState(false);
     const [smbLastError, setSmbLastError] = useState<string | null>(null);
     const [isTestingSmb, setIsTestingSmb] = useState(false);
 
@@ -279,6 +281,25 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         }
 
         window.location.href = getBackupDumpDownloadUrl(selectedDumpFileName);
+    };
+
+    const handleUploadSelectedDumpToSmb = async () => {
+        if (!selectedDumpFileName || isUploadingToSmb) {
+            return;
+        }
+
+        try {
+            setIsUploadingToSmb(true);
+            const result = await uploadBackupToSmb(selectedDumpFileName);
+            setSmbLastRunAt(result.smbLastRunAt);
+            setSmbLastStatus(result.smbLastStatus);
+            setSmbLastError(result.smbLastError);
+            toast.success(result.message);
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Copia sul NAS non riuscita"));
+        } finally {
+            setIsUploadingToSmb(false);
+        }
     };
 
     const handleRunBackup = async () => {
@@ -542,6 +563,18 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                             onClick={handleDownloadSelectedDump}
                                         >
                                             Scarica dump selezionato
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled={
+                                                !selectedDumpFileName ||
+                                                !formValues.smbEnabled ||
+                                                isUploadingToSmb
+                                            }
+                                            onClick={handleUploadSelectedDumpToSmb}
+                                        >
+                                            {isUploadingToSmb ? "Copia in corso..." : "Copia sul NAS"}
                                         </Button>
                                     </div>
                                 )}
