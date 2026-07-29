@@ -10,6 +10,8 @@ export type BackupSettingsDto = {
     nextRunAt: string | null;
     lastRunAt: string | null;
     lastRunStatus: "idle" | "success" | "failed";
+    /** Chi ha avviato l'ultima esecuzione: i fallimenti automatici non li ha visti nessuno. */
+    lastRunOrigin: "manual" | "auto" | null;
     lastError: string | null;
     lastDumpPath: string | null;
     smbEnabled: boolean;

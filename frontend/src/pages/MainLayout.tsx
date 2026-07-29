@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import LoadingPage from "@/components/loadingPage"
 // import { ModeToggle } from "@/components/mode-toggle"
-import { TodayInterventionsMenu } from "@/components/today-interventions-menu"
+import { NotificationsMenu } from "@/components/notifications-menu"
 import { UserBadge } from "@/components/user-badge"
 import MainSidebar from "@/components/main-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
@@ -45,7 +45,7 @@ export const MainLayout = () => {
                 <header className="flex h-13 items-center justify-between border-b px-2">
                     <SidebarTrigger />
                     <div className="flex items-center gap-2">
-                        <TodayInterventionsMenu />
+                        <NotificationsMenu />
                         {/* <ModeToggle /> */}
                         <UserBadge />
                     </div>

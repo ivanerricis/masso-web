@@ -12,6 +12,7 @@ import devicesRouter from "./routes/devices";
 import issuesRouter from "./routes/issues";
 import reportTechniciansRouter from "./routes/reportTechnicians";
 import interventionsRouter from "./routes/interventions";
+import notificationsRouter from "./routes/notifications";
 import authRouter from "./routes/auth";
 import usersRouter from "./routes/users";
 import { userActionLogger } from "./middleware/userActionLogger";
@@ -55,6 +56,7 @@ app.use("/api/devices", devicesRouter);
 app.use("/api/issues", issuesRouter);
 app.use("/api/report-technicians", reportTechniciansRouter);
 app.use("/api/interventions", interventionsRouter);
+app.use("/api/notifications", notificationsRouter);
 app.use("/api/settings", settingsRouter);
 
 app.use(errorHandler);

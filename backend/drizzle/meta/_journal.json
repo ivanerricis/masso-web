@@ -120,6 +120,13 @@
       "when": 1776363000000,
       "tag": "0016_add_created_at_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1776364000000,
+      "tag": "0017_add_notification",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { decryptSecret, encryptSecret } from "./secretCrypto";
 import { invalidateEmailSettingsCache, isStoredEmailPasswordUsable } from "./emailManager";
+import { recordNotification } from "./notificationManager";
 
 const settingsDir = path.join(process.cwd(), "data");
 const settingsFilePath = path.join(settingsDir, "backup-settings.json");
@@ -47,6 +48,8 @@ export type BackupSettingsState = {
     nextRunAt: string | null;
     lastRunAt: string | null;
     lastRunStatus: "idle" | "success" | "failed";
+    /** Chi ha avviato l'ultima esecuzione: serve ad avvisare solo sui fallimenti non presidiati. */
+    lastRunOrigin: "manual" | "auto" | null;
     lastError: string | null;
     lastDumpPath: string | null;
     smbEnabled: boolean;
@@ -94,6 +97,7 @@ const defaultState: BackupSettingsState = {
     nextRunAt: null,
     lastRunAt: null,
     lastRunStatus: "idle",
+    lastRunOrigin: null,
     lastError: null,
     lastDumpPath: null,
     smbEnabled: false,
@@ -207,6 +211,7 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
             input.lastRunStatus === "success" || input.lastRunStatus === "failed" || input.lastRunStatus === "idle"
                 ? input.lastRunStatus
                 : defaultState.lastRunStatus,
+        lastRunOrigin: input.lastRunOrigin === "manual" || input.lastRunOrigin === "auto" ? input.lastRunOrigin : null,
         lastError: typeof input.lastError === "string" ? input.lastError : null,
         lastDumpPath: typeof input.lastDumpPath === "string" ? input.lastDumpPath : null,
         smbEnabled: Boolean(input.smbEnabled ?? defaultState.smbEnabled),
@@ -440,6 +445,27 @@ const resetPublicSchema = async () => {
         "-c",
         "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO public;",
     ]);
+};
+
+// Un'esecuzione manuale ha gia' mostrato l'errore a chi l'ha lanciata; quella automatica
+// gira di notte e senza notifica non la vedrebbe nessuno.
+const notifyAutoBackupFailure = async (
+    origin: "manual" | "auto",
+    dedupeKey: string,
+    title: string,
+    message: string
+) => {
+    if (origin !== "auto") {
+        return;
+    }
+
+    await recordNotification({
+        dedupeKey,
+        title,
+        message,
+        link: "/settings?section=backup",
+        severity: "warning",
+    });
 };
 
 const smbTarget = (config: SmbConnectionConfig) => `//${config.host}/${config.share}`;
@@ -900,6 +926,7 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
 
         state.lastRunAt = now.toISOString();
         state.lastRunStatus = "success";
+        state.lastRunOrigin = origin;
         state.lastError = null;
         state.lastDumpPath = outputPath;
 
@@ -929,6 +956,13 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
                 state.smbLastStatus = "failed";
                 state.smbLastError = smbMessage;
                 message = `${message}, ma la copia su NAS non e riuscita: ${smbMessage}`;
+
+                await notifyAutoBackupFailure(
+                    origin,
+                    "backup:auto-nas-failed",
+                    "Copia del backup su NAS non riuscita",
+                    smbMessage
+                );
             }
         }
 
@@ -943,9 +977,12 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
         const message = error instanceof Error ? error.message : "Errore durante il dump database";
         state.lastRunAt = now.toISOString();
         state.lastRunStatus = "failed";
+        state.lastRunOrigin = origin;
         state.lastError = message;
         setNextRunIfNeeded(state, now);
         await persistState(state);
+
+        await notifyAutoBackupFailure(origin, "backup:auto-failed", "Backup automatico non riuscito", message);
 
         throw error;
     } finally {

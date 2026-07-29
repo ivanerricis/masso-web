@@ -123,6 +123,27 @@ export const sessionTable = pgTable("session", {
     index("session_user_id_idx").on(table.userId),
 ]);
 
+export const notificationSeverities = ["info", "warning"] as const;
+
+export const notificationTable = pgTable("notification", {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    // Identifica l'evento, non la riga: un guasto che si ripete (es. il backup notturno
+    // che fallisce ogni notte) aggiorna la riga esistente invece di accumularne una nuova.
+    dedupeKey: varchar("dedupe_key", { length: 255 }).notNull().unique(),
+    severity: varchar("severity", { length: 20 }).notNull().default("info"),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message"),
+    /** Rotta dell'app aperta cliccando la notifica. */
+    link: varchar("link", { length: 512 }),
+    occurrences: integer("occurrences").notNull().default(1),
+    lastOccurredAt: timestamp("last_occurred_at").defaultNow().notNull(),
+    // Chiusura condivisa: chi legge la notifica la chiude per tutti.
+    dismissedAt: timestamp("dismissed_at"),
+    ...timestamps,
+}, (table) => [
+    index("notification_last_occurred_at_idx").on(table.lastOccurredAt),
+]);
+
 export const interventionTypes = ["consegna_materiale", "intervento_sede", "intervento_remoto"] as const;
 export const interventionStatuses = ["programmato", "in_lavorazione", "completato"] as const;
 
