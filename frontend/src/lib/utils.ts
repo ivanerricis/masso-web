@@ -56,6 +56,18 @@ export function formatDate(value: string | null | undefined) {
   }).format(date)
 }
 
+export function formatFileSize(sizeBytes: number) {
+  if (sizeBytes < 1024) {
+    return `${sizeBytes} B`
+  }
+
+  if (sizeBytes < 1024 * 1024) {
+    return `${(sizeBytes / 1024).toFixed(1)} KB`
+  }
+
+  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export function formatEuro(value: number | null | undefined) {
   const amount = typeof value === "number" && Number.isFinite(value) ? value : 0
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Computer, Moon, Palette, Sun } from "lucide-react";
+import { Computer, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SettingsCard, SettingsSection } from "@/components/settings/settingsUi";
 import { useTheme } from "@/components/use-theme";
 import {
     applyThemeAccentPreset,
@@ -25,6 +25,14 @@ const modeOptions: ModeOption[] = [
     { value: "system", label: "Sistema", description: "Segue le impostazioni del sistema.", icon: Computer },
 ];
 
+// Stessa resa dei pulsanti di navigazione della pagina Impostazioni: riquadro con icona,
+// titolo e descrizione, bordo evidenziato quando la voce è quella attiva.
+const optionButtonClasses = (isActive: boolean) =>
+    cn(
+        "h-auto items-start justify-start gap-2 rounded-xl border p-3 text-left",
+        isActive && "border-primary bg-primary/10 dark:border-primary dark:bg-primary/10"
+    );
+
 const ThemeSettingsSection = () => {
     const { theme, setTheme } = useTheme();
     const [selectedAccent, setSelectedAccent] = useState<ThemeAccentPresetKey>(() =>
@@ -42,79 +50,56 @@ const ThemeSettingsSection = () => {
     };
 
     return (
-        <div className="grid gap-4">
-            <Card className="border-primary/15 shadow-sm">
-                <CardHeader className="border-b border-primary/10 bg-muted/20">
-                    <CardTitle>Aspetto</CardTitle>
-                    <CardDescription>Imposta il modo grafico e i colori principali dell'applicazione.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 pt-6">
-                    <div className="grid gap-3 md:grid-cols-3">
-                        {modeOptions.map((option) => {
-                            const Icon = option.icon;
-                            const isActive = theme === option.value;
+        <SettingsSection>
+            <SettingsCard title="Modalità" description="Scegli se seguire il sistema oppure forzare il tema chiaro o scuro.">
+                <div className="grid gap-2 sm:grid-cols-3">
+                    {modeOptions.map((option) => {
+                        const Icon = option.icon;
 
-                            return (
-                                <Button
-                                    key={option.value}
-                                    type="button"
-                                    variant="outline"
-                                    className={cn(
-                                        "h-auto items-start justify-start gap-3 rounded-xl border p-4 text-left",
-                                        isActive && "border-primary bg-primary/10 dark:border-primary dark:bg-primary/10"
-                                    )}
-                                    onClick={() => setTheme(option.value)}
-                                >
-                                    <Icon className="mt-0.5 size-5 shrink-0" />
-                                    <span className="grid gap-1">
-                                        <span className="font-semibold">{option.label}</span>
-                                        <span className="text-sm font-normal text-muted-foreground">{option.description}</span>
+                        return (
+                            <Button
+                                key={option.value}
+                                type="button"
+                                variant="outline"
+                                className={optionButtonClasses(theme === option.value)}
+                                onClick={() => setTheme(option.value)}
+                            >
+                                <Icon className="mt-0.5 size-4 shrink-0" />
+                                <span className="grid gap-0.5">
+                                    <span className="text-sm font-semibold">{option.label}</span>
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        {option.description}
                                     </span>
-                                </Button>
-                            );
-                        })}
-                    </div>
+                                </span>
+                            </Button>
+                        );
+                    })}
+                </div>
+            </SettingsCard>
 
-                    <div className="grid gap-3">
-                        <div className="flex items-center gap-2">
-                            <Palette className="size-5 text-primary" />
-                            <div>
-                                <p className="font-semibold">Colore principale</p>
-                                <p className="text-sm text-muted-foreground">Scegli una palette per pulsanti, sidebar e accenti.</p>
-                            </div>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                            {themeAccentPresets.map((preset) => {
-                                const isActive = selectedAccent === preset.key;
-
-                                return (
-                                    <Button
-                                        key={preset.key}
-                                        type="button"
-                                        variant="outline"
-                                        className={cn(
-                                            "h-auto items-start justify-start gap-3 rounded-xl border p-4 text-left",
-                                            isActive && "border-primary bg-primary/10 dark:border-primary dark:bg-primary/10"
-                                        )}
-                                        onClick={() => handleSelectAccent(preset.key)}
-                                    >
-                                        <span
-                                            className="mt-0.5 size-4 shrink-0 rounded-full border border-border"
-                                            style={{ backgroundColor: preset.primary }}
-                                        />
-                                        <span className="grid gap-1">
-                                            <span className="font-semibold">{preset.label}</span>
-                                            <span className="text-sm font-normal text-muted-foreground">{preset.description}</span>
-                                        </span>
-                                    </Button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+            <SettingsCard title="Colore principale" description="Palette usata per pulsanti, sidebar e accenti dell'applicazione.">
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {themeAccentPresets.map((preset) => (
+                        <Button
+                            key={preset.key}
+                            type="button"
+                            variant="outline"
+                            className={optionButtonClasses(selectedAccent === preset.key)}
+                            onClick={() => handleSelectAccent(preset.key)}
+                        >
+                            <span
+                                className="mt-0.5 size-4 shrink-0 rounded-full border border-border"
+                                style={{ backgroundColor: preset.primary }}
+                            />
+                            <span className="grid gap-0.5">
+                                <span className="text-sm font-semibold">{preset.label}</span>
+                                <span className="text-xs font-normal text-muted-foreground">{preset.description}</span>
+                            </span>
+                        </Button>
+                    ))}
+                </div>
+            </SettingsCard>
+        </SettingsSection>
     );
 };
 

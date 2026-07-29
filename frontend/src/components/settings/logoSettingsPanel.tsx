@@ -4,7 +4,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    SettingsActions,
+    SettingsCard,
+    SettingsGroup,
+    SettingsLoadingBox,
+    SettingsSection,
+} from "@/components/settings/settingsUi";
 import { getApiErrorMessage, getLogoStatus, resetLogo, uploadLogo } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
@@ -86,21 +92,16 @@ const LogoSettingsPanel = () => {
     const previewSrc = `${logoAssetUrl}?v=${encodeURIComponent(updatedAt ?? "default")}`;
 
     return (
-        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card size="sm" className="border-primary/15 shadow-sm">
-                <CardHeader className="border-b border-primary/10 bg-muted/20">
-                    <CardTitle>Logo laboratorio</CardTitle>
-                    <CardDescription>
-                        Carica un&apos;immagine per sostituire il logo mostrato nell&apos;app e nei report PDF.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3 pt-4">
-                    {isLoading ? (
-                        <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-                            Caricamento impostazioni...
-                        </div>
-                    ) : (
-                        <div className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-3">
+        <SettingsSection>
+            <SettingsCard
+                title="Logo laboratorio"
+                description="Carica un'immagine per sostituire il logo mostrato nell'app e nei report PDF."
+            >
+                {isLoading ? (
+                    <SettingsLoadingBox />
+                ) : (
+                    <div className="grid gap-3 xl:grid-cols-2">
+                        <SettingsGroup title="Logo attuale">
                             <div className="flex items-center gap-4">
                                 <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-primary/15 bg-background">
                                     <img src={previewSrc} alt="Logo attuale" className="size-full object-contain" />
@@ -111,6 +112,19 @@ const LogoSettingsPanel = () => {
                                 </div>
                             </div>
 
+                            <SettingsActions>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={!hasCustomLogo || isResetting || isUploading}
+                                    onClick={() => void handleReset()}
+                                >
+                                    {isResetting ? "Ripristino..." : "Ripristina logo predefinito"}
+                                </Button>
+                            </SettingsActions>
+                        </SettingsGroup>
+
+                        <SettingsGroup title="Sostituisci logo">
                             <div className="grid gap-2">
                                 <Label htmlFor="logoUpload">Carica nuovo logo</Label>
                                 <Input
@@ -122,25 +136,15 @@ const LogoSettingsPanel = () => {
                                     onChange={(event) => void handleFileSelected(event)}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Formati supportati: JPG, PNG, WEBP, GIF, SVG. Dimensione massima 5 MB.
+                                    Formati supportati: JPG, PNG, WEBP, GIF, SVG. Dimensione massima 5 MB. Il logo viene
+                                    applicato subito dopo il caricamento.
                                 </p>
                             </div>
-
-                            <div className="flex flex-wrap justify-end gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={!hasCustomLogo || isResetting || isUploading}
-                                    onClick={() => void handleReset()}
-                                >
-                                    {isResetting ? "Ripristino..." : "Ripristina logo predefinito"}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+                        </SettingsGroup>
+                    </div>
+                )}
+            </SettingsCard>
+        </SettingsSection>
     );
 };
 

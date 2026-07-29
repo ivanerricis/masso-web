@@ -1,10 +1,10 @@
 import { useSearchParams } from "react-router-dom";
 import { Database, Image, Mail, Palette, RefreshCw, ScrollText, Users } from "lucide-react";
-import BackupSettingsPanel from "@/components/dialogs/settings/backupSettingsPanel";
-import EmailSettingsPanel from "@/components/dialogs/settings/emailSettingsPanel";
-import LogoSettingsPanel from "@/components/dialogs/settings/logoSettingsPanel";
-import LogsSettingsPanel from "@/components/dialogs/settings/logsSettingsPanel";
-import UpdateSettingsPanel from "@/components/dialogs/settings/updateSettingsPanel";
+import BackupSettingsPanel from "@/components/settings/backupSettingsPanel";
+import EmailSettingsPanel from "@/components/settings/emailSettingsPanel";
+import LogoSettingsPanel from "@/components/settings/logoSettingsPanel";
+import LogsSettingsPanel from "@/components/settings/logsSettingsPanel";
+import UpdateSettingsPanel from "@/components/settings/updateSettingsPanel";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";

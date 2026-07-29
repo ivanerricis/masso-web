@@ -2,7 +2,7 @@ import { startTransition, useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SettingsCard, SettingsEmptyBox, SettingsSection } from "@/components/settings/settingsUi";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,21 +18,9 @@ import {
     type LogEntryDto,
     type LogFileDto,
 } from "@/lib/api";
-import { cn, formatDateTime } from "@/lib/utils";
+import { cn, formatDateTime, formatFileSize } from "@/lib/utils";
 
 const pageSize = 25;
-
-const formatFileSize = (sizeBytes: number) => {
-    if (sizeBytes < 1024) {
-        return `${sizeBytes} B`;
-    }
-
-    if (sizeBytes < 1024 * 1024) {
-        return `${(sizeBytes / 1024).toFixed(1)} KB`;
-    }
-
-    return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
-};
 
 const formatDayKey = (dayKey: string) => formatDateTime(`${dayKey}T00:00:00.000Z`).split(",")[0]?.trim() ?? dayKey;
 
@@ -118,20 +106,43 @@ const LogsSettingsPanel = () => {
     };
 
     return (
-        <Card size="sm" className="border-primary/15 shadow-sm">
-            <CardHeader className="border-b border-primary/10 bg-muted/20">
-                <CardTitle>Log azioni</CardTitle>
-                <CardDescription>Consulta il registro delle azioni eseguite sull'applicazione, giorno per giorno.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 pt-4">
+        <SettingsSection>
+            <SettingsCard
+                title="Log azioni"
+                description="Consulta il registro delle azioni eseguite sull'applicazione, giorno per giorno."
+                action={
+                    <>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={isLoadingEntries || isLoadingFiles}
+                                    onClick={handleRefresh}
+                                    aria-label="Aggiorna elenco log"
+                                >
+                                    <RefreshCw
+                                        className={cn(
+                                            "size-4",
+                                            (isLoadingEntries || isLoadingFiles) && "animate-spin"
+                                        )}
+                                    />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Aggiorna elenco log</TooltipContent>
+                        </Tooltip>
+
+                        <Button type="button" variant="outline" disabled={!selectedDayKey} onClick={handleDownload}>
+                            Scarica log selezionato
+                        </Button>
+                    </>
+                }
+            >
                 {isLoadingFiles && logFiles.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-                        Caricamento elenco log...
-                    </div>
+                    <SettingsEmptyBox>Caricamento elenco log...</SettingsEmptyBox>
                 ) : logFiles.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-                        Nessun log disponibile sul server.
-                    </div>
+                    <SettingsEmptyBox>Nessun log disponibile sul server.</SettingsEmptyBox>
                 ) : (
                     <>
                         <div className="flex flex-wrap items-center gap-2">
@@ -149,32 +160,6 @@ const LogsSettingsPanel = () => {
                             </Select>
 
                             <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca nel log..." />
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        disabled={isLoadingEntries || isLoadingFiles}
-                                        onClick={handleRefresh}
-                                        aria-label="Aggiorna"
-                                    >
-                                        <RefreshCw className={cn("size-4", (isLoadingEntries || isLoadingFiles) && "animate-spin")} />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Aggiorna</TooltipContent>
-                            </Tooltip>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="ml-auto"
-                                disabled={!selectedDayKey}
-                                onClick={handleDownload}
-                            >
-                                Scarica log selezionato
-                            </Button>
                         </div>
 
                         <div className="rounded-md border border-primary/15">
@@ -231,8 +216,8 @@ const LogsSettingsPanel = () => {
                         />
                     </>
                 )}
-            </CardContent>
-        </Card>
+            </SettingsCard>
+        </SettingsSection>
     );
 };
 

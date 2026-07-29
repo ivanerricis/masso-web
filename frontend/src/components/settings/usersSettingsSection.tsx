@@ -2,8 +2,8 @@ import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { KeyRound, ShieldCheck, Trash2, UserPlus, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SettingsCard, SettingsLoadingBox, SettingsSection } from "@/components/settings/settingsUi";
 import CustomDialog from "@/components/dialogs/customDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import CreateUserDialog from "@/components/dialogs/settings/createUserDialog";
@@ -183,22 +183,19 @@ const UsersSettingsSection = () => {
     );
 
     return (
-        <Card size="sm" className="border-primary/15 shadow-sm">
-            <CardHeader className="flex-row items-start justify-between gap-2 border-b border-primary/10 bg-muted/20">
-                <div>
-                    <CardTitle>Utenti</CardTitle>
-                    <CardDescription>Gestisci gli account che possono accedere all'applicazione.</CardDescription>
-                </div>
-                <Button type="button" onClick={() => setIsCreateOpen(true)}>
-                    <UserPlus className="size-4" />
-                    Nuovo utente
-                </Button>
-            </CardHeader>
-            <CardContent className="pt-4">
+        <SettingsSection>
+            <SettingsCard
+                title="Utenti"
+                description="Gestisci gli account che possono accedere all'applicazione."
+                action={
+                    <Button type="button" onClick={() => setIsCreateOpen(true)}>
+                        <UserPlus className="size-4" />
+                        Nuovo utente
+                    </Button>
+                }
+            >
                 {isLoading ? (
-                    <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-                        Caricamento utenti...
-                    </div>
+                    <SettingsLoadingBox label="Caricamento utenti..." />
                 ) : (
                     <>
                     <Table className="hidden sm:table">
@@ -264,7 +261,7 @@ const UsersSettingsSection = () => {
                     </div>
                     </>
                 )}
-            </CardContent>
+            </SettingsCard>
 
             <CreateUserDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} onCreated={handleUserCreated} />
 
@@ -340,7 +337,7 @@ const UsersSettingsSection = () => {
                     password={generatedPasswordResult.generatedPassword}
                 />
             ) : null}
-        </Card>
+        </SettingsSection>
     );
 };
 
