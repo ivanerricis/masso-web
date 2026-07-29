@@ -1,7 +1,8 @@
-import { startTransition, useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Download, Play, RefreshCw, RotateCcw } from "lucide-react";
 import CustomDialog from "@/components/dialogs/customDialog";
 import { useAuth } from "@/components/use-auth";
 import { useBusyGuard } from "@/components/use-busy-guard";
@@ -9,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
     getApiErrorMessage,
     getBackupDumpDownloadUrl,
@@ -22,13 +24,28 @@ import {
     testSmbConnection,
     updateBackupSettings,
     type BackupDumpFileDto,
+    type BackupSettingsDto,
     type BackupSettingsInput,
 } from "@/lib/api";
-import { formatDateTime } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 
 const restoreConfirmKeyword = "RESTORE";
 
 type PendingRestore = { type: "existing"; fileName: string } | { type: "upload"; file: File };
+
+type RunStatus = BackupSettingsDto["lastRunStatus"];
+
+const runStatusLabels: Record<RunStatus, string> = {
+    idle: "Mai eseguito",
+    success: "Riuscito",
+    failed: "Fallito",
+};
+
+const runStatusClasses: Record<RunStatus, string> = {
+    idle: "bg-muted text-muted-foreground",
+    success: "bg-green-500/15 text-green-700 dark:text-green-400",
+    failed: "bg-destructive/15 text-destructive",
+};
 
 const formatFileSize = (sizeBytes: number) => {
     if (sizeBytes < 1024) {
@@ -41,6 +58,42 @@ const formatFileSize = (sizeBytes: number) => {
 
     return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 };
+
+const StatusBadge = ({ status }: { status: RunStatus }) => (
+    <span
+        className={cn(
+            "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium",
+            runStatusClasses[status]
+        )}
+    >
+        {runStatusLabels[status]}
+    </span>
+);
+
+const SummaryTile = ({ label, value, status }: { label: string; value: string; status?: RunStatus }) => (
+    <div className="grid content-start gap-1 rounded-md border border-primary/15 bg-muted/20 p-3">
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="text-sm font-semibold">{value}</span>
+        {status ? <StatusBadge status={status} /> : null}
+    </div>
+);
+
+const ErrorNote = ({ label, message }: { label: string; message: string }) => (
+    <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <span className="font-medium">{label}:</span> {message}
+    </p>
+);
+
+const LoadingBox = ({ destructive = false }: { destructive?: boolean }) => (
+    <div
+        className={cn(
+            "rounded-md border border-dashed bg-muted/30 px-4 py-8 text-center text-muted-foreground",
+            destructive ? "border-destructive/20" : "border-primary/20"
+        )}
+    >
+        Caricamento impostazioni...
+    </div>
+);
 
 type BackupSettingsPanelProps = {
     onSaveSuccess?: () => void;
@@ -71,31 +124,28 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
     const [isRunningBackup, setIsRunningBackup] = useState(false);
     const [formValues, setFormValues] = useState<BackupSettingsInput>(defaultForm);
     const [lastRunAt, setLastRunAt] = useState<string | null>(null);
-    const [lastRunStatus, setLastRunStatus] = useState<"idle" | "success" | "failed">("idle");
+    const [lastRunStatus, setLastRunStatus] = useState<RunStatus>("idle");
     const [lastError, setLastError] = useState<string | null>(null);
     const [nextRunAt, setNextRunAt] = useState<string | null>(null);
     const [lastDumpPath, setLastDumpPath] = useState<string | null>(null);
     const [dumpFiles, setDumpFiles] = useState<BackupDumpFileDto[]>([]);
     const [isLoadingDumps, setIsLoadingDumps] = useState(false);
-    const [selectedDumpFileName, setSelectedDumpFileName] = useState<string>("");
     const [smbPasswordSet, setSmbPasswordSet] = useState(false);
     const [smbLastRunAt, setSmbLastRunAt] = useState<string | null>(null);
-    const [smbLastStatus, setSmbLastStatus] = useState<"idle" | "success" | "failed">("idle");
+    const [smbLastStatus, setSmbLastStatus] = useState<RunStatus>("idle");
     const [smbLastError, setSmbLastError] = useState<string | null>(null);
     const [isTestingSmb, setIsTestingSmb] = useState(false);
 
-    const [restoreDumpFileName, setRestoreDumpFileName] = useState<string>("");
     const [restoreUploadFile, setRestoreUploadFile] = useState<File | null>(null);
     const [resetSchemaOnRestore, setResetSchemaOnRestore] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
     const [pendingRestore, setPendingRestore] = useState<PendingRestore | null>(null);
     const [restoreConfirmText, setRestoreConfirmText] = useState("");
     const [lastRestoreAt, setLastRestoreAt] = useState<string | null>(null);
-    const [lastRestoreStatus, setLastRestoreStatus] = useState<"idle" | "success" | "failed">("idle");
+    const [lastRestoreStatus, setLastRestoreStatus] = useState<RunStatus>("idle");
     const [lastRestoreError, setLastRestoreError] = useState<string | null>(null);
     const [lastRestoreFileName, setLastRestoreFileName] = useState<string | null>(null);
     const [secretsToReconfigure, setSecretsToReconfigure] = useState<string[]>([]);
-    const restoreFileInputRef = useRef<HTMLInputElement>(null);
 
     const loadSettings = async () => {
         setIsLoading(true);
@@ -142,14 +192,7 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         setIsLoadingDumps(true);
 
         try {
-            const dumps = await listBackupDumps();
-            setDumpFiles(dumps);
-            setSelectedDumpFileName((current) =>
-                current && dumps.some((dump) => dump.fileName === current) ? current : dumps[0]?.fileName ?? ""
-            );
-            setRestoreDumpFileName((current) =>
-                current && dumps.some((dump) => dump.fileName === current) ? current : dumps[0]?.fileName ?? ""
-            );
+            setDumpFiles(await listBackupDumps());
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare l'elenco dei dump"));
         } finally {
@@ -273,12 +316,8 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         }
     };
 
-    const handleDownloadSelectedDump = () => {
-        if (!selectedDumpFileName) {
-            return;
-        }
-
-        window.location.href = getBackupDumpDownloadUrl(selectedDumpFileName);
+    const handleDownloadDump = (fileName: string) => {
+        window.location.assign(getBackupDumpDownloadUrl(fileName));
     };
 
     const handleRunBackup = async () => {
@@ -336,6 +375,15 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         setRestoreConfirmText("");
     };
 
+    const closeRestoreConfirm = () => {
+        if (isRestoring) {
+            return;
+        }
+
+        setPendingRestore(null);
+        setRestoreConfirmText("");
+    };
+
     const handleConfirmRestore = async () => {
         if (!pendingRestore || isRestoring) {
             return;
@@ -389,171 +437,63 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
         }
     };
 
+    const totalDumpsSize = dumpFiles.reduce((total, dump) => total + dump.sizeBytes, 0);
+
     return (
-        <>
-        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid gap-4">
             <Card size="sm" className="border-primary/15 shadow-sm">
                 <CardHeader className="border-b border-primary/10 bg-muted/20">
-                    <CardTitle>Backup database</CardTitle>
-                    <CardDescription>Configura il dump manuale e automatico del database.</CardDescription>
+                    <CardTitle>Stato backup</CardTitle>
+                    <CardDescription>Riepilogo delle ultime esecuzioni e avvio di un dump immediato.</CardDescription>
+                    <CardAction>
+                        <Button
+                            type="button"
+                            disabled={isRunningBackup || isSaving || isLoading}
+                            onClick={() => void handleRunBackup()}
+                        >
+                            <Play className="size-4" />
+                            {isRunningBackup ? "Dump in corso..." : "Esegui dump adesso"}
+                        </Button>
+                    </CardAction>
                 </CardHeader>
                 <CardContent className="grid gap-3 pt-4">
                     {isLoading ? (
-                        <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-                            Caricamento impostazioni...
-                        </div>
+                        <LoadingBox />
                     ) : (
                         <>
-                            <div className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-3">
-                                <div className="flex items-center gap-3">
-                                    <Checkbox
-                                        id="autoEnabled"
-                                        checked={formValues.autoEnabled}
-                                        onCheckedChange={(checked) =>
-                                            setFormValues((prev) => ({
-                                                ...prev,
-                                                autoEnabled: Boolean(checked),
-                                            }))
-                                        }
-                                    />
-                                    <Label htmlFor="autoEnabled" className="cursor-pointer">
-                                        Esegui dump in automatico
-                                    </Label>
-                                </div>
-
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="frequencyDays">Ogni quanti giorni</Label>
-                                        <Input
-                                            id="frequencyDays"
-                                            type="number"
-                                            min={1}
-                                            max={365}
-                                            disabled={!formValues.autoEnabled}
-                                            value={formValues.frequencyDays}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({
-                                                    ...prev,
-                                                    frequencyDays: Number(event.target.value),
-                                                }))
-                                            }
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="runAt">Orario</Label>
-                                        <Input
-                                            id="runAt"
-                                            type="time"
-                                            disabled={!formValues.autoEnabled}
-                                            value={formValues.runAt}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({
-                                                    ...prev,
-                                                    runAt: event.target.value,
-                                                }))
-                                            }
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="maxBackupsToKeep">Numero di backup da mantenere</Label>
-                                    <Input
-                                        id="maxBackupsToKeep"
-                                        type="number"
-                                        min={1}
-                                        max={365}
-                                        value={formValues.maxBackupsToKeep}
-                                        onChange={(event) =>
-                                            setFormValues((prev) => ({
-                                                ...prev,
-                                                maxBackupsToKeep: Number(event.target.value),
-                                            }))
-                                        }
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        I dump più vecchi oltre questo numero vengono eliminati automaticamente ad ogni nuovo backup.
-                                    </p>
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="outputDir">Cartella dump sul server</Label>
-                                    <Input
-                                        id="outputDir"
-                                        placeholder="es: backups oppure /app/backups"
-                                        value={formValues.outputDir}
-                                        disabled
-                                        onChange={(event) =>
-                                            setFormValues((prev) => ({
-                                                ...prev,
-                                                outputDir: event.target.value,
-                                            }))
-                                        }
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        La cartella di destinazione segue la configurazione del compose/.env.
-                                    </p>
-                                </div>
-
-                                <div className="flex flex-wrap justify-end gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        disabled={isRunningBackup || isSaving}
-                                        onClick={() => void handleRunBackup()}
-                                    >
-                                        {isRunningBackup ? "Dump in corso..." : "Esegui dump adesso"}
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        disabled={isSaving || isLoading || isRunningBackup}
-                                        onClick={() => void handleSave()}
-                                    >
-                                        {isSaving ? "Salvataggio..." : "Salva impostazioni"}
-                                    </Button>
-                                </div>
+                            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                                <SummaryTile
+                                    label="Ultimo backup"
+                                    value={formatDateTime(lastRunAt)}
+                                    status={lastRunStatus}
+                                />
+                                <SummaryTile
+                                    label="Prossima esecuzione"
+                                    value={nextRunAt ? formatDateTime(nextRunAt) : "Automazione disattivata"}
+                                />
+                                <SummaryTile
+                                    label="Ultima copia su NAS"
+                                    value={formatDateTime(smbLastRunAt)}
+                                    status={smbLastStatus}
+                                />
+                                <SummaryTile
+                                    label="Dump sul server"
+                                    value={
+                                        dumpFiles.length === 0
+                                            ? "Nessuno"
+                                            : `${dumpFiles.length} — ${formatFileSize(totalDumpsSize)}`
+                                    }
+                                />
                             </div>
 
-                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-3 text-sm">
-                                <p>Ultima esecuzione: {formatDateTime(lastRunAt)}</p>
-                                <p>Stato ultima esecuzione: {lastRunStatus}</p>
-                                <p>Prossima esecuzione: {formatDateTime(nextRunAt)}</p>
-                                <p>Percorso ultimo dump: {lastDumpPath ?? "-"}</p>
-                                {lastError ? <p className="text-destructive">Ultimo errore: {lastError}</p> : null}
-                            </div>
+                            {lastDumpPath ? (
+                                <p className="text-xs text-muted-foreground">
+                                    Percorso ultimo dump: <span className="font-mono">{lastDumpPath}</span>
+                                </p>
+                            ) : null}
 
-                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-3">
-                                <Label htmlFor="dumpFileSelect">Dump disponibili</Label>
-                                {isLoadingDumps ? (
-                                    <p className="text-sm text-muted-foreground">Caricamento elenco dump...</p>
-                                ) : dumpFiles.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">Nessun dump disponibile sul server.</p>
-                                ) : (
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <Select value={selectedDumpFileName} onValueChange={setSelectedDumpFileName}>
-                                            <SelectTrigger id="dumpFileSelect" className="w-full sm:w-auto sm:min-w-[320px]">
-                                                <SelectValue placeholder="Seleziona un dump" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {dumpFiles.map((dump) => (
-                                                    <SelectItem key={dump.fileName} value={dump.fileName}>
-                                                        {`${dump.fileName} — ${formatDateTime(dump.createdAt)} — ${formatFileSize(dump.sizeBytes)}`}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            disabled={!selectedDumpFileName}
-                                            onClick={handleDownloadSelectedDump}
-                                        >
-                                            Scarica dump selezionato
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
+                            {lastError ? <ErrorNote label="Ultimo errore backup" message={lastError} /> : null}
+                            {smbLastError ? <ErrorNote label="Ultimo errore NAS" message={smbLastError} /> : null}
                         </>
                     )}
                 </CardContent>
@@ -561,232 +501,384 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
 
             <Card size="sm" className="border-primary/15 shadow-sm">
                 <CardHeader className="border-b border-primary/10 bg-muted/20">
-                    <CardTitle>Destinazione di rete (NAS)</CardTitle>
+                    <CardTitle>Configurazione</CardTitle>
                     <CardDescription>
-                        Copia automaticamente ogni backup anche su una condivisione SMB/CIFS (es. una cartella di un NAS).
+                        Pianificazione del dump automatico e copia su condivisione di rete. Le due sezioni si salvano
+                        insieme con il pulsante in fondo.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3 pt-4">
                     {isLoading ? (
-                        <div className="rounded-md border border-dashed border-primary/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-                            Caricamento impostazioni...
-                        </div>
+                        <LoadingBox />
                     ) : (
                         <>
-                            <div className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-3">
-                                <div className="flex items-center gap-3">
-                                    <Checkbox
-                                        id="smbEnabled"
-                                        checked={formValues.smbEnabled}
-                                        onCheckedChange={(checked) =>
-                                            setFormValues((prev) => ({
-                                                ...prev,
-                                                smbEnabled: Boolean(checked),
-                                            }))
-                                        }
-                                    />
-                                    <Label htmlFor="smbEnabled" className="cursor-pointer">
-                                        Copia i backup anche sul NAS
-                                    </Label>
-                                </div>
+                            <div className="grid gap-3 xl:grid-cols-2">
+                                <div className="grid content-start gap-3 rounded-md border border-primary/15 bg-muted/20 p-3">
+                                    <p className="text-sm font-semibold">Pianificazione</p>
 
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="smbHost">Host / IP del NAS</Label>
-                                        <Input
-                                            id="smbHost"
-                                            placeholder="es: 192.168.1.10"
-                                            disabled={!formValues.smbEnabled}
-                                            value={formValues.smbHost}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, smbHost: event.target.value }))
-                                            }
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="smbShare">Nome condivisione</Label>
-                                        <Input
-                                            id="smbShare"
-                                            placeholder="es: backup"
-                                            disabled={!formValues.smbEnabled}
-                                            value={formValues.smbShare}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, smbShare: event.target.value }))
-                                            }
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="smbPath">Sottocartella (opzionale)</Label>
-                                        <Input
-                                            id="smbPath"
-                                            placeholder="es: masso-web"
-                                            disabled={!formValues.smbEnabled}
-                                            value={formValues.smbPath}
-                                            onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, smbPath: event.target.value }))
-                                            }
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="smbPort">Porta</Label>
-                                        <Input
-                                            id="smbPort"
-                                            type="number"
-                                            min={1}
-                                            max={65535}
-                                            disabled={!formValues.smbEnabled}
-                                            value={formValues.smbPort}
-                                            onChange={(event) =>
+                                    <div className="flex items-center gap-3">
+                                        <Checkbox
+                                            id="autoEnabled"
+                                            checked={formValues.autoEnabled}
+                                            onCheckedChange={(checked) =>
                                                 setFormValues((prev) => ({
                                                     ...prev,
-                                                    smbPort: Number(event.target.value),
+                                                    autoEnabled: Boolean(checked),
                                                 }))
                                             }
                                         />
+                                        <Label htmlFor="autoEnabled" className="cursor-pointer">
+                                            Esegui dump in automatico
+                                        </Label>
                                     </div>
-                                </div>
 
-                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="frequencyDays">Ogni quanti giorni</Label>
+                                            <Input
+                                                id="frequencyDays"
+                                                type="number"
+                                                min={1}
+                                                max={365}
+                                                disabled={!formValues.autoEnabled}
+                                                value={formValues.frequencyDays}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({
+                                                        ...prev,
+                                                        frequencyDays: Number(event.target.value),
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="runAt">Orario</Label>
+                                            <Input
+                                                id="runAt"
+                                                type="time"
+                                                disabled={!formValues.autoEnabled}
+                                                value={formValues.runAt}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({
+                                                        ...prev,
+                                                        runAt: event.target.value,
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div className="grid gap-2">
-                                        <Label htmlFor="smbDomain">Dominio/Workgroup (opzionale)</Label>
+                                        <Label htmlFor="maxBackupsToKeep">Numero di backup da mantenere</Label>
                                         <Input
-                                            id="smbDomain"
-                                            placeholder="es: WORKGROUP"
-                                            disabled={!formValues.smbEnabled}
-                                            value={formValues.smbDomain}
+                                            id="maxBackupsToKeep"
+                                            type="number"
+                                            min={1}
+                                            max={365}
+                                            value={formValues.maxBackupsToKeep}
                                             onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, smbDomain: event.target.value }))
+                                                setFormValues((prev) => ({
+                                                    ...prev,
+                                                    maxBackupsToKeep: Number(event.target.value),
+                                                }))
                                             }
                                         />
+                                        <p className="text-xs text-muted-foreground">
+                                            I dump più vecchi oltre questo numero vengono eliminati automaticamente ad
+                                            ogni nuovo backup.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid gap-1">
+                                        <span className="text-sm font-medium">Cartella dump sul server</span>
+                                        <p className="font-mono text-sm break-all">{formValues.outputDir || "-"}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Definita dalla configurazione del compose/.env, non modificabile da qui.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid content-start gap-3 rounded-md border border-primary/15 bg-muted/20 p-3">
+                                    <p className="text-sm font-semibold">Destinazione di rete (NAS)</p>
+
+                                    <div className="flex items-center gap-3">
+                                        <Checkbox
+                                            id="smbEnabled"
+                                            checked={formValues.smbEnabled}
+                                            onCheckedChange={(checked) =>
+                                                setFormValues((prev) => ({
+                                                    ...prev,
+                                                    smbEnabled: Boolean(checked),
+                                                }))
+                                            }
+                                        />
+                                        <Label htmlFor="smbEnabled" className="cursor-pointer">
+                                            Copia ogni backup su una condivisione SMB/CIFS
+                                        </Label>
+                                    </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="smbHost">Host / IP del NAS</Label>
+                                            <Input
+                                                id="smbHost"
+                                                placeholder="es: 192.168.1.10"
+                                                disabled={!formValues.smbEnabled}
+                                                value={formValues.smbHost}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, smbHost: event.target.value }))
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="smbShare">Nome condivisione</Label>
+                                            <Input
+                                                id="smbShare"
+                                                placeholder="es: backup"
+                                                disabled={!formValues.smbEnabled}
+                                                value={formValues.smbShare}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, smbShare: event.target.value }))
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="smbPath">Sottocartella (opzionale)</Label>
+                                            <Input
+                                                id="smbPath"
+                                                placeholder="es: masso-web"
+                                                disabled={!formValues.smbEnabled}
+                                                value={formValues.smbPath}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, smbPath: event.target.value }))
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="smbPort">Porta</Label>
+                                            <Input
+                                                id="smbPort"
+                                                type="number"
+                                                min={1}
+                                                max={65535}
+                                                disabled={!formValues.smbEnabled}
+                                                value={formValues.smbPort}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({
+                                                        ...prev,
+                                                        smbPort: Number(event.target.value),
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="smbDomain">Dominio/Workgroup (opzionale)</Label>
+                                            <Input
+                                                id="smbDomain"
+                                                placeholder="es: WORKGROUP"
+                                                disabled={!formValues.smbEnabled}
+                                                value={formValues.smbDomain}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, smbDomain: event.target.value }))
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="smbUsername">Utente</Label>
+                                            <Input
+                                                id="smbUsername"
+                                                disabled={!formValues.smbEnabled}
+                                                value={formValues.smbUsername}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({
+                                                        ...prev,
+                                                        smbUsername: event.target.value,
+                                                    }))
+                                                }
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="smbUsername">Utente</Label>
+                                        <Label htmlFor="smbPassword">Password</Label>
                                         <Input
-                                            id="smbUsername"
+                                            id="smbPassword"
+                                            type="password"
+                                            autoComplete="new-password"
+                                            placeholder={smbPasswordSet ? "•••• (invariata, lascia vuoto)" : ""}
                                             disabled={!formValues.smbEnabled}
-                                            value={formValues.smbUsername}
+                                            value={formValues.smbPassword ?? ""}
                                             onChange={(event) =>
-                                                setFormValues((prev) => ({ ...prev, smbUsername: event.target.value }))
+                                                setFormValues((prev) => ({ ...prev, smbPassword: event.target.value }))
                                             }
                                         />
+                                        <p className="text-xs text-muted-foreground">
+                                            La password viene salvata cifrata. Lasciala vuota al salvataggio per
+                                            mantenere quella già impostata.
+                                        </p>
                                     </div>
-                                </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="smbPassword">Password</Label>
-                                    <Input
-                                        id="smbPassword"
-                                        type="password"
-                                        autoComplete="new-password"
-                                        placeholder={smbPasswordSet ? "•••• (invariata, lascia vuoto)" : ""}
-                                        disabled={!formValues.smbEnabled}
-                                        value={formValues.smbPassword ?? ""}
-                                        onChange={(event) =>
-                                            setFormValues((prev) => ({ ...prev, smbPassword: event.target.value }))
-                                        }
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        La password viene salvata cifrata. Lasciala vuota al salvataggio per mantenere quella già impostata.
-                                    </p>
-                                </div>
-
-                                <div className="flex flex-wrap justify-end gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        disabled={!formValues.smbEnabled || isTestingSmb}
-                                        onClick={() => void handleTestSmbConnection()}
-                                    >
-                                        {isTestingSmb ? "Test in corso..." : "Testa connessione"}
-                                    </Button>
+                                    <div className="flex justify-end">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled={!formValues.smbEnabled || isTestingSmb}
+                                            onClick={() => void handleTestSmbConnection()}
+                                        >
+                                            {isTestingSmb ? "Test in corso..." : "Testa connessione"}
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="grid gap-2 rounded-md border border-primary/15 bg-muted/20 p-3 text-sm">
-                                <p>Ultima copia su NAS: {formatDateTime(smbLastRunAt)}</p>
-                                <p>Stato ultima copia su NAS: {smbLastStatus}</p>
-                                {smbLastError ? (
-                                    <p className="text-destructive">Ultimo errore NAS: {smbLastError}</p>
-                                ) : null}
+                            <div className="flex justify-end">
+                                <Button
+                                    type="button"
+                                    disabled={isSaving || isLoading || isRunningBackup}
+                                    onClick={() => void handleSave()}
+                                >
+                                    {isSaving ? "Salvataggio..." : "Salva impostazioni"}
+                                </Button>
                             </div>
                         </>
                     )}
                 </CardContent>
             </Card>
-        </div>
 
-        <Card size="sm" className="border-destructive/30 shadow-sm">
-            <CardHeader className="border-b border-destructive/15 bg-destructive/5">
-                <CardTitle>Ripristino database</CardTitle>
-                <CardDescription>
-                    Sovrascrive i dati attuali con quelli del dump scelto. Operazione irreversibile: valuta di eseguire
-                    prima un dump del database corrente.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 pt-4">
-                {isLoading ? (
-                    <div className="rounded-md border border-dashed border-destructive/20 bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-                        Caricamento impostazioni...
-                    </div>
-                ) : (
-                    <>
-                        <div className="grid gap-3 rounded-md border border-destructive/15 bg-muted/20 p-3">
-                            <div className="flex items-center gap-3">
-                                <Checkbox
-                                    id="resetSchemaOnRestore"
-                                    checked={resetSchemaOnRestore}
-                                    onCheckedChange={(checked) => setResetSchemaOnRestore(Boolean(checked))}
-                                />
-                                <Label htmlFor="resetSchemaOnRestore" className="cursor-pointer">
-                                    Svuota lo schema prima del ripristino (consigliato se il dump contiene l&apos;intero
-                                    database)
-                                </Label>
-                            </div>
-
-                            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="restoreDumpSelect">Ripristina da un dump presente sul server</Label>
-                                    {dumpFiles.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">Nessun dump disponibile sul server.</p>
-                                    ) : (
-                                        <Select value={restoreDumpFileName} onValueChange={setRestoreDumpFileName}>
-                                            <SelectTrigger id="restoreDumpSelect" className="w-full">
-                                                <SelectValue placeholder="Seleziona un dump" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {dumpFiles.map((dump) => (
-                                                    <SelectItem key={dump.fileName} value={dump.fileName}>
-                                                        {`${dump.fileName} — ${formatDateTime(dump.createdAt)} — ${formatFileSize(dump.sizeBytes)}`}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                </div>
+            <Card size="sm" className="border-primary/15 shadow-sm">
+                <CardHeader className="border-b border-primary/10 bg-muted/20">
+                    <CardTitle>Archivio dump</CardTitle>
+                    <CardDescription>
+                        Dump presenti sul server: scaricali oppure ripristinali direttamente. Il ripristino sovrascrive i
+                        dati attuali ed è irreversibile.
+                    </CardDescription>
+                    <CardAction>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
                                 <Button
                                     type="button"
-                                    variant="destructive"
-                                    disabled={!restoreDumpFileName || isRestoring}
-                                    onClick={() => openRestoreConfirm({ type: "existing", fileName: restoreDumpFileName })}
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={isLoadingDumps}
+                                    onClick={() => void loadDumpFiles()}
+                                    aria-label="Aggiorna elenco dump"
                                 >
-                                    Ripristina da questo dump
+                                    <RefreshCw className={cn("size-4", isLoadingDumps && "animate-spin")} />
                                 </Button>
-                            </div>
+                            </TooltipTrigger>
+                            <TooltipContent>Aggiorna elenco dump</TooltipContent>
+                        </Tooltip>
+                    </CardAction>
+                </CardHeader>
+                <CardContent className="pt-4">
+                    <div className="rounded-md border border-primary/15">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nome file</TableHead>
+                                    <TableHead>Data</TableHead>
+                                    <TableHead>Dimensione</TableHead>
+                                    <TableHead className="text-right">Azioni</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoadingDumps && dumpFiles.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="whitespace-normal text-center text-muted-foreground">
+                                            Caricamento elenco dump...
+                                        </TableCell>
+                                    </TableRow>
+                                ) : dumpFiles.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="whitespace-normal text-center text-muted-foreground">
+                                            Nessun dump disponibile sul server.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    dumpFiles.map((dump) => (
+                                        <TableRow key={dump.fileName}>
+                                            <TableCell className="whitespace-normal font-mono text-xs">
+                                                {dump.fileName}
+                                            </TableCell>
+                                            <TableCell>{formatDateTime(dump.createdAt)}</TableCell>
+                                            <TableCell>{formatFileSize(dump.sizeBytes)}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="icon"
+                                                                onClick={() => handleDownloadDump(dump.fileName)}
+                                                                aria-label={`Scarica ${dump.fileName}`}
+                                                            >
+                                                                <Download className="size-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Scarica</TooltipContent>
+                                                    </Tooltip>
 
-                            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="icon"
+                                                                disabled={isRestoring}
+                                                                onClick={() =>
+                                                                    openRestoreConfirm({
+                                                                        type: "existing",
+                                                                        fileName: dump.fileName,
+                                                                    })
+                                                                }
+                                                                aria-label={`Ripristina ${dump.fileName}`}
+                                                            >
+                                                                <RotateCcw className="size-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Ripristina questo dump</TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card size="sm" className="border-destructive/30 shadow-sm">
+                <CardHeader className="border-b border-destructive/15 bg-destructive/5">
+                    <CardTitle>Ripristino da file esterno</CardTitle>
+                    <CardDescription>
+                        Carica un dump che non si trova sul server per sovrascrivere i dati attuali. Operazione
+                        irreversibile: valuta di eseguire prima un dump del database corrente.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 pt-4">
+                    {isLoading ? (
+                        <LoadingBox destructive />
+                    ) : (
+                        <>
+                            <div className="grid gap-2 rounded-md border border-destructive/15 bg-muted/20 p-3 sm:grid-cols-[1fr_auto] sm:items-end">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="restoreUpload">Oppure carica un file .tar.gz o .sql</Label>
+                                    <Label htmlFor="restoreUpload">File .tar.gz o .sql</Label>
                                     <Input
                                         id="restoreUpload"
                                         type="file"
                                         accept=".sql,.gz,.tar.gz,text/plain,application/sql,application/gzip"
-                                        ref={restoreFileInputRef}
                                         disabled={isRestoring}
                                         onChange={handleRestoreFileSelected}
                                     />
@@ -802,88 +894,102 @@ const BackupSettingsPanel = ({ onSaveSuccess }: BackupSettingsPanelProps) => {
                                     variant="destructive"
                                     disabled={!restoreUploadFile || isRestoring}
                                     onClick={() =>
-                                        restoreUploadFile && openRestoreConfirm({ type: "upload", file: restoreUploadFile })
+                                        restoreUploadFile &&
+                                        openRestoreConfirm({ type: "upload", file: restoreUploadFile })
                                     }
                                 >
                                     Ripristina da questo file
                                 </Button>
                             </div>
-                        </div>
 
-                        {secretsToReconfigure.length > 0 ? (
-                            <div className="grid gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-                                <p className="font-medium">Password da reinserire dopo il ripristino</p>
-                                <p className="text-muted-foreground">
-                                    Le password sono cifrate con una chiave che resta sul server e non viene
-                                    inclusa nei backup. Ripristinando su un'altra macchina non sono più
-                                    leggibili e vanno riscritte:
-                                </p>
-                                <ul className="list-disc pl-5">
-                                    {secretsToReconfigure.map((secret) => (
-                                        <li key={secret}>{secret}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ) : null}
-
-                        <div className="grid gap-2 rounded-md border border-destructive/15 bg-muted/20 p-3 text-sm">
-                            <p>Ultimo ripristino: {formatDateTime(lastRestoreAt)}</p>
-                            <p>Stato ultimo ripristino: {lastRestoreStatus}</p>
-                            <p>Dump utilizzato: {lastRestoreFileName ?? "-"}</p>
-                            {lastRestoreError ? (
-                                <p className="text-destructive">Ultimo errore: {lastRestoreError}</p>
+                            {secretsToReconfigure.length > 0 ? (
+                                <div className="grid gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                                    <p className="font-medium">Password da reinserire dopo il ripristino</p>
+                                    <p className="text-muted-foreground">
+                                        Le password sono cifrate con una chiave che resta sul server e non viene inclusa
+                                        nei backup. Ripristinando su un&apos;altra macchina non sono più leggibili e
+                                        vanno riscritte:
+                                    </p>
+                                    <ul className="list-disc pl-5">
+                                        {secretsToReconfigure.map((secret) => (
+                                            <li key={secret}>{secret}</li>
+                                        ))}
+                                    </ul>
+                                </div>
                             ) : null}
-                        </div>
-                    </>
-                )}
-            </CardContent>
-        </Card>
 
-        <CustomDialog
-            open={pendingRestore !== null}
-            onOpenChange={(open) => {
-                if (!open && !isRestoring) {
-                    setPendingRestore(null);
-                    setRestoreConfirmText("");
+                            <div className="grid gap-2 rounded-md border border-destructive/15 bg-muted/20 p-3 text-sm">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-muted-foreground">Ultimo ripristino:</span>
+                                    <span className="font-medium">{formatDateTime(lastRestoreAt)}</span>
+                                    <StatusBadge status={lastRestoreStatus} />
+                                </div>
+                                <p className="text-muted-foreground">
+                                    Dump utilizzato: <span className="font-mono">{lastRestoreFileName ?? "-"}</span>
+                                </p>
+                                {lastRestoreError ? (
+                                    <ErrorNote label="Ultimo errore" message={lastRestoreError} />
+                                ) : null}
+                            </div>
+                        </>
+                    )}
+                </CardContent>
+            </Card>
+
+            <CustomDialog
+                open={pendingRestore !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeRestoreConfirm();
+                    }
+                }}
+                title="Conferma ripristino database"
+                description={
+                    pendingRestore?.type === "existing"
+                        ? `Stai per sovrascrivere il database con il dump "${pendingRestore.fileName}". L'operazione è irreversibile.`
+                        : pendingRestore?.type === "upload"
+                          ? `Stai per sovrascrivere il database con il file caricato "${pendingRestore.file.name}". L'operazione è irreversibile.`
+                          : ""
                 }
-            }}
-            title="Conferma ripristino database"
-            description={
-                pendingRestore?.type === "existing"
-                    ? `Stai per sovrascrivere il database con il dump "${pendingRestore.fileName}". L'operazione è irreversibile.`
-                    : pendingRestore?.type === "upload"
-                      ? `Stai per sovrascrivere il database con il file caricato "${pendingRestore.file.name}". L'operazione è irreversibile.`
-                      : ""
-            }
-            content={
-                <div className="grid gap-2 py-2">
-                    <Label htmlFor="restoreConfirmText">
-                        Digita <span className="font-semibold">{restoreConfirmKeyword}</span> per confermare
-                    </Label>
-                    <Input
-                        id="restoreConfirmText"
-                        value={restoreConfirmText}
-                        disabled={isRestoring}
-                        onChange={(event) => setRestoreConfirmText(event.target.value)}
-                        autoComplete="off"
-                    />
-                </div>
-            }
-            confirmLabel={isRestoring ? "Ripristino in corso..." : "Ripristina"}
-            cancelLabel="Annulla"
-            onCancel={() => {
-                if (!isRestoring) {
-                    setPendingRestore(null);
-                    setRestoreConfirmText("");
+                content={
+                    <div className="grid gap-3 py-2">
+                        <div className="flex items-start gap-3 rounded-md border border-destructive/20 bg-muted/20 p-3">
+                            <Checkbox
+                                id="resetSchemaOnRestore"
+                                checked={resetSchemaOnRestore}
+                                disabled={isRestoring}
+                                onCheckedChange={(checked) => setResetSchemaOnRestore(Boolean(checked))}
+                            />
+                            <Label htmlFor="resetSchemaOnRestore" className="cursor-pointer text-sm leading-snug font-normal">
+                                Svuota lo schema prima del ripristino (consigliato se il dump contiene l&apos;intero
+                                database)
+                            </Label>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="restoreConfirmText">
+                                Digita <span className="font-semibold">{restoreConfirmKeyword}</span> per confermare
+                            </Label>
+                            <Input
+                                id="restoreConfirmText"
+                                value={restoreConfirmText}
+                                disabled={isRestoring}
+                                onChange={(event) => setRestoreConfirmText(event.target.value)}
+                                autoComplete="off"
+                            />
+                        </div>
+                    </div>
                 }
-            }}
-            onConfirm={() => void handleConfirmRestore()}
-            cancelDisabled={isRestoring}
-            confirmDisabled={isRestoring || restoreConfirmText !== restoreConfirmKeyword}
-            preventOutsideClose={isRestoring}
-            destructive
-        />
-        </>
+                confirmLabel={isRestoring ? "Ripristino in corso..." : "Ripristina"}
+                cancelLabel="Annulla"
+                onCancel={closeRestoreConfirm}
+                onConfirm={() => void handleConfirmRestore()}
+                cancelDisabled={isRestoring}
+                confirmDisabled={isRestoring || restoreConfirmText !== restoreConfirmKeyword}
+                preventOutsideClose={isRestoring}
+                destructive
+            />
+        </div>
     );
 };
 

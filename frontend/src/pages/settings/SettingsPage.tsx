@@ -49,7 +49,7 @@ const settingsSections: Array<{
     {
         key: "backup",
         label: "Backup",
-        description: "Dump manuale e automazione",
+        description: "Dump, archivio e ripristino",
         icon: Database,
     },
     {
