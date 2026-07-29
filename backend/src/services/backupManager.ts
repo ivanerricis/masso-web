@@ -434,6 +434,17 @@ const resetPublicSchema = async () => {
 
 const smbTarget = (config: SmbConnectionConfig) => `//${config.host}/${config.share}`;
 
+// smbclient stampa la maggior parte delle diagnostiche (NT_STATUS_*, "Connection to
+// ... failed") su stdout, non su stderr. Guardare solo stderr lascia come unico
+// messaggio "terminato con codice 1", che non dice nulla — e soprattutto impedisce a
+// ensureSmbRemoteDir di riconoscere NT_STATUS_OBJECT_NAME_COLLISION, cioè il caso
+// normalissimo di cartella remota già esistente.
+export const composeSmbErrorMessage = (stderr: string, stdout: string, code: number | null) => {
+    const details = [stderr.trim(), stdout.trim()].filter(Boolean).join(" | ");
+
+    return details || `smbclient terminato con codice ${code}`;
+};
+
 const runSmbClient = async (config: SmbConnectionConfig, command: string, timeoutMs: number) => {
     const args = [smbTarget(config), "-U", config.username, "-p", String(config.port)];
 
@@ -451,6 +462,7 @@ const runSmbClient = async (config: SmbConnectionConfig, command: string, timeou
     await new Promise<void>((resolve, reject) => {
         const child = spawn("smbclient", args, { env });
         let stderr = "";
+        let stdout = "";
         let timedOut = false;
 
         const timer = setTimeout(() => {
@@ -462,6 +474,10 @@ const runSmbClient = async (config: SmbConnectionConfig, command: string, timeou
 
         child.stderr.on("data", (chunk) => {
             stderr += chunk.toString();
+        });
+
+        child.stdout.on("data", (chunk) => {
+            stdout += chunk.toString();
         });
 
         child.on("error", (error: NodeJS.ErrnoException) => {
@@ -488,13 +504,19 @@ const runSmbClient = async (config: SmbConnectionConfig, command: string, timeou
                 return;
             }
 
-            const message = stderr.trim() || `smbclient terminato con codice ${code}`;
-            reject(new BackupManagerError(message, 502));
+            reject(new BackupManagerError(composeSmbErrorMessage(stderr, stdout, code), 502));
         });
     });
 };
 
 const quoteSmbPathSegment = (value: string) => value.replace(/"/g, "");
+
+// La cartella remota che esiste già è il caso normale, non un errore: dal secondo
+// backup in poi il mkdir fallisce sempre così. Le versioni di Samba riportano la
+// collisione con codici diversi, quindi si accettano entrambi.
+export const isAlreadyExistsSmbError = (message: string) =>
+    message.includes("NT_STATUS_OBJECT_NAME_COLLISION") ||
+    message.includes("NT_STATUS_OBJECT_NAME_EXISTS");
 
 const ensureSmbRemoteDir = async (config: SmbConnectionConfig) => {
     const remotePath = config.path.trim();
@@ -508,7 +530,7 @@ const ensureSmbRemoteDir = async (config: SmbConnectionConfig) => {
     } catch (error) {
         const message = error instanceof Error ? error.message : "";
 
-        if (message.includes("NT_STATUS_OBJECT_NAME_COLLISION")) {
+        if (isAlreadyExistsSmbError(message)) {
             return;
         }
 

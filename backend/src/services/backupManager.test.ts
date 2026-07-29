@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { BackupManagerError, getBackupDumpPath, restoreBackupFromUpload } from "./backupManager";
+import {
+    BackupManagerError,
+    composeSmbErrorMessage,
+    getBackupDumpPath,
+    isAlreadyExistsSmbError,
+    restoreBackupFromUpload,
+} from "./backupManager";
 
 // Il nome file è l'unico filtro fra la richiesta e il filesystem: questi test
 // coprono sia la retrocompatibilità col formato storico sia il traversal.
@@ -34,6 +40,43 @@ describe("getBackupDumpPath", () => {
 
     it("rifiuta una data non conforme allo schema", async () => {
         await expectStatus("db-dump-2026-01-01.sql", 400);
+    });
+});
+
+describe("composeSmbErrorMessage", () => {
+    // smbclient scrive le diagnostiche su stdout: ignorarlo lasciava come unico
+    // messaggio "terminato con codice 1", inutile da leggere e soprattutto tale da
+    // far sembrare un errore la cartella remota gia esistente.
+    it("usa stdout quando stderr e vuoto", () => {
+        expect(composeSmbErrorMessage("", "NT_STATUS_LOGON_FAILURE", 1)).toBe("NT_STATUS_LOGON_FAILURE");
+    });
+
+    it("unisce i due flussi quando ci sono entrambi", () => {
+        expect(composeSmbErrorMessage("warn", "NT_STATUS_ACCESS_DENIED", 1)).toBe(
+            "warn | NT_STATUS_ACCESS_DENIED"
+        );
+    });
+
+    it("ripiega sul codice di uscita solo se non c'e output", () => {
+        expect(composeSmbErrorMessage("  ", "  ", 1)).toBe("smbclient terminato con codice 1");
+    });
+
+    it("conserva il codice di collisione, che serve a riconoscere la cartella esistente", () => {
+        const message = composeSmbErrorMessage("", "NT_STATUS_OBJECT_NAME_COLLISION making dir", 1);
+
+        expect(isAlreadyExistsSmbError(message)).toBe(true);
+    });
+});
+
+describe("isAlreadyExistsSmbError", () => {
+    it("riconosce entrambi i codici usati dalle varie versioni di Samba", () => {
+        expect(isAlreadyExistsSmbError("NT_STATUS_OBJECT_NAME_COLLISION")).toBe(true);
+        expect(isAlreadyExistsSmbError("NT_STATUS_OBJECT_NAME_EXISTS")).toBe(true);
+    });
+
+    it("non scambia per collisione un errore diverso", () => {
+        expect(isAlreadyExistsSmbError("NT_STATUS_ACCESS_DENIED")).toBe(false);
+        expect(isAlreadyExistsSmbError("smbclient terminato con codice 1")).toBe(false);
     });
 });
 
