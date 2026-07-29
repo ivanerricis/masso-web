@@ -3,8 +3,10 @@ import {
     BackupManagerError,
     composeSmbErrorMessage,
     getBackupDumpPath,
+    getBackupSortKey,
     isAlreadyExistsSmbError,
     restoreBackupFromUpload,
+    sortBackupFileNamesByAge,
 } from "./backupManager";
 
 // Il nome file è l'unico filtro fra la richiesta e il filesystem: questi test
@@ -40,6 +42,55 @@ describe("getBackupDumpPath", () => {
 
     it("rifiuta una data non conforme allo schema", async () => {
         await expectStatus("db-dump-2026-01-01.sql", 400);
+    });
+});
+
+describe("ordinamento dei backup", () => {
+    // Regressione reale: con 14 .sql legacy e la retention a 14, l'archivio appena
+    // creato finiva in testa all'ordine alfabetico ('db-backup-' < 'db-dump-') e
+    // veniva cancellato subito dopo essere stato scritto. L'upload sul NAS falliva
+    // poi con "does not exist".
+    it("mette il nuovo archivio per ultimo, non per primo", () => {
+        const files = [
+            "db-dump-20260701-020000.sql",
+            "db-backup-20260729-113813.tar.gz",
+            "db-dump-20260710-020000.sql",
+        ];
+
+        expect(sortBackupFileNamesByAge(files).at(-1)).toBe("db-backup-20260729-113813.tar.gz");
+    });
+
+    it("non cancella il piu recente quando la retention taglia i piu vecchi", () => {
+        const legacy = Array.from(
+            { length: 14 },
+            (_, i) => `db-dump-202607${String(i + 1).padStart(2, "0")}-020000.sql`
+        );
+        const fresh = "db-backup-20260729-113813.tar.gz";
+
+        const ordered = sortBackupFileNamesByAge([...legacy, fresh]);
+        const toDelete = ordered.slice(0, ordered.length - 14);
+
+        expect(toDelete).not.toContain(fresh);
+        expect(toDelete).toEqual(["db-dump-20260701-020000.sql"]);
+    });
+
+    it("ordina per data anche fra formati diversi", () => {
+        const ordered = sortBackupFileNamesByAge([
+            "db-backup-20260729-113813.tar.gz",
+            "db-dump-20260801-020000.sql",
+            "db-backup-20260101-000000.tar.gz",
+        ]);
+
+        expect(ordered).toEqual([
+            "db-backup-20260101-000000.tar.gz",
+            "db-backup-20260729-113813.tar.gz",
+            "db-dump-20260801-020000.sql",
+        ]);
+    });
+
+    it("estrae il timestamp da entrambi i formati", () => {
+        expect(getBackupSortKey("db-backup-20260729-113813.tar.gz")).toBe("20260729-113813");
+        expect(getBackupSortKey("db-dump-20260729-113813.sql")).toBe("20260729-113813");
     });
 });
 

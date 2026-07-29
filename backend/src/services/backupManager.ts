@@ -16,6 +16,16 @@ const isBackupFileName = (fileName: string) =>
     legacyDumpFileNamePattern.test(fileName) || archiveFileNamePattern.test(fileName);
 const isArchiveFileName = (fileName: string) => /\.tar\.gz$/i.test(fileName);
 
+// I due formati hanno prefissi diversi ma lo stesso timestamp YYYYMMDD-HHMMSS.
+// Ordinare per nome intero metterebbe tutti i "db-backup-" prima di tutti i
+// "db-dump-" ('b' < 'd') a prescindere dalla data, facendo passare per piu vecchio
+// l'archivio appena creato. L'ordine cronologico va preso dal timestamp.
+export const getBackupSortKey = (fileName: string) => fileName.match(/(\d{8}-\d{6})/)?.[1] ?? "";
+
+/** Dal piu vecchio al piu recente. */
+export const sortBackupFileNamesByAge = (fileNames: string[]) =>
+    [...fileNames].sort((a, b) => getBackupSortKey(a).localeCompare(getBackupSortKey(b)));
+
 const archiveDumpEntry = "dump.sql";
 const archiveDataEntry = "data";
 // Elenco esplicito invece di una lista di esclusioni: un file nuovo in data/ non
@@ -567,7 +577,7 @@ const pruneOldBackups = async (outputDir: string, keep: number) => {
         return;
     }
 
-    const dumpFiles = entries.filter(isBackupFileName).sort();
+    const dumpFiles = sortBackupFileNamesByAge(entries.filter(isBackupFileName));
     const filesToDelete = dumpFiles.slice(0, Math.max(0, dumpFiles.length - keep));
 
     await Promise.all(
@@ -690,7 +700,8 @@ export const listBackupDumps = async (): Promise<BackupDumpFile[]> => {
         })
     );
 
-    return stats.sort((a, b) => b.fileName.localeCompare(a.fileName));
+    // Piu recente in cima, con lo stesso criterio cronologico usato dalla retention.
+    return stats.sort((a, b) => getBackupSortKey(b.fileName).localeCompare(getBackupSortKey(a.fileName)));
 };
 
 export const getBackupDumpPath = async (fileName: string) => {
