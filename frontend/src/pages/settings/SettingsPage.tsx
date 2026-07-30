@@ -1,9 +1,8 @@
 import { useSearchParams } from "react-router-dom";
-import { Building2, Database, Image, Mail, Palette, RefreshCw, ScrollText, Users } from "lucide-react";
+import { Building2, Database, Mail, Palette, RefreshCw, ScrollText, Users } from "lucide-react";
 import BackupSettingsPanel from "@/components/settings/backupSettingsPanel";
 import CompanySettingsPanel from "@/components/settings/companySettingsPanel";
 import EmailSettingsPanel from "@/components/settings/emailSettingsPanel";
-import LogoSettingsPanel from "@/components/settings/logoSettingsPanel";
 import LogsSettingsPanel from "@/components/settings/logsSettingsPanel";
 import UpdateSettingsPanel from "@/components/settings/updateSettingsPanel";
 import { Button } from "@/components/ui/button";
@@ -13,13 +12,12 @@ import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
 import UsersSettingsSection from "@/components/settings/usersSettingsSection";
 import { useAuth } from "@/components/use-auth";
 
-type SettingsSectionKey = "theme" | "users" | "company" | "logo" | "email" | "backup" | "update" | "logs";
+type SettingsSectionKey = "theme" | "users" | "company" | "email" | "backup" | "update" | "logs";
 
 const settingsSectionKeys: SettingsSectionKey[] = [
     "theme",
     "users",
     "company",
-    "logo",
     "email",
     "backup",
     "update",
@@ -47,14 +45,8 @@ const settingsSections: Array<{
     {
         key: "company",
         label: "Azienda",
-        description: "Nome, email, indirizzo e telefono nei PDF",
+        description: "Dati e logo del laboratorio su app e PDF",
         icon: Building2,
-    },
-    {
-        key: "logo",
-        label: "Logo",
-        description: "Logo del laboratorio su app e report",
-        icon: Image,
     },
     {
         key: "email",
@@ -157,8 +149,6 @@ const SettingsPage = () => {
                     <UsersSettingsSection />
                 ) : activeSection === "company" ? (
                     <CompanySettingsPanel />
-                ) : activeSection === "logo" ? (
-                    <LogoSettingsPanel />
                 ) : activeSection === "email" ? (
                     <EmailSettingsPanel />
                 ) : activeSection === "backup" ? (

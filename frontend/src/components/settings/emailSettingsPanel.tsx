@@ -21,6 +21,7 @@ import {
     updateEmailSettings,
     type EmailSettingsInput,
 } from "@/lib/api";
+import { isSettingsFormDirty } from "@/lib/settingsForm";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -40,15 +41,18 @@ const EmailSettingsPanel = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [formValues, setFormValues] = useState<EmailSettingsInput>(defaultForm);
+    const [savedValues, setSavedValues] = useState<EmailSettingsInput>(defaultForm);
     const [passwordSet, setPasswordSet] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+    const isDirty = isSettingsFormDirty(formValues, savedValues, ["password"]);
 
     const loadSettings = async () => {
         setIsLoading(true);
 
         try {
             const settings = await getEmailSettings();
-            setFormValues({
+            const nextValues: EmailSettingsInput = {
                 enabled: settings.enabled,
                 host: settings.host,
                 port: settings.port,
@@ -57,7 +61,9 @@ const EmailSettingsPanel = () => {
                 fromName: settings.fromName,
                 fromEmail: settings.fromEmail,
                 password: "",
-            });
+            };
+            setFormValues(nextValues);
+            setSavedValues(nextValues);
             setPasswordSet(settings.passwordSet);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare le impostazioni email"));
@@ -111,6 +117,16 @@ const EmailSettingsPanel = () => {
 
             setPasswordSet(settings.passwordSet);
             setFormValues((prev) => ({ ...prev, password: "" }));
+            setSavedValues({
+                enabled: settings.enabled,
+                host: settings.host,
+                port: settings.port,
+                secure: settings.secure,
+                username: settings.username,
+                fromName: settings.fromName,
+                fromEmail: settings.fromEmail,
+                password: "",
+            });
             toast.success("Impostazioni email salvate");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare le impostazioni email"));
@@ -339,7 +355,11 @@ const EmailSettingsPanel = () => {
                             >
                                 {isTesting ? "Invio email di test..." : "Testa connessione"}
                             </Button>
-                            <Button type="button" disabled={isSaving || isLoading} onClick={() => void handleSave()}>
+                            <Button
+                                type="button"
+                                disabled={isSaving || isLoading || !isDirty}
+                                onClick={() => void handleSave()}
+                            >
                                 {isSaving ? "Salvataggio..." : "Salva impostazioni"}
                             </Button>
                         </SettingsActions>

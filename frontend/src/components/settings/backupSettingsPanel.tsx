@@ -39,6 +39,7 @@ import {
     type BackupDumpFileDto,
     type BackupSettingsInput,
 } from "@/lib/api";
+import { isSettingsFormDirty } from "@/lib/settingsForm";
 import { cn, formatDateTime, formatFileSize } from "@/lib/utils";
 
 const restoreConfirmKeyword = "RESTORE";
@@ -69,6 +70,7 @@ const BackupSettingsPanel = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isRunningBackup, setIsRunningBackup] = useState(false);
     const [formValues, setFormValues] = useState<BackupSettingsInput>(defaultForm);
+    const [savedValues, setSavedValues] = useState<BackupSettingsInput>(defaultForm);
     const [lastRunAt, setLastRunAt] = useState<string | null>(null);
     const [lastRunStatus, setLastRunStatus] = useState<SettingsRunStatus>("idle");
     const [lastError, setLastError] = useState<string | null>(null);
@@ -93,12 +95,14 @@ const BackupSettingsPanel = () => {
     const [lastRestoreFileName, setLastRestoreFileName] = useState<string | null>(null);
     const [secretsToReconfigure, setSecretsToReconfigure] = useState<string[]>([]);
 
+    const isDirty = isSettingsFormDirty(formValues, savedValues, ["smbPassword"]);
+
     const loadSettings = async () => {
         setIsLoading(true);
 
         try {
             const settings = await getBackupSettings();
-            setFormValues({
+            const nextValues: BackupSettingsInput = {
                 autoEnabled: settings.autoEnabled,
                 frequencyDays: settings.frequencyDays,
                 runAt: settings.runAt,
@@ -112,7 +116,9 @@ const BackupSettingsPanel = () => {
                 smbPort: settings.smbPort,
                 smbUsername: settings.smbUsername,
                 smbPassword: "",
-            });
+            };
+            setFormValues(nextValues);
+            setSavedValues(nextValues);
             setLastRunAt(settings.lastRunAt);
             setLastRunStatus(settings.lastRunStatus);
             setLastError(settings.lastError);
@@ -217,6 +223,21 @@ const BackupSettingsPanel = () => {
             setSmbLastStatus(settings.smbLastStatus);
             setSmbLastError(settings.smbLastError);
             setFormValues((prev) => ({ ...prev, smbPassword: "" }));
+            setSavedValues({
+                autoEnabled: settings.autoEnabled,
+                frequencyDays: settings.frequencyDays,
+                runAt: settings.runAt,
+                outputDir: settings.outputDir,
+                maxBackupsToKeep: settings.maxBackupsToKeep,
+                smbEnabled: settings.smbEnabled,
+                smbHost: settings.smbHost,
+                smbShare: settings.smbShare,
+                smbPath: settings.smbPath,
+                smbDomain: settings.smbDomain,
+                smbPort: settings.smbPort,
+                smbUsername: settings.smbUsername,
+                smbPassword: "",
+            });
             toast.success("Impostazioni backup salvate");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare le impostazioni backup"));
@@ -672,7 +693,7 @@ const BackupSettingsPanel = () => {
                         <SettingsActions>
                             <Button
                                 type="button"
-                                disabled={isSaving || isLoading || isRunningBackup}
+                                disabled={isSaving || isLoading || isRunningBackup || !isDirty}
                                 onClick={() => void handleSave()}
                             >
                                 {isSaving ? "Salvataggio..." : "Salva impostazioni"}
