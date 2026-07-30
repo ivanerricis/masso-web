@@ -33,7 +33,7 @@ const getVisiblePages = (currentPage: number, totalPages: number) => {
 };
 
 const TablePagination = ({ currentPage, totalPages, totalItems, pageSize, onPageChange }: TablePaginationProps) => {
-    if (totalPages <= 1) {
+    if (totalItems <= 0) {
         return null;
     }
 
@@ -47,62 +47,64 @@ const TablePagination = ({ currentPage, totalPages, totalItems, pageSize, onPage
                 Visualizzati {startItem}-{endItem} di {totalItems}
             </p>
 
-            <Pagination>
-                <PaginationContent>
-                    <PaginationItem>
-                        <PaginationPrevious
-                            href="#"
-                            aria-disabled={currentPage === 1}
-                            className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
-                            onClick={(event) => {
-                                event.preventDefault();
-                                if (currentPage > 1) {
-                                    onPageChange(currentPage - 1);
-                                }
-                            }}
-                        />
-                    </PaginationItem>
+            {totalPages <= 1 ? null : (
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious
+                                href="#"
+                                aria-disabled={currentPage === 1}
+                                className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    if (currentPage > 1) {
+                                        onPageChange(currentPage - 1);
+                                    }
+                                }}
+                            />
+                        </PaginationItem>
 
-                    {visiblePages.map((page, index) => {
-                        if (typeof page === "string") {
+                        {visiblePages.map((page, index) => {
+                            if (typeof page === "string") {
+                                return (
+                                    <PaginationItem key={`ellipsis-${index}`}>
+                                        <PaginationEllipsis />
+                                    </PaginationItem>
+                                );
+                            }
+
                             return (
-                                <PaginationItem key={`ellipsis-${index}`}>
-                                    <PaginationEllipsis />
+                                <PaginationItem key={page}>
+                                    <PaginationLink
+                                        href="#"
+                                        isActive={page === currentPage}
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            onPageChange(page);
+                                        }}
+                                    >
+                                        {page}
+                                    </PaginationLink>
                                 </PaginationItem>
                             );
-                        }
+                        })}
 
-                        return (
-                            <PaginationItem key={page}>
-                                <PaginationLink
-                                    href="#"
-                                    isActive={page === currentPage}
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        onPageChange(page);
-                                    }}
-                                >
-                                    {page}
-                                </PaginationLink>
-                            </PaginationItem>
-                        );
-                    })}
-
-                    <PaginationItem>
-                        <PaginationNext
-                            href="#"
-                            aria-disabled={currentPage === totalPages}
-                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
-                            onClick={(event) => {
-                                event.preventDefault();
-                                if (currentPage < totalPages) {
-                                    onPageChange(currentPage + 1);
-                                }
-                            }}
-                        />
-                    </PaginationItem>
-                </PaginationContent>
-            </Pagination>
+                        <PaginationItem>
+                            <PaginationNext
+                                href="#"
+                                aria-disabled={currentPage === totalPages}
+                                className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    if (currentPage < totalPages) {
+                                        onPageChange(currentPage + 1);
+                                    }
+                                }}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            )}
         </div>
     );
 };
