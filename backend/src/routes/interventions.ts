@@ -5,6 +5,7 @@ import {
     createIntervention,
     deleteInterventionById,
     getInterventionById,
+    getInterventionStats,
     listInterventions,
     updateInterventionById,
 } from "../db/queries/intervention";
@@ -120,6 +121,12 @@ interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), a
     });
 
     sendListResponse(res, interventions, page, pageSize);
+});
+
+interventionsRouter.get("/stats", async (_req, res) => {
+    const stats = await getInterventionStats();
+
+    res.json(stats);
 });
 
 const loadInterventionPrintContext = async (id: number, req: { protocol: string; get: (name: string) => string | undefined }) => {

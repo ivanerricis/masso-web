@@ -85,3 +85,12 @@ export const getInterventionPrintUrl = (id: number) =>
 
 export const sendInterventionEmail = async (id: number) =>
     (await api.post<{ message: string }>(`/interventions/${id}/send-email`)).data;
+
+export type InterventionStatsDto = {
+    programmatoCount: number;
+    inLavorazioneCount: number;
+    completatoCount: number;
+};
+
+export const getInterventionStats = async () =>
+    (await api.get<InterventionStatsDto>("/interventions/stats")).data;

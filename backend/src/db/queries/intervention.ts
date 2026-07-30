@@ -125,6 +125,21 @@ export const listInterventions = async ({
     };
 };
 
+export const getInterventionStats = async () => {
+    const statusCountRows = await db
+        .select({ status: interventionTable.status, count: sql<number>`count(*)::int` })
+        .from(interventionTable)
+        .groupBy(interventionTable.status);
+
+    const countByStatus = new Map(statusCountRows.map((row) => [row.status, Number(row.count)]));
+
+    return {
+        programmatoCount: countByStatus.get("programmato") ?? 0,
+        inLavorazioneCount: countByStatus.get("in_lavorazione") ?? 0,
+        completatoCount: countByStatus.get("completato") ?? 0,
+    };
+};
+
 export const getInterventionById = (id: number) =>
     db.select().from(interventionTable).where(eq(interventionTable.id, id));
 

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro, Loader } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
 import LoadingPage from "@/components/loadingPage";
@@ -22,6 +22,7 @@ import {
     createReport,
     getReportPrintUrl,
     getApiErrorMessage,
+    getInterventionStats,
     getReportStats,
     listCustomers,
     listDevices,
@@ -76,6 +77,9 @@ const DashboardPage = () => {
     const [closedReports, setClosedReports] = useState(0);
     const [monthlyRevenue, setMonthlyRevenue] = useState(0);
     const [monthlyRevenueSeries, setMonthlyRevenueSeries] = useState<{ monthKey: string; value: number }[]>([]);
+    const [scheduledInterventions, setScheduledInterventions] = useState(0);
+    const [inProgressInterventions, setInProgressInterventions] = useState(0);
+    const [completedInterventions, setCompletedInterventions] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     const selectedRevenueLabel = useMemo(
@@ -101,12 +105,18 @@ const DashboardPage = () => {
     const loadDashboardMetrics = async (month: string) => {
         setIsLoading(true);
         try {
-            const stats = await getReportStats(month);
+            const [reportStats, interventionStats] = await Promise.all([
+                getReportStats(month),
+                getInterventionStats(),
+            ]);
 
-            setOpenReports(stats.openCount);
-            setClosedReports(stats.closedCount);
-            setMonthlyRevenue(stats.monthlyRevenue);
-            setMonthlyRevenueSeries(stats.series);
+            setOpenReports(reportStats.openCount);
+            setClosedReports(reportStats.closedCount);
+            setMonthlyRevenue(reportStats.monthlyRevenue);
+            setMonthlyRevenueSeries(reportStats.series);
+            setScheduledInterventions(interventionStats.programmatoCount);
+            setInProgressInterventions(interventionStats.inLavorazioneCount);
+            setCompletedInterventions(interventionStats.completatoCount);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare i dati dashboard"));
         } finally {
@@ -226,6 +236,10 @@ const DashboardPage = () => {
 
     const goToReportsPage = (visibilityFilter: "open" | "closed") => {
         navigate(`/reports?visibility=${visibilityFilter}`);
+    };
+
+    const goToInterventionsPage = (statusFilter: "programmato" | "in_lavorazione" | "completato") => {
+        navigate(`/interventions?status=${statusFilter}`);
     };
 
     return (
@@ -361,6 +375,31 @@ const DashboardPage = () => {
                         </div>
                     </DialogContent>
                 </Dialog>
+
+                <CardDashboard
+                    text="Interventi programmati"
+                    mobileText="Programmati"
+                    icon={CalendarClock}
+                    number={String(scheduledInterventions)}
+                    iconColor="text-destructive"
+                    onClick={() => goToInterventionsPage("programmato")}
+                />
+                <CardDashboard
+                    text="Interventi in lavorazione"
+                    mobileText="In lavorazione"
+                    icon={Loader}
+                    number={String(inProgressInterventions)}
+                    iconColor="text-yellow-400"
+                    onClick={() => goToInterventionsPage("in_lavorazione")}
+                />
+                <CardDashboard
+                    text="Interventi completati"
+                    mobileText="Completati"
+                    icon={CircleCheck}
+                    number={String(completedInterventions)}
+                    iconColor="text-green-400"
+                    onClick={() => goToInterventionsPage("completato")}
+                />
             </div>
 
             <Suspense fallback={<LoadingPage className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]" />}>

@@ -46,7 +46,7 @@ const messages: Messages = {
 // specificità delle classi Tailwind e viene caricato dopo, quindi vincerebbe sempre lui.
 const statusEventStyle: Record<InterventionStatus, { backgroundColor: string; color: string }> = {
     completato: { backgroundColor: "var(--color-green-500)", color: "#fff" },
-    in_lavorazione: { backgroundColor: "var(--color-yellow-400)", color: "#000" },
+    in_lavorazione: { backgroundColor: "var(--color-yellow-400)", color: "#fff" },
     programmato: { backgroundColor: "var(--color-red-500)", color: "#fff" },
 };
 

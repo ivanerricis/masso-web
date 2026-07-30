@@ -17,7 +17,7 @@ const CardDashboard = ({ text, mobileText, icon: Icon, number, iconColor, onClic
     return (
         <div
             className={cn(
-                "flex flex-col w-full gap-0.5 rounded-lg border bg-card p-2 shadow sm:w-48 sm:gap-1 sm:p-4",
+                "flex flex-col w-full gap-0.5 rounded-lg border bg-card p-2 shadow sm:w-56 sm:gap-1 sm:p-4",
                 isInteractive && "cursor-pointer *:cursor-pointer *:*:cursor-pointer hover:bg-accent/35"
             )}
             onClick={onClick}
@@ -34,8 +34,8 @@ const CardDashboard = ({ text, mobileText, icon: Icon, number, iconColor, onClic
                     : undefined
             }
         >
-            <div className="flex items-center justify-between gap-1">
-                <Label className="truncate text-xs sm:text-base">
+            <div className="flex items-start justify-between gap-1">
+                <Label className="text-xs sm:text-base">
                     {mobileText ? (
                         <>
                             <span className="sm:hidden">{mobileText}</span>

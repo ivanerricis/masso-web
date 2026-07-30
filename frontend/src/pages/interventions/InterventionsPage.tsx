@@ -17,7 +17,7 @@ import { useState } from "react";
 import type { CustomerDto, InterventionDto } from "@/types/dtos";
 import { toast } from "sonner";
 import LoadingPage from "@/components/loadingPage";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { interventionColumns } from "./components/intervention-columns";
 import InterventionsFilters from "./components/interventions-filters";
 import InterventionsTable from "./components/interventions-table";
@@ -86,8 +86,17 @@ const resolveSelectedCustomer = (customers: CustomerDto[], rawValue: string) => 
     return null;
 };
 
+const parseStatusFilter = (value: string | null): InterventionStatusFilter => {
+    if (value === "all" || value === "programmato" || value === "in_lavorazione" || value === "completato") {
+        return value;
+    }
+
+    return "all";
+};
+
 const InterventionsPage = () => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -95,8 +104,17 @@ const InterventionsPage = () => {
     const [interventionCustomerNameToEdit, setInterventionCustomerNameToEdit] = useState("");
     const [interventionToDelete, setInterventionToDelete] = useState<InterventionDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<InterventionStatusFilter>(() =>
+        parseStatusFilter(searchParams.get("status"))
+    );
+    const [previousSearchParams, setPreviousSearchParams] = useState(searchParams);
+
+    if (previousSearchParams !== searchParams) {
+        setPreviousSearchParams(searchParams);
+        setStatusFilter(parseStatusFilter(searchParams.get("status")));
+    }
+
     const [searchText, setSearchText] = useState("");
-    const [statusFilter, setStatusFilter] = useState<InterventionStatusFilter>("all");
     const [typeFilter, setTypeFilter] = useState<InterventionTypeFilter>("all");
     const [sortOption, setSortOption] = useState<InterventionSortOption>(DEFAULT_INTERVENTION_SORT_OPTION);
     const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
@@ -160,6 +178,11 @@ const InterventionsPage = () => {
 
     const handleOpenIntervention = (id: number) => {
         navigate(`/interventions/${id}`);
+    };
+
+    const handleStatusFilterChange = (value: InterventionStatusFilter) => {
+        setStatusFilter(value);
+        setSearchParams(value === "all" ? {} : { status: value }, { replace: true });
     };
 
     const handleOpenEditDialog = (id: number) => {
@@ -277,7 +300,7 @@ const InterventionsPage = () => {
                     searchText={searchText}
                     onSearchTextChange={setSearchText}
                     statusFilter={statusFilter}
-                    onStatusFilterChange={setStatusFilter}
+                    onStatusFilterChange={handleStatusFilterChange}
                     typeFilter={typeFilter}
                     onTypeFilterChange={setTypeFilter}
                     sortOption={sortOption}
