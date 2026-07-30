@@ -1,6 +1,40 @@
 import path from "node:path";
 import pdfmake from "pdfmake";
 
+import { createLegacyReportPdfBuffer } from "./reportPdfLegacy";
+
+/**
+ * Layout del PDF del singolo report: "sections" e' quello nuovo (barre di sezione come
+ * nel PDF degli interventi), "legacy" ripristina il vecchio design conservato in
+ * reportPdfLegacy.ts. Si cambia con la variabile d'ambiente REPORT_PDF_LAYOUT.
+ */
+const REPORT_PDF_LAYOUT = process.env.REPORT_PDF_LAYOUT === "legacy" ? "legacy" : "sections";
+
+/** Altezza A4 in punti, come la usa pdfmake. */
+const PAGE_HEIGHT = 841.89;
+const PAGE_MARGIN = 14;
+
+/** Righe vuote di "Lavoro eseguito": alte quanto basta per scriverci a mano. */
+const WORK_ROW_COUNT = 4;
+const WORK_ROW_MIN_HEIGHT = 12;
+const WORK_ROW_TARGET_HEIGHT = 18;
+
+/**
+ * Padding verticale delle righe: e' la leva con cui lo spazio che avanza viene
+ * ridistribuito su tutte le sezioni invece di gonfiare solo "Lavoro eseguito".
+ */
+const ROW_PADDING_MIN = 2.5;
+const ROW_PADDING_MAX = 8;
+
+const CONTENT_END_ID = "reportContentEnd";
+
+type MeasuredNode = {
+    id?: string;
+    startPosition?: { top: number; pageNumber: number };
+};
+
+type MeasureCallback = (top: number, pageNumber: number) => void;
+
 export type ReportPrintData = {
     id: number;
     labName: string;
@@ -45,21 +79,6 @@ export type CustomerReportsPrintData = {
     rangeLabel?: string;
     reportCount: number;
     reports: CustomerReportSummaryItem[];
-};
-
-export type ReportRangeSummaryItem = CustomerReportSummaryItem & {
-    customerName: string;
-};
-
-export type ReportsRangePrintData = {
-    labName: string;
-    labEmail: string;
-    labAddress: string;
-    labPhone: string;
-    labLogoUrl: string;
-    rangeLabel: string;
-    reportCount: number;
-    reports: ReportRangeSummaryItem[];
 };
 
 const pdfmakeRoot = path.dirname(require.resolve("pdfmake/package.json"));
@@ -110,7 +129,17 @@ const tableLayout = {
     paddingBottom: () => 4,
 };
 
-const emptyCell = () => ({ text: "", margin: [0, 6, 0, 6] });
+// Il report singolo stampa due copie sulla stessa pagina: serve un passo piu' stretto
+// delle tabelle di resoconto, poi allargato quanto serve per riempire il foglio.
+const reportTableLayout = (rowPadding: number) => ({
+    ...tableLayout,
+    paddingTop: () => rowPadding,
+    paddingBottom: () => rowPadding,
+});
+
+// Le righe da compilare a mano: font minimo cosi' l'altezza naturale non fa da pavimento
+// e la loro altezza resta governata da `heights`.
+const emptyCell = () => ({ text: "", fontSize: 1, margin: [0, 0, 0, 0] });
 
 const buildFilledCell = (value: string) => ({
     text: value,
@@ -135,19 +164,32 @@ const cardIconSvg = `
     <path d="M6 16h2.5" />
 </svg>`;
 
-const pairRow = (label: string, value: string) => [
-    { text: label, style: "label" },
-    { text: value, style: "value" },
+const euroIconSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2A75B9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17.5 6.8a6.6 6.6 0 1 0 0 10.4" />
+    <path d="M4.5 10.5h9.5" />
+    <path d="M4.5 13.5h8.5" />
+</svg>`;
+
+const sectionBarRow = (title: string, colSpan: number) => {
+    const row = new Array(colSpan).fill({});
+    row[0] = { text: title, style: "sectionBar", colSpan, alignment: "center", fillColor: "#E7ECF3" };
+    return row;
+};
+
+const dualFieldRow = (label1: string, value1: string, label2: string, value2: string) => [
+    { text: label1, style: "label" },
+    { text: value1, style: "value" },
+    { text: label2, style: "label" },
+    { text: value2, style: "value" },
 ];
 
-const buildGridTable = (rows: Array<[string, string]>) => ({
-    table: {
-        widths: [120, "*"],
-        body: rows.map((row) => pairRow(row[0], row[1])),
-    },
-    layout: tableLayout,
-    margin: [0, 0, 0, 7],
-});
+const fullWidthRow = (text: string, style: string, margin: number[]) => [
+    { text, style, colSpan: 4, margin },
+    {},
+    {},
+    {},
+];
 
 const buildReportMetaBlock = (report: ReportPrintData) => ({
     table: {
@@ -209,7 +251,7 @@ const buildHeader = (report: ReportPrintData, logoDataUrl: string | null, compac
               },
           ],
     columnGap: 12,
-    margin: [0, 0, 0, 8],
+    margin: [0, 0, 0, 5],
 });
 
 const buildCustomerSummaryMetaBlock = (customer: CustomerReportsPrintData) => ({
@@ -265,28 +307,25 @@ const buildCustomerSummaryHeader = (customer: CustomerReportsPrintData, logoData
     margin: [0, 0, 0, 8],
 });
 
-const buildCustomerSummaryInfoSection = (customer: CustomerReportsPrintData, compact = false) => ({
-    stack: [
-        { text: "Cliente", style: "sectionTitle", margin: [0, 0, 0, 3] },
-        {
-            table: {
-                widths: [112, "*", 128, "*"],
-                body: [[
-                    { text: "Nome", style: "label" },
-                    { text: customer.customerName, style: "value" },
-                    { text: "Telefono", style: "label" },
-                    { text: customer.customerPhone, style: "value" },
-                ], [
-                    { text: "Email", style: "label" },
-                    { text: customer.customerEmail || "-", style: "value" },
-                    { text: "Report", style: "label" },
-                    { text: String(customer.reportCount), style: "value" },
-                ]],
-            },
-            layout: tableLayout,
-        },
-    ],
-    margin: compact ? [0, 0, 0, 6] : [0, 0, 0, 8],
+const buildCustomerSummaryInfoSection = (customer: CustomerReportsPrintData) => ({
+    table: {
+        widths: [90, "*", 90, "*"],
+        body: [
+            sectionBarRow("CLIENTE", 4),
+            dualFieldRow("Cliente", customer.customerName, "Telefono", customer.customerPhone),
+            // L'email prende tutta la riga: e' un token che non va a capo e in mezza
+            // colonna costringerebbe la tabella a sforare il margine destro.
+            // Il numero di report e' gia' nel riquadro in alto.
+            [
+                { text: "Email", style: "label" },
+                { text: customer.customerEmail || "-", style: "value", colSpan: 3 },
+                {},
+                {},
+            ],
+        ],
+    },
+    layout: tableLayout,
+    margin: [0, 0, 0, 8],
 });
 
 type ReportsTableCell = {
@@ -303,6 +342,7 @@ type ReportsTableCell = {
 
 const buildCustomerReportsTable = (reports: CustomerReportSummaryItem[]) => {
     const body: ReportsTableCell[][] = [
+        sectionBarRow("RESOCONTO REPORT", 7),
         [
             { text: "#", style: "summaryHeader" },
             { text: "Data", style: "summaryHeader" },
@@ -351,7 +391,8 @@ const buildCustomerReportsTable = (reports: CustomerReportSummaryItem[]) => {
 
     return {
         table: {
-            headerRows: 1,
+            // Barra di sezione + intestazione colonne: entrambe si ripetono a ogni pagina.
+            headerRows: 2,
             widths: [28, 56, 92, "*", 56, 68, 68],
             body,
         },
@@ -359,244 +400,127 @@ const buildCustomerReportsTable = (reports: CustomerReportSummaryItem[]) => {
     };
 };
 
-const buildRangeMetaBlock = (data: ReportsRangePrintData) => ({
+const sectionMargin = (compact: boolean) => (compact ? [0, 0, 0, 4] : [0, 0, 0, 5]);
+
+const buildCustomerSection = (report: ReportPrintData, rowPadding: number, compact = false) => ({
     table: {
-        widths: [160],
-        body: [[
-            {
-                stack: [
-                    { text: "Resoconto report", style: "metaTitle", alignment: "right" },
-                    { text: data.rangeLabel, style: "metaDate", alignment: "right" },
-                    { text: `${data.reportCount} report`, style: "metaDate", alignment: "right" },
-                ],
-            },
-        ]],
+        widths: [90, "*", 90, "*"],
+        body: [
+            sectionBarRow("CLIENTE", 4),
+            dualFieldRow("Cliente", report.customerName, "Telefono", report.customerPhone),
+        ],
     },
-    layout: {
-        hLineWidth: () => 1,
-        vLineWidth: () => 1,
-        hLineColor: () => "#2A75B9",
-        vLineColor: () => "#2A75B9",
-        paddingLeft: () => 8,
-        paddingRight: () => 8,
-        paddingTop: () => 4,
-        paddingBottom: () => 4,
-    },
-    margin: [0, 0, 0, 0],
+    layout: reportTableLayout(rowPadding),
+    margin: sectionMargin(compact),
 });
 
-const buildRangeHeader = (data: ReportsRangePrintData, logoDataUrl: string | null) => ({
+const buildDeviceSection = (report: ReportPrintData, rowPadding: number, compact = false) => ({
+    table: {
+        widths: [90, "*", 90, "*"],
+        body: [
+            sectionBarRow("DISPOSITIVO", 4),
+            dualFieldRow("Dispositivo", report.deviceName, "Password", report.password),
+            dualFieldRow("Backup dati", yesNo(report.dataBackup), "Alimentatore", yesNo(report.charger)),
+        ],
+    },
+    layout: reportTableLayout(rowPadding),
+    margin: sectionMargin(compact),
+});
+
+const buildDetailsSection = (report: ReportPrintData, rowPadding: number, compact = false) => ({
+    table: {
+        widths: [90, "*", 90, "*"],
+        body: [
+            sectionBarRow("DETTAGLI", 4),
+            fullWidthRow("Problema riscontrato", "label", [0, 1, 0, 0]),
+            fullWidthRow(report.issueDescription, "value", [0, 0, 0, 1]),
+            fullWidthRow("Note", "label", [0, 1, 0, 0]),
+            fullWidthRow(report.note, "value", [0, 0, 0, 1]),
+        ],
+    },
+    layout: reportTableLayout(rowPadding),
+    margin: sectionMargin(compact),
+});
+
+// Avvertenza sui tempi di ritiro: va solo sulla copia che resta al cliente.
+const buildRetentionNoticeSection = () => ({
+    text: "I dispositivi vanno ritirati dal cliente entro 60gg dalla consegna (anche quelli non riparati), dopo tale termine il laboratorio non risponde di eventuali smarrimenti degli stessi.",
+    style: "fineprint",
+    margin: [0, 0, 0, 4],
+});
+
+const buildWorkSection = (rowHeight: number, rowPadding: number) => ({
+    table: {
+        widths: ["*"],
+        // La prima riga e' la barra di sezione, le altre restano vuote da compilare a mano.
+        heights: (row: number) => (row === 0 ? "auto" : rowHeight),
+        body: [
+            sectionBarRow("LAVORO ESEGUITO", 1),
+            ...Array.from({ length: WORK_ROW_COUNT }, () => [emptyCell()]),
+        ],
+    },
+    layout: reportTableLayout(rowPadding),
+    margin: [0, 0, 0, 5],
+});
+
+const boxedTable = (title: string, cell: object, rowPadding: number) => ({
+    table: {
+        widths: ["*"],
+        heights: (row: number) => (row === 0 ? "auto" : 42),
+        body: [
+            sectionBarRow(title, 1),
+            [cell],
+        ],
+    },
+    layout: reportTableLayout(rowPadding),
+});
+
+const paymentIconCell = (iconSvg: string, label: string) => ({
+    stack: [
+        { svg: iconSvg, width: 26, height: 26, alignment: "center", margin: [0, 1, 0, 2] },
+        { text: label, style: "paymentLabel", alignment: "center" },
+    ],
+});
+
+const buildAmountCell = (report: ReportPrintData) => ({
     columns: [
+        // Icona ancorata al bordo sinistro, importo centrato nello spazio restante.
+        { width: 26, stack: [{ svg: euroIconSvg, width: 26, height: 26 }] },
         {
             width: "*",
-            columns: [
-                ...(logoDataUrl
-                    ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
-                    : [{ width: 56, text: "" }]),
-                {
-                    width: "*",
-                    stack: [
-                        { text: data.labName, style: "brandName" },
-                        { text: `${data.labAddress}\n${data.labEmail}\n${data.labPhone}`, style: "brandInfo" },
-                    ],
-                    margin: [0, 0, 0, 0],
-                },
-            ],
-        },
-        {
-            width: "auto",
-            ...buildRangeMetaBlock(data),
+            text: formatOptionalEuro(report.totalPrice),
+            bold: true,
+            alignment: "center",
+            margin: [0, 6, 0, 0],
         },
     ],
-    columnGap: 12,
-    margin: [0, 0, 0, 8],
+    margin: [0, 8, 0, 8],
 });
 
-const buildReportsRangeTable = (reports: ReportRangeSummaryItem[]) => {
-    const body: ReportsTableCell[][] = [
-        [
-            { text: "#", style: "summaryHeader" },
-            { text: "Data", style: "summaryHeader" },
-            { text: "Cliente", style: "summaryHeader" },
-            { text: "Dispositivo", style: "summaryHeader" },
-            { text: "Problema", style: "summaryHeader" },
-            { text: "Stato", style: "summaryHeader" },
-            { text: "Pagamento", style: "summaryHeader" },
-            { text: "Totale", style: "summaryHeader" },
-        ],
-    ];
-
-    if (reports.length === 0) {
-        body.push([
-            { text: "Nessun report disponibile", colSpan: 8, alignment: "center", italics: true, margin: [0, 8, 0, 8] },
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
-        ]);
-    } else {
-        for (const report of reports) {
-            body.push([
-                { text: String(report.id), alignment: "center", bold: true },
-                { text: report.createdAtLabel, alignment: "center" },
-                { text: report.customerName, fontSize: 8.5 },
-                { text: report.deviceName, bold: true },
-                { text: report.issueDescription, fontSize: 8.5 },
-                { text: report.closed ? "Chiuso" : "Aperto", alignment: "center" },
-                { text: formatPaymentMethod(report.paymentMethod), alignment: "center" },
-                { text: formatEuro(report.totalPrice), alignment: "right", bold: true },
-            ]);
-        }
-
-        const totalAmount = reports.reduce((sum, report) => sum + report.totalPrice, 0);
-        body.push([
-            { text: "Totale complessivo", colSpan: 7, alignment: "right", bold: true, fillColor: "#F4F8FD" },
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
-            { text: formatEuro(totalAmount), alignment: "right", bold: true, fillColor: "#F4F8FD" },
-        ]);
-    }
-
-    return {
-        table: {
-            headerRows: 1,
-            widths: [22, 52, 82, 80, "*", 48, 60, 62],
-            body,
-        },
-        layout: tableLayout,
-    };
-};
-
-const buildSection = (title: string, rows: Array<[string, string]>, compact = false) => ({
-    stack: [
-        { text: title, style: "sectionTitle", margin: [0, 0, 0, 3] },
-        buildGridTable(rows),
-    ],
-    margin: compact ? [0, 0, 0, 6] : [0, 0, 0, 8],
-});
-
-const buildStateSection = (report: ReportPrintData, compact = false) => ({
-    stack: [
-        { text: "Stato", style: "sectionTitle", margin: [0, 0, 0, 3] },
-        {
-            table: {
-                widths: [112, "*", 128, "*"],
-                body: [
-                    [
-                        { text: "Backup dati", style: "label" },
-                        { text: yesNo(report.dataBackup), style: "value" },
-                        { text: "Alimentatore", style: "label" },
-                        { text: yesNo(report.charger), style: "value" },
-                    ],
-                ],
-            },
-            layout: tableLayout,
-        },
-    ],
-    margin: compact ? [0, 0, 0, 6] : [0, 0, 0, 8],
-});
-
-const buildCustomerSection = (report: ReportPrintData, compact = false) => ({
-    stack: [
-        { text: "Cliente", style: "sectionTitle", margin: [0, 0, 0, 3] },
-        {
-            table: {
-                widths: [112, "*", 128, "*"],
-                body: [[
-                    { text: "Nome", style: "label" },
-                    { text: report.customerName, style: "value" },
-                    { text: "Telefono", style: "label" },
-                    { text: report.customerPhone, style: "value" },
-                ]],
-            },
-            layout: tableLayout,
-        },
-    ],
-    margin: compact ? [0, 0, 0, 6] : [0, 0, 0, 8],
-});
-
-const buildWorkSection = () => ({
-    stack: [
-        { text: "Lavoro eseguito", style: "sectionTitle", margin: [0, 0, 0, 3] },
-        {
-            table: {
-                widths: ["*"],
-                body: [[emptyCell()], [emptyCell()], [emptyCell()]],
-            },
-            layout: tableLayout,
-            heights: [18, 18, 18],
-        },
-    ],
-    margin: [0, 0, 0, 8],
-});
-
-const buildNotesAndPaymentSection = (report: ReportPrintData) => ({
+const buildNotesAndPaymentSection = (report: ReportPrintData, rowPadding: number) => ({
     columns: [
         {
             width: "33%",
-            stack: [
-                { text: "Avvisato", style: "sectionTitle", margin: [0, 0, 0, 3] },
-                {
-                    table: { widths: ["*"], body: [[buildFilledCell(report.alerted ? yesNo(report.alerted) : "")]] },
-                    layout: tableLayout,
-                    heights: [46],
-                },
-            ],
+            ...boxedTable("AVVISATO", buildFilledCell(report.alerted ? yesNo(report.alerted) : ""), rowPadding),
         },
         {
             width: "33%",
-            stack: [
-                { text: "Importo totale", style: "sectionTitle", margin: [0, 0, 0, 3] },
-                { table: { widths: ["*"], body: [[buildFilledCell(formatOptionalEuro(report.totalPrice))]] }, layout: tableLayout, heights: [46] },
-            ],
+            ...boxedTable("IMPORTO", buildAmountCell(report), rowPadding),
         },
         {
             width: "34%",
-            stack: [
-                { text: "Pagamento", style: "sectionTitle", margin: [0, 0, 0, 3] },
-                {
-                    columns: [
-                        {
-                            width: "48%",
-                            table: {
-                                widths: ["*"],
-                                body: [[
-                                    {
-                                        stack: [
-                                            { svg: cashIconSvg, width: 26, height: 26, alignment: "center", margin: [0, 1, 0, 2] },
-                                            { text: "Contanti", style: "paymentLabel", alignment: "center" },
-                                        ],
-                                    },
-                                ]],
-                            },
-                            layout: tableLayout,
-                        },
-                        {
-                            width: "48%",
-                            table: {
-                                widths: ["*"],
-                                body: [[
-                                    {
-                                        stack: [
-                                            { svg: cardIconSvg, width: 26, height: 26, alignment: "center", margin: [0, 1, 0, 2] },
-                                            { text: "Carta", style: "paymentLabel", alignment: "center" },
-                                        ],
-                                    },
-                                ]],
-                            },
-                            layout: tableLayout,
-                        },
+            table: {
+                widths: ["*", "*"],
+                heights: (row: number) => (row === 0 ? "auto" : 42),
+                body: [
+                    sectionBarRow("PAGAMENTO", 2),
+                    [
+                        paymentIconCell(cashIconSvg, "Contanti"),
+                        paymentIconCell(cardIconSvg, "Carta"),
                     ],
-                    columnGap: 6,
-                },
-            ],
+                ],
+            },
+            layout: reportTableLayout(rowPadding),
         },
     ],
     columnGap: 10,
@@ -618,33 +542,33 @@ const loadImageDataUrl = async (imageUrl: string) => {
     }
 };
 
-export const createReportPdfBuffer = async (report: ReportPrintData) => {
-    const logoDataUrl = await loadImageDataUrl(report.labLogoUrl);
-
-    const copyBlock = (compact: boolean) => [
+const createSectionedReportPdfBuffer = async (report: ReportPrintData, logoDataUrl: string | null) => {
+    const copyBlock = (rowPadding: number, compact: boolean) => [
         buildHeader(report, logoDataUrl, compact),
-        buildCustomerSection(report, compact),
-        buildSection("Dispositivo", [
-            ["Nome", report.deviceName],
-        ], compact),
-        buildSection("Dettagli", [
-            ["Problema", report.issueDescription],
-            ["Password", report.password],
-            ["Note", report.note],
-        ], compact),
-        buildStateSection(report, compact),
+        buildCustomerSection(report, rowPadding, compact),
+        buildDeviceSection(report, rowPadding, compact),
+        buildDetailsSection(report, rowPadding, compact),
+        ...(compact ? [] : [buildRetentionNoticeSection()]),
     ];
 
-    const documentDefinition = {
+    const buildDocumentDefinition = (workRowHeight: number, rowPadding: number, onMeasure?: MeasureCallback) => ({
         pageSize: "A4",
-        pageMargins: [14, 14, 14, 14],
+        pageMargins: [PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN],
         defaultStyle: {
             font: "Roboto",
             fontSize: 10,
             color: "#111111",
         },
+        // Mai forzare interruzioni: l'hook serve solo a leggere dove finisce il contenuto.
+        pageBreakBefore: (currentNode: MeasuredNode) => {
+            if (currentNode.id === CONTENT_END_ID && currentNode.startPosition) {
+                onMeasure?.(currentNode.startPosition.top, currentNode.startPosition.pageNumber);
+            }
+
+            return false;
+        },
         content: [
-            ...copyBlock(false),
+            ...copyBlock(rowPadding, false),
             {
                 canvas: [
                     {
@@ -657,11 +581,15 @@ export const createReportPdfBuffer = async (report: ReportPrintData) => {
                         dash: { length: 4, space: 3 },
                     },
                 ],
-                margin: [0, 4, 0, 6],
+                margin: [0, 6, 0, 8],
             },
-            ...copyBlock(true),
-            buildWorkSection(),
-            buildNotesAndPaymentSection(report),
+            ...copyBlock(rowPadding, true),
+            buildWorkSection(workRowHeight, rowPadding),
+            buildNotesAndPaymentSection(report, rowPadding),
+            // Sentinella invisibile: la sua posizione di partenza e' la fine del contenuto.
+            // Solo nella passata di misura: nel PDF finale il contenuto arriva a filo pagina
+            // e questo nodo, per quanto minuscolo, aprirebbe una seconda pagina vuota.
+            ...(onMeasure ? [{ id: CONTENT_END_ID, text: " ", fontSize: 1, margin: [0, 0, 0, 0] }] : []),
         ],
         styles: {
             brandName: {
@@ -681,8 +609,8 @@ export const createReportPdfBuffer = async (report: ReportPrintData) => {
             metaDate: {
                 fontSize: 10.5,
             },
-            sectionTitle: {
-                fontSize: 11,
+            sectionBar: {
+                fontSize: 10.5,
                 bold: true,
                 color: "#2A75B9",
             },
@@ -698,12 +626,71 @@ export const createReportPdfBuffer = async (report: ReportPrintData) => {
                 fontSize: 9,
                 color: "#555555",
             },
+            fineprint: {
+                fontSize: 7.5,
+                italics: true,
+                color: "#555555",
+            },
         },
+    });
+
+    // Impagina una volta e restituisce dove finisce il contenuto (null se sborda di pagina).
+    const measureContentBottom = async (workRowHeight: number, rowPadding: number) => {
+        let bottom: number | null = null;
+        await pdfmake
+            .createPdf(buildDocumentDefinition(workRowHeight, rowPadding, (top, pageNumber) => {
+                bottom = pageNumber === 1 ? top : null;
+            }))
+            .getBuffer();
+
+        return bottom as number | null;
     };
 
-    const pdfDocument = pdfmake.createPdf(documentDefinition);
+    // Righe di lavoro all'altezza voluta: quello che avanza va allargato sul resto.
+    const baseBottom = await measureContentBottom(WORK_ROW_TARGET_HEIGHT, ROW_PADDING_MIN);
 
-    return await pdfDocument.getBuffer();
+    let workRowHeight = WORK_ROW_MIN_HEIGHT;
+    let rowPadding = ROW_PADDING_MIN;
+
+    if (baseBottom !== null) {
+        workRowHeight = WORK_ROW_TARGET_HEIGHT;
+        // Un punto di margine perche' un arrotondamento non spinga l'ultima riga oltre il bordo.
+        const slack = PAGE_HEIGHT - PAGE_MARGIN - baseBottom - 1;
+
+        if (slack > 0) {
+            // Quanto costa un punto di padding va misurato, non stimato: dipende da quante
+            // righe ci sono e da quali hanno un'altezza fissa che se lo assorbe. La sonda
+            // toglie padding invece di aggiungerne: cosi' non puo' sforare di pagina e
+            // restituire null proprio quando il foglio e' quasi pieno.
+            const probeBottom = await measureContentBottom(WORK_ROW_TARGET_HEIGHT, ROW_PADDING_MIN - 1);
+            const costPerPaddingPoint = probeBottom === null ? 0 : baseBottom - probeBottom;
+
+            if (costPerPaddingPoint > 0) {
+                const wanted = slack / costPerPaddingPoint;
+                rowPadding = ROW_PADDING_MIN + Math.min(wanted, ROW_PADDING_MAX - ROW_PADDING_MIN);
+            }
+
+            // Se il padding da solo non basta (o e' arrivato al tetto), il resto lo
+            // assorbono le righe di "Lavoro eseguito".
+            const leftover = slack - (rowPadding - ROW_PADDING_MIN) * costPerPaddingPoint;
+
+            if (leftover > 0) {
+                workRowHeight += leftover / WORK_ROW_COUNT;
+            }
+        }
+    }
+
+    return await pdfmake.createPdf(buildDocumentDefinition(workRowHeight, rowPadding)).getBuffer();
+};
+
+export const createReportPdfBuffer = async (report: ReportPrintData) => {
+    const logoDataUrl = await loadImageDataUrl(report.labLogoUrl);
+
+    if (REPORT_PDF_LAYOUT === "legacy") {
+        return await createLegacyReportPdfBuffer(report, logoDataUrl);
+    }
+
+    return await createSectionedReportPdfBuffer(report, logoDataUrl);
 };
 
 export const createCustomerReportsPdfBuffer = async (customer: CustomerReportsPrintData) => {
@@ -720,12 +707,7 @@ export const createCustomerReportsPdfBuffer = async (customer: CustomerReportsPr
         content: [
             buildCustomerSummaryHeader(customer, logoDataUrl),
             buildCustomerSummaryInfoSection(customer),
-            {
-                stack: [
-                    { text: "Resoconto report", style: "sectionTitle", margin: [0, 0, 0, 3] },
-                    buildCustomerReportsTable(customer.reports),
-                ],
-            },
+            buildCustomerReportsTable(customer.reports),
         ],
         styles: {
             brandName: {
@@ -745,8 +727,8 @@ export const createCustomerReportsPdfBuffer = async (customer: CustomerReportsPr
             metaDate: {
                 fontSize: 10.5,
             },
-            sectionTitle: {
-                fontSize: 11,
+            sectionBar: {
+                fontSize: 10.5,
                 bold: true,
                 color: "#2A75B9",
             },
@@ -766,52 +748,6 @@ export const createCustomerReportsPdfBuffer = async (customer: CustomerReportsPr
             paymentLabel: {
                 fontSize: 9,
                 color: "#555555",
-            },
-        },
-    };
-
-    const pdfDocument = pdfmake.createPdf(documentDefinition);
-
-    return await pdfDocument.getBuffer();
-};
-
-export const createReportsRangePdfBuffer = async (data: ReportsRangePrintData) => {
-    const logoDataUrl = await loadImageDataUrl(data.labLogoUrl);
-
-    const documentDefinition = {
-        pageSize: "A4",
-        pageMargins: [14, 14, 14, 14],
-        defaultStyle: {
-            font: "Roboto",
-            fontSize: 10,
-            color: "#111111",
-        },
-        content: [
-            buildRangeHeader(data, logoDataUrl),
-            buildReportsRangeTable(data.reports),
-        ],
-        styles: {
-            brandName: {
-                fontSize: 15,
-                bold: true,
-                color: "#2A75B9",
-            },
-            brandInfo: {
-                fontSize: 10.5,
-                lineHeight: 1.25,
-            },
-            metaTitle: {
-                fontSize: 13,
-                bold: true,
-                color: "#2A75B9",
-            },
-            metaDate: {
-                fontSize: 10.5,
-            },
-            summaryHeader: {
-                fontSize: 9,
-                bold: true,
-                color: "#2A75B9",
             },
         },
     };

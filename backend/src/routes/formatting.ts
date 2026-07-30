@@ -6,15 +6,8 @@ export const formatDateLabel = (value: Date) => dateLabelFormatter.format(value)
 // vengano interpretate come UTC e slittino al giorno precedente.
 export const formatDayLabel = (value: string) => dateLabelFormatter.format(new Date(`${value}T00:00:00`));
 
-// Con un fallback l'etichetta è sempre valorizzata; senza, un intervallo vuoto
-// non produce etichetta — i due casi sono distinti negli overload.
-export function buildDateRangeLabel(
-    dateFrom: string | undefined,
-    dateTo: string | undefined,
-    fallback: string
-): string;
-export function buildDateRangeLabel(dateFrom?: string, dateTo?: string): string | undefined;
-export function buildDateRangeLabel(dateFrom?: string, dateTo?: string, fallback?: string) {
+// Un intervallo vuoto non produce etichetta: chi chiama la omette dal PDF.
+export const buildDateRangeLabel = (dateFrom?: string, dateTo?: string) => {
     if (dateFrom && dateTo) {
         return `Dal ${formatDayLabel(dateFrom)} al ${formatDayLabel(dateTo)}`;
     }
@@ -27,8 +20,8 @@ export function buildDateRangeLabel(dateFrom?: string, dateTo?: string, fallback
         return `Fino al ${formatDayLabel(dateTo)}`;
     }
 
-    return fallback;
-}
+    return undefined;
+};
 
 export const formatPhoneLabel = (primary?: string | null, secondary?: string | null) => {
     const trimmedPrimary = primary?.trim() ?? "";

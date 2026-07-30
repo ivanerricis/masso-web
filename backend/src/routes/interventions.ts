@@ -12,14 +12,12 @@ import {
 import { db } from "../db";
 import { collaboratorTable, customerTable, interventionTable } from "../db/schema";
 import { EmailManagerError, sendEmail } from "../services/emailManager";
-import { createInterventionPdfBuffer, createInterventionsRangePdfBuffer } from "../services/interventionPdf";
+import { createInterventionPdfBuffer } from "../services/interventionPdf";
 import { getLabConfig } from "../config/lab";
 import {
-    buildDateRangeLabel,
     formatDateLabel,
     formatDayLabel,
     formatPhoneLabel,
-    formatScheduleLabel,
 } from "./formatting";
 import { sendListResponse } from "./crudRouter";
 import { validate } from "./validation";
@@ -202,49 +200,6 @@ const handleEmailError = (error: unknown, res: Response) => {
 
     return false;
 };
-
-const interventionsRangePrintQuerySchema = z.object({
-    dateFrom: z.string().regex(dateRegex).optional(),
-    dateTo: z.string().regex(dateRegex).optional(),
-});
-
-const buildInterventionsRangeLabel = (dateFrom?: string, dateTo?: string) =>
-    buildDateRangeLabel(dateFrom, dateTo, "Tutti gli interventi");
-
-interventionsRouter.get("/print", validate({ query: interventionsRangePrintQuerySchema }), async (req, res) => {
-    const { dateFrom, dateTo } = req.query as unknown as { dateFrom?: string; dateTo?: string };
-
-    const interventionsResult = await listInterventions({ status: "all", type: "all", dateFrom, dateTo });
-    const interventions = Array.isArray(interventionsResult) ? interventionsResult : interventionsResult.items;
-    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = getLabConfig(req);
-
-    const pdfBuffer = await createInterventionsRangePdfBuffer({
-        labName,
-        labEmail,
-        labAddress,
-        labPhone,
-        labLogoUrl,
-        rangeLabel: buildInterventionsRangeLabel(dateFrom, dateTo),
-        interventionCount: interventions.length,
-        interventions: interventions.map((intervention) => ({
-            id: intervention.id,
-            createdAtLabel: formatDateLabel(intervention.createdAt),
-            customerName: intervention.customer,
-            type: intervention.type as InterventionType,
-            status: intervention.status as (typeof interventionStatuses)[number],
-            description: intervention.description,
-            scheduleLabel: formatScheduleLabel(
-                intervention.interventionDate,
-                intervention.startTime,
-                intervention.endTime
-            ),
-        })),
-    });
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=resoconto-interventi.pdf");
-    res.send(pdfBuffer);
-});
 
 interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
