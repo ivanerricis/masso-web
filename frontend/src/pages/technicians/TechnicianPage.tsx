@@ -234,15 +234,15 @@ const TechnicianPage = () => {
                                         key={report.id}
                                         className={
                                             report.closed
-                                                ? "bg-green-500/30 hover:bg-green-500/40 dark:bg-green-500/15 dark:hover:bg-green-500/20"
-                                                : "bg-red-500/30 hover:bg-red-500/40 dark:bg-red-500/15 dark:hover:bg-red-500/20"
+                                                ? "bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                                                : "bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
                                         }
                                     >
                                         <TableCell>#{report.id}</TableCell>
                                         <TableCell>{report.customerName}</TableCell>
                                         <TableCell>{report.deviceName}</TableCell>
                                         <TableCell>{report.closed ? "Chiuso" : "Aperto"}</TableCell>
-                                        <TableCell className="bg-background">
+                                        <TableCell className="bg-background text-foreground">
                                             <div className="flex items-center justify-end gap-2">
                                                 <OpenEntityButton
                                                     size="icon-lg"

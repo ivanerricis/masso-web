@@ -16,10 +16,12 @@ type InterventionsTableProps = {
     onDeleteIntervention: (intervention: InterventionDto) => void;
 };
 
+// Tinte piene con testo bianco: la cella azioni torna a bg-background/text-foreground
+// per non colorare le icone dei pulsanti.
 const rowClassNameByStatus: Record<InterventionDto["status"], string> = {
-    programmato: "bg-red-500/30 hover:bg-red-500/40 dark:bg-red-500/15 dark:hover:bg-red-500/20",
-    in_lavorazione: "bg-yellow-400/30 hover:bg-yellow-400/40 dark:bg-yellow-400/15 dark:hover:bg-yellow-400/20",
-    completato: "bg-green-500/30 hover:bg-green-500/40 dark:bg-green-500/15 dark:hover:bg-green-500/20",
+    programmato: "bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600",
+    in_lavorazione: "bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600",
+    completato: "bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600",
 };
 
 const accentClassNameByStatus: Record<InterventionDto["status"], string> = {
@@ -106,7 +108,11 @@ const InterventionsTable = ({
                             {columns.map((column) => (
                                 <TableCell
                                     key={`${row.id}-${column.key}`}
-                                    className={column.key === "actions" ? "bg-background" : column.className}
+                                    className={
+                                        column.key === "actions"
+                                            ? "bg-background text-foreground"
+                                            : column.className
+                                    }
                                 >
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">

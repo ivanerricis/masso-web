@@ -17,6 +17,13 @@ type ReportsTableProps = {
 
 const getAccentClassName = (row: ReportDto) => (row.closed ? "border-t-green-500" : "border-t-red-500");
 
+// Tinte piene con testo bianco: la cella azioni torna a bg-background/text-foreground
+// per non colorare le icone dei pulsanti.
+const getRowClassName = (row: ReportDto) =>
+    row.closed
+        ? "bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+        : "bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600";
+
 const ReportsTable = ({
     columns,
     rows,
@@ -81,18 +88,15 @@ const ReportsTable = ({
                     </TableRow>
                 ) : (
                     rows.map((row) => (
-                        <TableRow
-                            key={row.id}
-                            className={
-                                row.closed
-                                    ? "bg-green-500/30 hover:bg-green-500/40 dark:bg-green-500/15 dark:hover:bg-green-500/20"
-                                    : "bg-red-500/30 hover:bg-red-500/40 dark:bg-red-500/15 dark:hover:bg-red-500/20"
-                            }
-                        >
+                        <TableRow key={row.id} className={getRowClassName(row)}>
                             {columns.map((column) => (
                                 <TableCell
                                     key={`${row.id}-${column.key}`}
-                                    className={column.key === "actions" ? "bg-background" : column.className}
+                                    className={
+                                        column.key === "actions"
+                                            ? "bg-background text-foreground"
+                                            : column.className
+                                    }
                                 >
                                     {column.key === "actions" ? (
                                         <div className="flex items-center justify-end gap-2">
