@@ -14,6 +14,7 @@ import TechniciansFilters from "./components/technicians-filters";
 import TechniciansTable from "./components/technicians-table";
 import { useTechniciansRows } from "./hooks/useTechniciansRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
 const TechniciansPage = () => {
     const navigate = useNavigate();
@@ -24,8 +25,8 @@ const TechniciansPage = () => {
     const [technicianToEdit, setTechnicianToEdit] = useState<TechnicianDto | null>(null);
     const [technicianToDelete, setTechnicianToDelete] = useState<TechnicianDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const pageSize = 10;
-    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const pageSize = useTableRowsPerPage();
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const { technicianRows, totalItems, totalPages, isLoading, loadTechnicians } = useTechniciansRows({
         searchText,
         currentPage,

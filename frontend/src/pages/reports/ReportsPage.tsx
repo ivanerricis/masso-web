@@ -29,6 +29,7 @@ import ReportsTable from "./components/reports-table";
 import type { ReportVisibilityFilter } from "./components/types";
 import { useReportsRows } from "./hooks/useReportsRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 import { openPrintWindow } from "@/lib/utils";
 
 const parseVisibilityFilter = (value: string | null): ReportVisibilityFilter => {
@@ -122,9 +123,9 @@ const ReportsPage = () => {
     const [searchText, setSearchText] = useState("");
     const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
     const [dateTo, setDateTo] = useState<string | undefined>(undefined);
-    const pageSize = 10;
+    const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [searchText, visibilityFilter, dateFrom, dateTo],
+        resetDependencies: [searchText, visibilityFilter, dateFrom, dateTo, pageSize],
     });
     const { reportRows, totalItems, totalPages, isLoading, loadReports, updateReportRow } = useReportsRows({
         searchText,

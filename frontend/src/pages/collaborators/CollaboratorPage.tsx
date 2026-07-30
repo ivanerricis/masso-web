@@ -11,6 +11,7 @@ import type { ReportVisibilityFilter } from "../reports/components/types";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
 type CollaboratorReportCard = {
     id: number;
@@ -49,9 +50,9 @@ const CollaboratorPage = () => {
         return reportCards;
     }, [reportCards, visibilityFilter]);
 
-    const pageSize = 10;
+    const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [visibilityFilter],
+        resetDependencies: [visibilityFilter, pageSize],
     });
     const totalItems = visibleReportCards.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));

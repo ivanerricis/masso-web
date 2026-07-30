@@ -13,6 +13,7 @@ import DevicesFilters from "./components/devices-filters";
 import DevicesTable from "./components/devices-table";
 import { useDevicesRows } from "./hooks/useDevicesRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
 const DevicesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -22,8 +23,8 @@ const DevicesPage = () => {
     const [deviceToEdit, setDeviceToEdit] = useState<DeviceDto | null>(null);
     const [deviceToDelete, setDeviceToDelete] = useState<DeviceDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const pageSize = 10;
-    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const pageSize = useTableRowsPerPage();
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const { deviceRows, totalItems, totalPages, isLoading, loadDevices } = useDevicesRows({
         searchText,
         currentPage,

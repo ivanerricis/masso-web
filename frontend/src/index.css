@@ -193,3 +193,132 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   opacity: 0;
 }
+
+/* Colori delle righe di stato delle tabelle.
+   L'intensità è un attributo su <html>, scritto da applyTableRowIntensity in lib/theme.ts.
+   Le regole non sono ancorate a :root: applicate a un elemento qualsiasi valgono per il
+   suo sottoalbero, così le anteprime in Impostazioni possono mostrare un livello diverso
+   da quello attivo senza ripetere i colori in TypeScript.
+   L'ordine dei blocchi conta: a parità di specificità vince l'ultimo, quindi i livelli
+   stanno dopo il default e le varianti scure dopo quelle chiare.
+   Il giallo ha una scala a parte: la tavolozza Tailwind vira sull'arancione appena si
+   scurisce (hue 92 a yellow-400, 66 a yellow-700), quindi qui l'hue resta fisso intorno
+   a 85 e il giallo resta pieno. Scelta voluta: il bianco su questo giallo sta sotto il
+   rapporto di contrasto consigliato, ma il giallo vivo è l'aspetto richiesto e il testo
+   bianco è uniforme su tutte le righe. Scurirlo quanto basterebbe al contrasto lo
+   trasformerebbe in un senape. */
+:root,
+[data-table-row-intensity="default"] {
+  --table-row-red: oklch(57.7% 0.245 27.325);
+  --table-row-red-hover: oklch(50.5% 0.213 27.518);
+  --table-row-yellow: oklch(79.5% 0.184 86.047);
+  --table-row-yellow-hover: oklch(72% 0.176 85);
+  --table-row-green: oklch(62.7% 0.194 149.214);
+  --table-row-green-hover: oklch(52.7% 0.154 150.069);
+  --table-row-foreground: oklch(1 0 0);
+}
+
+[data-table-row-intensity="soft"] {
+  --table-row-red: oklch(63.7% 0.237 25.331 / 30%);
+  --table-row-red-hover: oklch(63.7% 0.237 25.331 / 40%);
+  --table-row-yellow: oklch(85.2% 0.199 91.936 / 30%);
+  --table-row-yellow-hover: oklch(85.2% 0.199 91.936 / 40%);
+  --table-row-green: oklch(72.3% 0.219 149.579 / 30%);
+  --table-row-green-hover: oklch(72.3% 0.219 149.579 / 40%);
+  --table-row-foreground: var(--foreground);
+}
+
+[data-table-row-intensity="strong"] {
+  --table-row-red: oklch(50.5% 0.213 27.518);
+  --table-row-red-hover: oklch(44.4% 0.177 26.899);
+  --table-row-yellow: oklch(72% 0.176 85);
+  --table-row-yellow-hover: oklch(65% 0.163 84);
+  --table-row-green: oklch(52.7% 0.154 150.069);
+  --table-row-green-hover: oklch(44.8% 0.119 151.328);
+  --table-row-foreground: oklch(1 0 0);
+}
+
+.dark,
+.dark[data-table-row-intensity="default"],
+.dark [data-table-row-intensity="default"] {
+  --table-row-red: oklch(50.5% 0.213 27.518);
+  --table-row-red-hover: oklch(57.7% 0.245 27.325);
+  --table-row-yellow: oklch(79.5% 0.184 86.047);
+  --table-row-yellow-hover: oklch(85.2% 0.199 91.936);
+  --table-row-green: oklch(52.7% 0.154 150.069);
+  --table-row-green-hover: oklch(62.7% 0.194 149.214);
+  --table-row-foreground: oklch(1 0 0);
+}
+
+.dark[data-table-row-intensity="soft"],
+.dark [data-table-row-intensity="soft"] {
+  --table-row-red: oklch(63.7% 0.237 25.331 / 15%);
+  --table-row-red-hover: oklch(63.7% 0.237 25.331 / 20%);
+  --table-row-yellow: oklch(85.2% 0.199 91.936 / 15%);
+  --table-row-yellow-hover: oklch(85.2% 0.199 91.936 / 20%);
+  --table-row-green: oklch(72.3% 0.219 149.579 / 15%);
+  --table-row-green-hover: oklch(72.3% 0.219 149.579 / 20%);
+  --table-row-foreground: var(--foreground);
+}
+
+.dark[data-table-row-intensity="strong"],
+.dark [data-table-row-intensity="strong"] {
+  --table-row-red: oklch(44.4% 0.177 26.899);
+  --table-row-red-hover: oklch(50.5% 0.213 27.518);
+  --table-row-yellow: oklch(72% 0.176 85);
+  --table-row-yellow-hover: oklch(79.5% 0.184 86.047);
+  --table-row-green: oklch(44.8% 0.119 151.328);
+  --table-row-green-hover: oklch(52.7% 0.154 150.069);
+  --table-row-foreground: oklch(1 0 0);
+}
+
+/* Fuori da @layer di proposito: le utility Tailwind della riga (hover:bg-muted/50 su
+   TableRow) stanno in un layer, e il CSS senza layer le sovrascrive comunque. */
+tr[data-status-color] {
+  background-color: var(--table-row-bg);
+  color: var(--table-row-foreground);
+}
+
+tr[data-status-color]:hover {
+  background-color: var(--table-row-bg-hover);
+}
+
+tr[data-status-color="red"] {
+  --table-row-bg: var(--table-row-red);
+  --table-row-bg-hover: var(--table-row-red-hover);
+}
+
+tr[data-status-color="yellow"] {
+  --table-row-bg: var(--table-row-yellow);
+  --table-row-bg-hover: var(--table-row-yellow-hover);
+}
+
+tr[data-status-color="green"] {
+  --table-row-bg: var(--table-row-green);
+  --table-row-bg-hover: var(--table-row-green-hover);
+}
+
+/* Densità delle tabelle: l'attributo sta su <html> (scritto da applyTableDensity in
+   lib/theme.ts) e le regole restano fuori da @layer per battere le utility p-2/h-10
+   di Tailwind sulle stesse celle, esattamente come per i colori di stato sopra. */
+[data-table-density="compact"] [data-slot="table-cell"],
+[data-table-density="compact"] [data-slot="table-head"] {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+[data-table-density="comfortable"] [data-slot="table-cell"],
+[data-table-density="comfortable"] [data-slot="table-head"] {
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+}
+
+/* Dimensione testo: scala l'intera app perché Tailwind usa unità rem legate al
+   font-size di <html>, quindi basta questa regola invece di toccare ogni componente. */
+html[data-font-size="sm"] {
+  font-size: 14px;
+}
+
+html[data-font-size="lg"] {
+  font-size: 18px;
+}

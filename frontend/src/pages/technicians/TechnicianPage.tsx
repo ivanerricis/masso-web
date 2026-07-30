@@ -25,6 +25,7 @@ import OpenEntityButton from "@/components/open-entity-button";
 import TableActionButton from "@/components/table-action-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
 type TechnicianReportCard = {
     id: number;
@@ -117,9 +118,9 @@ const TechnicianPage = () => {
 
         return reportCards;
     }, [reportCards, visibilityFilter]);
-    const pageSize = 10;
+    const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [visibilityFilter],
+        resetDependencies: [visibilityFilter, pageSize],
     });
     const totalItems = visibleReportCards.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -230,14 +231,7 @@ const TechnicianPage = () => {
                             </TableHeader>
                             <TableBody>
                                 {paginatedReportCards.map((report) => (
-                                    <TableRow
-                                        key={report.id}
-                                        className={
-                                            report.closed
-                                                ? "bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
-                                                : "bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
-                                        }
-                                    >
+                                    <TableRow key={report.id} data-status-color={report.closed ? "green" : "red"}>
                                         <TableCell>#{report.id}</TableCell>
                                         <TableCell>{report.customerName}</TableCell>
                                         <TableCell>{report.deviceName}</TableCell>

@@ -17,12 +17,10 @@ type ReportsTableProps = {
 
 const getAccentClassName = (row: ReportDto) => (row.closed ? "border-t-green-500" : "border-t-red-500");
 
-// Tinte piene con testo bianco: la cella azioni torna a bg-background/text-foreground
-// per non colorare le icone dei pulsanti.
-const getRowClassName = (row: ReportDto) =>
-    row.closed
-        ? "bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
-        : "bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600";
+// Sfondo e testo li decide index.css in base a data-status-color e all'intensità scelta
+// in Impostazioni > Tema; la cella azioni torna a bg-background/text-foreground per non
+// colorare le icone dei pulsanti.
+const getStatusColor = (row: ReportDto) => (row.closed ? "green" : "red");
 
 const ReportsTable = ({
     columns,
@@ -88,7 +86,7 @@ const ReportsTable = ({
                     </TableRow>
                 ) : (
                     rows.map((row) => (
-                        <TableRow key={row.id} className={getRowClassName(row)}>
+                        <TableRow key={row.id} data-status-color={getStatusColor(row)}>
                             {columns.map((column) => (
                                 <TableCell
                                     key={`${row.id}-${column.key}`}

@@ -13,6 +13,7 @@ import IssuesFilters from "./components/issues-filters";
 import IssuesTable from "./components/issues-table";
 import { useIssuesRows } from "./hooks/useIssuesRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
 const IssuesPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -22,8 +23,8 @@ const IssuesPage = () => {
     const [issueToEdit, setIssueToEdit] = useState<IssueDto | null>(null);
     const [issueToDelete, setIssueToDelete] = useState<IssueDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const pageSize = 10;
-    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const pageSize = useTableRowsPerPage();
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const { issueRows, totalItems, totalPages, isLoading, loadIssues } = useIssuesRows({
         searchText,
         currentPage,

@@ -1,13 +1,33 @@
 import { useEffect, useState } from "react";
 import { Computer, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SettingsCard, SettingsSection } from "@/components/settings/settingsUi";
+import { SettingsCard, SettingsGroup, SettingsSection } from "@/components/settings/settingsUi";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { useTheme } from "@/components/use-theme";
 import {
+    applyFontSize,
+    applyTableDensity,
+    applyTableRowIntensity,
     applyThemeAccentPreset,
+    fontSizes,
+    getStoredFontSize,
+    getStoredTableDensity,
+    getStoredTableRowIntensity,
+    getStoredTableRowsPerPage,
     getStoredThemeAccentPreset,
+    setStoredFontSize,
+    setStoredTableDensity,
+    setStoredTableRowIntensity,
+    setStoredTableRowsPerPage,
     setStoredThemeAccentPreset,
+    tableDensities,
+    tableRowIntensities,
+    tableRowsPerPageOptions,
     themeAccentPresets,
+    type FontSizeKey,
+    type TableDensityKey,
+    type TableRowIntensityKey,
+    type TableRowsPerPageKey,
     type ThemeAccentPresetKey,
 } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -19,6 +39,12 @@ type ModeOption = {
     icon: typeof Sun;
 };
 
+const rowIntensityPreviewRows = [
+    { statusColor: "red", label: "Programmato" },
+    { statusColor: "yellow", label: "In lavorazione" },
+    { statusColor: "green", label: "Completato" },
+];
+
 const modeOptions: ModeOption[] = [
     { value: "light", label: "Chiaro", description: "Interfaccia luminosa e pulita.", icon: Sun },
     { value: "dark", label: "Scuro", description: "Interfaccia più riposante.", icon: Moon },
@@ -29,15 +55,58 @@ const modeOptions: ModeOption[] = [
 // titolo e descrizione, bordo evidenziato quando la voce è quella attiva.
 const optionButtonClasses = (isActive: boolean) =>
     cn(
-        "h-auto items-start justify-start gap-2 rounded-xl border p-3 text-left",
+        "h-auto items-start justify-start gap-2 whitespace-normal rounded-xl border p-3 text-left",
         isActive && "border-primary bg-primary/10 dark:border-primary dark:bg-primary/10"
     );
+
+// Le barrette prendono i colori dalle variabili del livello: l'attributo qui sopra le
+// isola dall'intensità attiva, così ogni pulsante mostra davvero il proprio livello.
+const IntensityPreview = ({ intensityKey }: { intensityKey: TableRowIntensityKey }) => (
+    <span
+        data-table-row-intensity={intensityKey}
+        className="mt-0.5 flex shrink-0 flex-col gap-px overflow-hidden rounded-sm border border-border"
+    >
+        <span className="h-1.5 w-4 bg-[var(--table-row-red)]" />
+        <span className="h-1.5 w-4 bg-[var(--table-row-yellow)]" />
+        <span className="h-1.5 w-4 bg-[var(--table-row-green)]" />
+    </span>
+);
+
+const densityPreviewGaps: Record<TableDensityKey, string> = {
+    compact: "gap-0.5",
+    default: "gap-1",
+    comfortable: "gap-1.5",
+};
+
+const DensityPreview = ({ densityKey }: { densityKey: TableDensityKey }) => (
+    <span className={cn("mt-0.5 flex shrink-0 flex-col overflow-hidden rounded-sm", densityPreviewGaps[densityKey])}>
+        <span className="h-1.5 w-4 rounded-[1px] bg-muted-foreground/40" />
+        <span className="h-1.5 w-4 rounded-[1px] bg-muted-foreground/40" />
+        <span className="h-1.5 w-4 rounded-[1px] bg-muted-foreground/40" />
+    </span>
+);
+
+const fontSizePreviewClasses: Record<FontSizeKey, string> = {
+    sm: "text-xs",
+    default: "text-sm",
+    lg: "text-base",
+};
+
+const FontSizePreview = ({ fontSizeKey }: { fontSizeKey: FontSizeKey }) => (
+    <span className={cn("mt-0.5 shrink-0 font-semibold leading-none", fontSizePreviewClasses[fontSizeKey])}>Aa</span>
+);
 
 const ThemeSettingsSection = () => {
     const { theme, setTheme } = useTheme();
     const [selectedAccent, setSelectedAccent] = useState<ThemeAccentPresetKey>(() =>
         getStoredThemeAccentPreset() ?? "default"
     );
+    const [selectedRowIntensity, setSelectedRowIntensity] = useState<TableRowIntensityKey>(() =>
+        getStoredTableRowIntensity() ?? "default"
+    );
+    const [selectedDensity, setSelectedDensity] = useState<TableDensityKey>(() => getStoredTableDensity() ?? "default");
+    const [selectedFontSize, setSelectedFontSize] = useState<FontSizeKey>(() => getStoredFontSize() ?? "default");
+    const [selectedRowsPerPage, setSelectedRowsPerPage] = useState<TableRowsPerPageKey>(() => getStoredTableRowsPerPage());
 
     useEffect(() => {
         applyThemeAccentPreset(selectedAccent);
@@ -47,6 +116,29 @@ const ThemeSettingsSection = () => {
         setSelectedAccent(presetKey);
         setStoredThemeAccentPreset(presetKey);
         applyThemeAccentPreset(presetKey);
+    };
+
+    const handleSelectRowIntensity = (intensityKey: TableRowIntensityKey) => {
+        setSelectedRowIntensity(intensityKey);
+        setStoredTableRowIntensity(intensityKey);
+        applyTableRowIntensity(intensityKey);
+    };
+
+    const handleSelectDensity = (densityKey: TableDensityKey) => {
+        setSelectedDensity(densityKey);
+        setStoredTableDensity(densityKey);
+        applyTableDensity(densityKey);
+    };
+
+    const handleSelectFontSize = (fontSizeKey: FontSizeKey) => {
+        setSelectedFontSize(fontSizeKey);
+        setStoredFontSize(fontSizeKey);
+        applyFontSize(fontSizeKey);
+    };
+
+    const handleSelectRowsPerPage = (pageSize: TableRowsPerPageKey) => {
+        setSelectedRowsPerPage(pageSize);
+        setStoredTableRowsPerPage(pageSize);
     };
 
     return (
@@ -94,6 +186,105 @@ const ThemeSettingsSection = () => {
                             <span className="grid gap-0.5">
                                 <span className="text-sm font-semibold">{preset.label}</span>
                                 <span className="text-xs font-normal text-muted-foreground">{preset.description}</span>
+                            </span>
+                        </Button>
+                    ))}
+                </div>
+            </SettingsCard>
+
+            <SettingsCard
+                title="Righe delle tabelle"
+                description="Quanto sono marcati i colori di stato nelle tabelle di interventi e rapporti."
+            >
+                <div className="grid gap-2 sm:grid-cols-3">
+                    {tableRowIntensities.map((intensity) => (
+                        <Button
+                            key={intensity.key}
+                            type="button"
+                            variant="outline"
+                            className={optionButtonClasses(selectedRowIntensity === intensity.key)}
+                            onClick={() => handleSelectRowIntensity(intensity.key)}
+                        >
+                            <IntensityPreview intensityKey={intensity.key} />
+                            <span className="grid gap-0.5">
+                                <span className="text-sm font-semibold">{intensity.label}</span>
+                                <span className="text-xs font-normal text-muted-foreground">
+                                    {intensity.description}
+                                </span>
+                            </span>
+                        </Button>
+                    ))}
+                </div>
+
+                <SettingsGroup title="Anteprima" description="Le righe qui sotto usano il livello selezionato.">
+                    <Table className="bg-background">
+                        <TableBody>
+                            {rowIntensityPreviewRows.map((previewRow) => (
+                                <TableRow key={previewRow.statusColor} data-status-color={previewRow.statusColor}>
+                                    <TableCell>{previewRow.label}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </SettingsGroup>
+            </SettingsCard>
+
+            <SettingsCard title="Densità tabelle" description="Quanto sono ravvicinate le righe nelle tabelle dell'app.">
+                <div className="grid gap-2 sm:grid-cols-3">
+                    {tableDensities.map((density) => (
+                        <Button
+                            key={density.key}
+                            type="button"
+                            variant="outline"
+                            className={optionButtonClasses(selectedDensity === density.key)}
+                            onClick={() => handleSelectDensity(density.key)}
+                        >
+                            <DensityPreview densityKey={density.key} />
+                            <span className="grid gap-0.5">
+                                <span className="text-sm font-semibold">{density.label}</span>
+                                <span className="text-xs font-normal text-muted-foreground">{density.description}</span>
+                            </span>
+                        </Button>
+                    ))}
+                </div>
+            </SettingsCard>
+
+            <SettingsCard title="Dimensione testo" description="Scala il testo e gli elementi di tutta l'applicazione.">
+                <div className="grid gap-2 sm:grid-cols-3">
+                    {fontSizes.map((fontSize) => (
+                        <Button
+                            key={fontSize.key}
+                            type="button"
+                            variant="outline"
+                            className={optionButtonClasses(selectedFontSize === fontSize.key)}
+                            onClick={() => handleSelectFontSize(fontSize.key)}
+                        >
+                            <FontSizePreview fontSizeKey={fontSize.key} />
+                            <span className="grid gap-0.5">
+                                <span className="text-sm font-semibold">{fontSize.label}</span>
+                                <span className="text-xs font-normal text-muted-foreground">{fontSize.description}</span>
+                            </span>
+                        </Button>
+                    ))}
+                </div>
+            </SettingsCard>
+
+            <SettingsCard
+                title="Righe per pagina"
+                description="Quante righe mostrare per pagina nelle tabelle di interventi, rapporti, clienti e altro."
+            >
+                <div className="grid gap-2 sm:grid-cols-3">
+                    {tableRowsPerPageOptions.map((option) => (
+                        <Button
+                            key={option.key}
+                            type="button"
+                            variant="outline"
+                            className={optionButtonClasses(selectedRowsPerPage === option.key)}
+                            onClick={() => handleSelectRowsPerPage(option.key)}
+                        >
+                            <span className="grid gap-0.5">
+                                <span className="text-sm font-semibold">{option.label}</span>
+                                <span className="text-xs font-normal text-muted-foreground">{option.description}</span>
                             </span>
                         </Button>
                     ))}

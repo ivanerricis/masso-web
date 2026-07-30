@@ -14,6 +14,7 @@ import CollaboratorsFilters from "./components/collaborators-filters";
 import CollaboratorsTable from "./components/collaborators-table";
 import { useCollaboratorsRows } from "./hooks/useCollaboratorsRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
 const CollaboratorsPage = () => {
     const navigate = useNavigate();
@@ -24,8 +25,8 @@ const CollaboratorsPage = () => {
     const [collaboratorToEdit, setCollaboratorToEdit] = useState<CollaboratorDto | null>(null);
     const [collaboratorToDelete, setCollaboratorToDelete] = useState<CollaboratorDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const pageSize = 10;
-    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const pageSize = useTableRowsPerPage();
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const { collaboratorRows, totalItems, totalPages, isLoading, loadCollaborators } = useCollaboratorsRows({
         searchText,
         currentPage,

@@ -16,12 +16,13 @@ type InterventionsTableProps = {
     onDeleteIntervention: (intervention: InterventionDto) => void;
 };
 
-// Tinte piene con testo bianco: la cella azioni torna a bg-background/text-foreground
-// per non colorare le icone dei pulsanti.
-const rowClassNameByStatus: Record<InterventionDto["status"], string> = {
-    programmato: "bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600",
-    in_lavorazione: "bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600",
-    completato: "bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600",
+// Sfondo e testo li decide index.css in base a data-status-color e all'intensità scelta
+// in Impostazioni > Tema; la cella azioni torna a bg-background/text-foreground per non
+// colorare le icone dei pulsanti.
+const statusColorByStatus: Record<InterventionDto["status"], string> = {
+    programmato: "red",
+    in_lavorazione: "yellow",
+    completato: "green",
 };
 
 const accentClassNameByStatus: Record<InterventionDto["status"], string> = {
@@ -104,7 +105,7 @@ const InterventionsTable = ({
                     </TableRow>
                 ) : (
                     rows.map((row) => (
-                        <TableRow key={row.id} className={rowClassNameByStatus[row.status]}>
+                        <TableRow key={row.id} data-status-color={statusColorByStatus[row.status]}>
                             {columns.map((column) => (
                                 <TableCell
                                     key={`${row.id}-${column.key}`}

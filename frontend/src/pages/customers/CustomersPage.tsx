@@ -22,6 +22,7 @@ import CustomersFilters from "./components/customers-filters";
 import CustomersTable from "./components/customers-table";
 import { useCustomersRows } from "./hooks/useCustomersRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 import { openPrintWindow } from "@/lib/utils";
 
 const CustomersPage = () => {
@@ -35,8 +36,8 @@ const CustomersPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [printReportsCustomerId, setPrintReportsCustomerId] = useState<number | null>(null);
     const [printInterventionsCustomerId, setPrintInterventionsCustomerId] = useState<number | null>(null);
-    const pageSize = 10;
-    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText] });
+    const pageSize = useTableRowsPerPage();
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const { customerRows, totalItems, totalPages, isLoading, loadCustomers } = useCustomersRows({
         searchText,
         currentPage,

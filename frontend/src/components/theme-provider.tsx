@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react"
-import { applyThemeAccentPreset, getStoredThemeAccentPreset } from "@/lib/theme"
+import {
+  applyFontSize,
+  applyTableDensity,
+  applyTableRowIntensity,
+  applyThemeAccentPreset,
+  getStoredFontSize,
+  getStoredTableDensity,
+  getStoredTableRowIntensity,
+  getStoredThemeAccentPreset,
+} from "@/lib/theme"
 import { ThemeProviderContext, type Theme } from "@/components/theme-provider-context"
 
 type ThemeProviderProps = {
@@ -35,6 +44,9 @@ export function ThemeProvider({
     }
 
     applyThemeAccentPreset(getStoredThemeAccentPreset())
+    applyTableRowIntensity(getStoredTableRowIntensity())
+    applyTableDensity(getStoredTableDensity())
+    applyFontSize(getStoredFontSize())
   }, [theme])
 
   const value = {

@@ -16,7 +16,118 @@ export type ThemeAccentPreset = {
     chart5: string;
 };
 
+export type TableRowIntensityKey = "soft" | "default" | "strong";
+
+export type TableRowIntensity = {
+    key: TableRowIntensityKey;
+    label: string;
+    description: string;
+};
+
+export type TableDensityKey = "compact" | "default" | "comfortable";
+
+export type TableDensity = {
+    key: TableDensityKey;
+    label: string;
+    description: string;
+};
+
+export type FontSizeKey = "sm" | "default" | "lg";
+
+export type FontSize = {
+    key: FontSizeKey;
+    label: string;
+    description: string;
+};
+
+export type TableRowsPerPageKey = 10 | 20 | 50;
+
+export type TableRowsPerPage = {
+    key: TableRowsPerPageKey;
+    label: string;
+    description: string;
+};
+
 const accentStorageKey = "masso-web-theme-accent";
+const tableRowIntensityStorageKey = "masso-web-table-row-intensity";
+const tableRowIntensityAttribute = "data-table-row-intensity";
+const tableDensityStorageKey = "masso-web-table-density";
+const tableDensityAttribute = "data-table-density";
+const fontSizeStorageKey = "masso-web-font-size";
+const fontSizeAttribute = "data-font-size";
+const tableRowsPerPageStorageKey = "masso-web-table-rows-per-page";
+
+export const tableDensities: TableDensity[] = [
+    {
+        key: "compact",
+        label: "Compatta",
+        description: "Righe ravvicinate per vedere più dati insieme.",
+    },
+    {
+        key: "default",
+        label: "Normale",
+        description: "Spaziatura standard delle righe.",
+    },
+    {
+        key: "comfortable",
+        label: "Comoda",
+        description: "Righe più alte, più facili da leggere.",
+    },
+];
+
+export const fontSizes: FontSize[] = [
+    {
+        key: "sm",
+        label: "Piccolo",
+        description: "Più contenuto visibile senza scorrere.",
+    },
+    {
+        key: "default",
+        label: "Medio",
+        description: "Dimensione standard dell'app.",
+    },
+    {
+        key: "lg",
+        label: "Grande",
+        description: "Testo più leggibile su schermi grandi.",
+    },
+];
+
+export const tableRowsPerPageOptions: TableRowsPerPage[] = [
+    {
+        key: 10,
+        label: "10",
+        description: "Meno righe, pagine più veloci da scorrere.",
+    },
+    {
+        key: 20,
+        label: "20",
+        description: "Compromesso tra scroll e numero di pagine.",
+    },
+    {
+        key: 50,
+        label: "50",
+        description: "Più righe per pagina, meno cambi pagina.",
+    },
+];
+
+export const tableRowIntensities: TableRowIntensity[] = [
+    {
+        key: "soft",
+        label: "Tenue",
+        description: "Sfondo velato e leggero.",
+    },
+    {
+        key: "default",
+        label: "Media",
+        description: "Colore pieno con testo bianco.",
+    },
+    {
+        key: "strong",
+        label: "Intensa",
+        description: "Colore carico e marcato.",
+    },
+];
 
 export const themeAccentPresets: ThemeAccentPreset[] = [
     {
@@ -146,4 +257,100 @@ export const applyThemeAccentPreset = (presetKey: ThemeAccentPresetKey | null) =
     root.style.setProperty("--chart-3", preset.chart3);
     root.style.setProperty("--chart-4", preset.chart4);
     root.style.setProperty("--chart-5", preset.chart5);
+};
+
+export const getStoredTableRowIntensity = () => {
+    const storedValue = localStorage.getItem(tableRowIntensityStorageKey) as TableRowIntensityKey | null;
+
+    return tableRowIntensities.some((intensity) => intensity.key === storedValue) ? storedValue : null;
+};
+
+export const setStoredTableRowIntensity = (intensityKey: TableRowIntensityKey | null) => {
+    if (!intensityKey || intensityKey === "default") {
+        localStorage.removeItem(tableRowIntensityStorageKey);
+        return;
+    }
+
+    localStorage.setItem(tableRowIntensityStorageKey, intensityKey);
+};
+
+// I colori dei tre livelli stanno in index.css: qui basta marcare la radice, il default
+// non ha bisogno di attributo perché è quello dichiarato su :root.
+export const applyTableRowIntensity = (intensityKey: TableRowIntensityKey | null) => {
+    const root = getThemeRoot();
+
+    if (!intensityKey || intensityKey === "default") {
+        root.removeAttribute(tableRowIntensityAttribute);
+        return;
+    }
+
+    root.setAttribute(tableRowIntensityAttribute, intensityKey);
+};
+
+export const getStoredTableDensity = () => {
+    const storedValue = localStorage.getItem(tableDensityStorageKey) as TableDensityKey | null;
+
+    return tableDensities.some((density) => density.key === storedValue) ? storedValue : null;
+};
+
+export const setStoredTableDensity = (densityKey: TableDensityKey | null) => {
+    if (!densityKey || densityKey === "default") {
+        localStorage.removeItem(tableDensityStorageKey);
+        return;
+    }
+
+    localStorage.setItem(tableDensityStorageKey, densityKey);
+};
+
+export const applyTableDensity = (densityKey: TableDensityKey | null) => {
+    const root = getThemeRoot();
+
+    if (!densityKey || densityKey === "default") {
+        root.removeAttribute(tableDensityAttribute);
+        return;
+    }
+
+    root.setAttribute(tableDensityAttribute, densityKey);
+};
+
+export const getStoredFontSize = () => {
+    const storedValue = localStorage.getItem(fontSizeStorageKey) as FontSizeKey | null;
+
+    return fontSizes.some((fontSize) => fontSize.key === storedValue) ? storedValue : null;
+};
+
+export const setStoredFontSize = (fontSizeKey: FontSizeKey | null) => {
+    if (!fontSizeKey || fontSizeKey === "default") {
+        localStorage.removeItem(fontSizeStorageKey);
+        return;
+    }
+
+    localStorage.setItem(fontSizeStorageKey, fontSizeKey);
+};
+
+export const applyFontSize = (fontSizeKey: FontSizeKey | null) => {
+    const root = getThemeRoot();
+
+    if (!fontSizeKey || fontSizeKey === "default") {
+        root.removeAttribute(fontSizeAttribute);
+        return;
+    }
+
+    root.setAttribute(fontSizeAttribute, fontSizeKey);
+};
+
+export const getStoredTableRowsPerPage = (): TableRowsPerPageKey => {
+    const storedValue = Number(localStorage.getItem(tableRowsPerPageStorageKey));
+    const match = tableRowsPerPageOptions.find((option) => option.key === storedValue);
+
+    return match ? match.key : 10;
+};
+
+export const setStoredTableRowsPerPage = (pageSize: TableRowsPerPageKey) => {
+    if (pageSize === 10) {
+        localStorage.removeItem(tableRowsPerPageStorageKey);
+        return;
+    }
+
+    localStorage.setItem(tableRowsPerPageStorageKey, String(pageSize));
 };

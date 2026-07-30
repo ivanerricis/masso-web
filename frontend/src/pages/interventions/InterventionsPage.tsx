@@ -24,6 +24,7 @@ import InterventionsTable from "./components/interventions-table";
 import type { InterventionStatusFilter, InterventionTypeFilter } from "./components/types";
 import { useInterventionsRows } from "./hooks/useInterventionsRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 import { openPrintWindow } from "@/lib/utils";
 
 const formatCustomerOption = (
@@ -94,9 +95,9 @@ const InterventionsPage = () => {
     const [typeFilter, setTypeFilter] = useState<InterventionTypeFilter>("all");
     const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
     const [dateTo, setDateTo] = useState<string | undefined>(undefined);
-    const pageSize = 10;
+    const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [searchText, statusFilter, typeFilter, dateFrom, dateTo],
+        resetDependencies: [searchText, statusFilter, typeFilter, dateFrom, dateTo, pageSize],
     });
     const { interventionRows, totalItems, totalPages, isLoading, loadInterventions, updateInterventionRow } = useInterventionsRows({
         searchText,
