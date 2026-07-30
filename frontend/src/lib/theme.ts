@@ -24,6 +24,15 @@ export type TableRowIntensity = {
     description: string;
 };
 
+export type CornerRadiusKey = "square" | "default" | "round";
+
+export type CornerRadiusPreset = {
+    key: CornerRadiusKey;
+    label: string;
+    description: string;
+    radius: string;
+};
+
 export type TableDensityKey = "compact" | "default" | "comfortable";
 
 export type TableDensity = {
@@ -51,11 +60,34 @@ export type TableRowsPerPage = {
 const accentStorageKey = "masso-web-theme-accent";
 const tableRowIntensityStorageKey = "masso-web-table-row-intensity";
 const tableRowIntensityAttribute = "data-table-row-intensity";
+const cornerRadiusStorageKey = "masso-web-corner-radius";
+const defaultRadius = "0.3375rem";
 const tableDensityStorageKey = "masso-web-table-density";
 const tableDensityAttribute = "data-table-density";
 const fontSizeStorageKey = "masso-web-font-size";
 const fontSizeAttribute = "data-font-size";
 const tableRowsPerPageStorageKey = "masso-web-table-rows-per-page";
+
+export const cornerRadiusPresets: CornerRadiusPreset[] = [
+    {
+        key: "square",
+        label: "Squadrato",
+        description: "Angoli quasi dritti, stile tecnico.",
+        radius: "0.125rem",
+    },
+    {
+        key: "default",
+        label: "Normale",
+        description: "L'arrotondamento attuale dell'app.",
+        radius: defaultRadius,
+    },
+    {
+        key: "round",
+        label: "Arrotondato",
+        description: "Angoli più morbidi su card e pulsanti.",
+        radius: "0.75rem",
+    },
+];
 
 export const tableDensities: TableDensity[] = [
     {
@@ -285,6 +317,38 @@ export const applyTableRowIntensity = (intensityKey: TableRowIntensityKey | null
     }
 
     root.setAttribute(tableRowIntensityAttribute, intensityKey);
+};
+
+export const getStoredCornerRadius = () => {
+    const storedValue = localStorage.getItem(cornerRadiusStorageKey) as CornerRadiusKey | null;
+
+    return cornerRadiusPresets.some((preset) => preset.key === storedValue) ? storedValue : null;
+};
+
+export const setStoredCornerRadius = (radiusKey: CornerRadiusKey | null) => {
+    if (!radiusKey || radiusKey === "default") {
+        localStorage.removeItem(cornerRadiusStorageKey);
+        return;
+    }
+
+    localStorage.setItem(cornerRadiusStorageKey, radiusKey);
+};
+
+export const applyCornerRadius = (radiusKey: CornerRadiusKey | null) => {
+    const root = getThemeRoot();
+
+    if (!radiusKey || radiusKey === "default") {
+        root.style.removeProperty("--radius");
+        return;
+    }
+
+    const preset = cornerRadiusPresets.find((item) => item.key === radiusKey);
+
+    if (!preset) {
+        return;
+    }
+
+    root.style.setProperty("--radius", preset.radius);
 };
 
 export const getStoredTableDensity = () => {

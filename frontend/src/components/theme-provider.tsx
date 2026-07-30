@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react"
 import {
+  applyCornerRadius,
   applyFontSize,
   applyTableDensity,
   applyTableRowIntensity,
   applyThemeAccentPreset,
+  getStoredCornerRadius,
   getStoredFontSize,
   getStoredTableDensity,
   getStoredTableRowIntensity,
@@ -47,6 +49,7 @@ export function ThemeProvider({
     applyTableRowIntensity(getStoredTableRowIntensity())
     applyTableDensity(getStoredTableDensity())
     applyFontSize(getStoredFontSize())
+    applyCornerRadius(getStoredCornerRadius())
   }, [theme])
 
   const value = {

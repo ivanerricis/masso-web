@@ -5,16 +5,20 @@ import { SettingsCard, SettingsGroup, SettingsSection } from "@/components/setti
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { useTheme } from "@/components/use-theme";
 import {
+    applyCornerRadius,
     applyFontSize,
     applyTableDensity,
     applyTableRowIntensity,
     applyThemeAccentPreset,
+    cornerRadiusPresets,
     fontSizes,
+    getStoredCornerRadius,
     getStoredFontSize,
     getStoredTableDensity,
     getStoredTableRowIntensity,
     getStoredTableRowsPerPage,
     getStoredThemeAccentPreset,
+    setStoredCornerRadius,
     setStoredFontSize,
     setStoredTableDensity,
     setStoredTableRowIntensity,
@@ -24,6 +28,7 @@ import {
     tableRowIntensities,
     tableRowsPerPageOptions,
     themeAccentPresets,
+    type CornerRadiusKey,
     type FontSizeKey,
     type TableDensityKey,
     type TableRowIntensityKey,
@@ -86,6 +91,13 @@ const DensityPreview = ({ densityKey }: { densityKey: TableDensityKey }) => (
     </span>
 );
 
+const RadiusPreview = ({ radius }: { radius: string }) => (
+    <span
+        className="mt-0.5 size-4 shrink-0 border-2 border-muted-foreground/40"
+        style={{ borderRadius: radius }}
+    />
+);
+
 const fontSizePreviewClasses: Record<FontSizeKey, string> = {
     sm: "text-xs",
     default: "text-sm",
@@ -107,6 +119,7 @@ const ThemeSettingsSection = () => {
     const [selectedDensity, setSelectedDensity] = useState<TableDensityKey>(() => getStoredTableDensity() ?? "default");
     const [selectedFontSize, setSelectedFontSize] = useState<FontSizeKey>(() => getStoredFontSize() ?? "default");
     const [selectedRowsPerPage, setSelectedRowsPerPage] = useState<TableRowsPerPageKey>(() => getStoredTableRowsPerPage());
+    const [selectedRadius, setSelectedRadius] = useState<CornerRadiusKey>(() => getStoredCornerRadius() ?? "default");
 
     useEffect(() => {
         applyThemeAccentPreset(selectedAccent);
@@ -139,6 +152,12 @@ const ThemeSettingsSection = () => {
     const handleSelectRowsPerPage = (pageSize: TableRowsPerPageKey) => {
         setSelectedRowsPerPage(pageSize);
         setStoredTableRowsPerPage(pageSize);
+    };
+
+    const handleSelectRadius = (radiusKey: CornerRadiusKey) => {
+        setSelectedRadius(radiusKey);
+        setStoredCornerRadius(radiusKey);
+        applyCornerRadius(radiusKey);
     };
 
     return (
@@ -183,6 +202,26 @@ const ThemeSettingsSection = () => {
                                 className="mt-0.5 size-4 shrink-0 rounded-full border border-border"
                                 style={{ backgroundColor: preset.primary }}
                             />
+                            <span className="grid gap-0.5">
+                                <span className="text-sm font-semibold">{preset.label}</span>
+                                <span className="text-xs font-normal text-muted-foreground">{preset.description}</span>
+                            </span>
+                        </Button>
+                    ))}
+                </div>
+            </SettingsCard>
+
+            <SettingsCard title="Raggio degli angoli" description="Quanto sono arrotondati i bordi di card, pulsanti e campi.">
+                <div className="grid gap-2 sm:grid-cols-3">
+                    {cornerRadiusPresets.map((preset) => (
+                        <Button
+                            key={preset.key}
+                            type="button"
+                            variant="outline"
+                            className={optionButtonClasses(selectedRadius === preset.key)}
+                            onClick={() => handleSelectRadius(preset.key)}
+                        >
+                            <RadiusPreview radius={preset.radius} />
                             <span className="grid gap-0.5">
                                 <span className="text-sm font-semibold">{preset.label}</span>
                                 <span className="text-xs font-normal text-muted-foreground">{preset.description}</span>
