@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { FilterX, ListFilter } from "lucide-react";
-import type { ReportVisibilityFilter } from "./types";
+import { ArrowUpDown, FilterX, ListFilter } from "lucide-react";
+import { reportSortOptions, type ReportSortOption, type ReportVisibilityFilter } from "./types";
 
 const COMPACT_BREAKPOINT = 640;
 
@@ -13,6 +13,8 @@ type ReportsFiltersProps = {
     onSearchTextChange: (value: string) => void;
     visibilityFilter: ReportVisibilityFilter;
     onVisibilityFilterChange: (value: ReportVisibilityFilter) => void;
+    sortOption: ReportSortOption;
+    onSortOptionChange: (value: ReportSortOption) => void;
     dateFrom: string | undefined;
     onDateFromChange: (value: string | undefined) => void;
     dateTo: string | undefined;
@@ -24,6 +26,8 @@ const ReportsFilters = ({
     onSearchTextChange,
     visibilityFilter,
     onVisibilityFilterChange,
+    sortOption,
+    onSortOptionChange,
     dateFrom,
     onDateFromChange,
     dateTo,
@@ -47,6 +51,19 @@ const ReportsFilters = ({
                     <SelectItem value="all">Tutti i rapportini</SelectItem>
                     <SelectItem value="open">Rapportini aperti</SelectItem>
                     <SelectItem value="closed">Rapportini chiusi</SelectItem>
+                </SelectContent>
+            </Select>
+
+            <Select value={sortOption} onValueChange={(value) => onSortOptionChange(value as ReportSortOption)}>
+                <SelectTrigger className={isCompact ? "w-auto px-2" : "w-56"} aria-label="Ordina per">
+                    {isCompact ? <ArrowUpDown className="size-4" /> : <SelectValue placeholder="Ordina per" />}
+                </SelectTrigger>
+                <SelectContent position="popper">
+                    {reportSortOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
                 </SelectContent>
             </Select>
 

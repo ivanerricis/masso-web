@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { interventionTypeOptions, interventionStatusOptions } from "@/lib/interventions";
-import { FilterX, ListFilter, Tag } from "lucide-react";
-import type { InterventionStatusFilter, InterventionTypeFilter } from "./types";
+import { ArrowUpDown, FilterX, ListFilter, Tag } from "lucide-react";
+import { interventionSortOptions, type InterventionSortOption, type InterventionStatusFilter, type InterventionTypeFilter } from "./types";
 
 const COMPACT_BREAKPOINT = 640;
 
@@ -16,6 +16,8 @@ type InterventionsFiltersProps = {
     onStatusFilterChange: (value: InterventionStatusFilter) => void;
     typeFilter: InterventionTypeFilter;
     onTypeFilterChange: (value: InterventionTypeFilter) => void;
+    sortOption: InterventionSortOption;
+    onSortOptionChange: (value: InterventionSortOption) => void;
     dateFrom: string | undefined;
     onDateFromChange: (value: string | undefined) => void;
     dateTo: string | undefined;
@@ -29,6 +31,8 @@ const InterventionsFilters = ({
     onStatusFilterChange,
     typeFilter,
     onTypeFilterChange,
+    sortOption,
+    onSortOptionChange,
     dateFrom,
     onDateFromChange,
     dateTo,
@@ -66,6 +70,19 @@ const InterventionsFilters = ({
                 <SelectContent position="popper">
                     <SelectItem value="all">Tutti i tipi</SelectItem>
                     {interventionTypeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            <Select value={sortOption} onValueChange={(value) => onSortOptionChange(value as InterventionSortOption)}>
+                <SelectTrigger className={isCompact ? "w-auto px-2" : "w-56"} aria-label="Ordina per">
+                    {isCompact ? <ArrowUpDown className="size-4" /> : <SelectValue placeholder="Ordina per" />}
+                </SelectTrigger>
+                <SelectContent position="popper">
+                    {interventionSortOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
                         </SelectItem>

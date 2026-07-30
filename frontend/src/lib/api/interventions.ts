@@ -27,6 +27,8 @@ export type InterventionCreateInput = {
     endTime?: string | null;
 };
 
+export type InterventionSortBy = "createdAt" | "interventionDate" | "customer" | "status";
+
 export type ListInterventionsParams = {
     page?: number;
     pageSize?: number;
@@ -36,6 +38,8 @@ export type ListInterventionsParams = {
     dateFrom?: string;
     dateTo?: string;
     scheduledDate?: string;
+    sortBy?: InterventionSortBy;
+    sortOrder?: "asc" | "desc";
 };
 
 export function listInterventions(): Promise<InterventionDto[]>;
@@ -56,6 +60,8 @@ export async function listInterventions(params?: ListInterventionsParams) {
             dateFrom: params.dateFrom,
             dateTo: params.dateTo,
             scheduledDate: params.scheduledDate,
+            sortBy: params.sortBy,
+            sortOrder: params.sortOrder,
         },
     });
 

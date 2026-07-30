@@ -10,12 +10,16 @@ export const listQuerySchema = z.object({
     page: z.coerce.number().int().min(1).optional(),
     pageSize: z.coerce.number().int().min(1).max(1000).optional(),
     search: z.string().trim().max(255).optional(),
+    sortBy: z.string().trim().max(64).optional(),
+    sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
 export type ListParams = {
     page?: number;
     pageSize?: number;
     search?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
 };
 
 // Le query di lista restituiscono un array semplice quando non è richiesta la
@@ -76,9 +80,9 @@ export const createCrudRouter = <TRow, TCreate, TUpdate>({
     const router = Router();
 
     router.get("/", validate({ query: listQuerySchema }), async (req, res) => {
-        const { page, pageSize, search } = req.query as unknown as ListParams;
+        const { page, pageSize, search, sortBy, sortOrder } = req.query as unknown as ListParams;
 
-        sendListResponse(res, await queries.list({ page, pageSize, search }), page, pageSize);
+        sendListResponse(res, await queries.list({ page, pageSize, search, sortBy, sortOrder }), page, pageSize);
     });
 
     extraRoutes?.(router);

@@ -31,6 +31,8 @@ const reportIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+const reportSortFields = ["createdAt", "customer", "totalPrice"] as const;
+
 const reportListQuerySchema = z.object({
     page: z.coerce.number().int().min(1).optional(),
     pageSize: z.coerce.number().int().min(1).max(1000).optional(),
@@ -38,6 +40,8 @@ const reportListQuerySchema = z.object({
     visibility: z.enum(["all", "open", "closed"]).optional(),
     dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    sortBy: z.enum(reportSortFields).optional(),
+    sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
 const reportBodySchema = z
@@ -77,13 +81,15 @@ const reportUpdateBodySchema = reportBodySchema.partial().refine((value) => Obje
 });
 
 reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search, visibility, dateFrom, dateTo } = req.query as unknown as {
+    const { page, pageSize, search, visibility, dateFrom, dateTo, sortBy, sortOrder } = req.query as unknown as {
         page?: number;
         pageSize?: number;
         search?: string;
         visibility?: "all" | "open" | "closed";
         dateFrom?: string;
         dateTo?: string;
+        sortBy?: (typeof reportSortFields)[number];
+        sortOrder?: "asc" | "desc";
     };
 
     const reports = await listReports({
@@ -93,6 +99,8 @@ reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, r
         visibility: visibility ?? (page == null || pageSize == null ? "all" : "open"),
         dateFrom,
         dateTo,
+        sortBy,
+        sortOrder,
     });
 
     sendListResponse(res, reports, page, pageSize);

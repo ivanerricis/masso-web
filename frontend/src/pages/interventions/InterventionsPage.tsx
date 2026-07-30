@@ -21,7 +21,12 @@ import { useNavigate } from "react-router-dom";
 import { interventionColumns } from "./components/intervention-columns";
 import InterventionsFilters from "./components/interventions-filters";
 import InterventionsTable from "./components/interventions-table";
-import type { InterventionStatusFilter, InterventionTypeFilter } from "./components/types";
+import {
+    DEFAULT_INTERVENTION_SORT_OPTION,
+    type InterventionSortOption,
+    type InterventionStatusFilter,
+    type InterventionTypeFilter,
+} from "./components/types";
 import { useInterventionsRows } from "./hooks/useInterventionsRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
@@ -93,16 +98,18 @@ const InterventionsPage = () => {
     const [searchText, setSearchText] = useState("");
     const [statusFilter, setStatusFilter] = useState<InterventionStatusFilter>("all");
     const [typeFilter, setTypeFilter] = useState<InterventionTypeFilter>("all");
+    const [sortOption, setSortOption] = useState<InterventionSortOption>(DEFAULT_INTERVENTION_SORT_OPTION);
     const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
     const [dateTo, setDateTo] = useState<string | undefined>(undefined);
     const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [searchText, statusFilter, typeFilter, dateFrom, dateTo, pageSize],
+        resetDependencies: [searchText, statusFilter, typeFilter, sortOption, dateFrom, dateTo, pageSize],
     });
     const { interventionRows, totalItems, totalPages, isLoading, loadInterventions, updateInterventionRow } = useInterventionsRows({
         searchText,
         statusFilter,
         typeFilter,
+        sortOption,
         dateFrom,
         dateTo,
         currentPage,
@@ -273,6 +280,8 @@ const InterventionsPage = () => {
                     onStatusFilterChange={setStatusFilter}
                     typeFilter={typeFilter}
                     onTypeFilterChange={setTypeFilter}
+                    sortOption={sortOption}
+                    onSortOptionChange={setSortOption}
                     dateFrom={dateFrom}
                     onDateFromChange={setDateFrom}
                     dateTo={dateTo}

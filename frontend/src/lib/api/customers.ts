@@ -13,10 +13,14 @@ export type CustomerCreateInput = {
 
 export type CustomerUpdateInput = Partial<CustomerCreateInput>;
 
+export type CustomerSortBy = "createdAt" | "name";
+
 export type ListCustomersParams = {
     page?: number;
     pageSize?: number;
     search?: string;
+    sortBy?: CustomerSortBy;
+    sortOrder?: "asc" | "desc";
 };
 
 export function listCustomers(): Promise<CustomerDto[]>;
@@ -28,7 +32,13 @@ export async function listCustomers(params?: ListCustomersParams) {
     }
 
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<CustomerDto>>>("/customers", {
-        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
+        params: {
+            page: params.page ?? 1,
+            pageSize: params.pageSize ?? 1000,
+            search: params.search?.trim() || undefined,
+            sortBy: params.sortBy,
+            sortOrder: params.sortOrder,
+        },
     });
 
     const items = response.data.items.map((customer) => mapEntityTimestamps(customer));

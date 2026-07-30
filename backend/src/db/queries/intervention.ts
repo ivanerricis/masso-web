@@ -1,7 +1,9 @@
-import { and, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { collaboratorTable, customerTable, interventionTable } from "../schema";
 import type { NewIntervention, UpdateIntervention } from "../types";
+
+type InterventionSortBy = "createdAt" | "interventionDate" | "customer" | "status";
 
 type ListInterventionsParams = {
     page?: number;
@@ -13,6 +15,8 @@ type ListInterventionsParams = {
     dateTo?: string;
     scheduledDate?: string;
     customerId?: number;
+    sortBy?: InterventionSortBy;
+    sortOrder?: "asc" | "desc";
 };
 
 export const listInterventions = async ({
@@ -25,6 +29,8 @@ export const listInterventions = async ({
     dateTo,
     scheduledDate,
     customerId,
+    sortBy = "createdAt",
+    sortOrder = "desc",
 }: ListInterventionsParams) => {
     const trimmedSearch = search?.trim();
     const searchPattern = `%${trimmedSearch ?? ""}%`;
@@ -68,6 +74,17 @@ export const listInterventions = async ({
     ].filter((condition): condition is NonNullable<typeof condition> => condition != null);
     const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
+    const customerSortExpr = sql<string>`coalesce(nullif(concat_ws(' ', ${customerTable.firstName}, ${customerTable.lastName}), ''), '-')`;
+    const sortColumn =
+        sortBy === "customer"
+            ? customerSortExpr
+            : sortBy === "interventionDate"
+              ? interventionTable.interventionDate
+              : sortBy === "status"
+                ? interventionTable.status
+                : interventionTable.created_at;
+    const orderByClause = sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
+
     const baseQuery = db
         .select({
             id: interventionTable.id,
@@ -79,7 +96,7 @@ export const listInterventions = async ({
             endTime: interventionTable.endTime,
             customerId: interventionTable.customerId,
             collaboratorId: interventionTable.collaboratorId,
-            customer: sql<string>`coalesce(nullif(concat_ws(' ', ${customerTable.firstName}, ${customerTable.lastName}), ''), '-')`,
+            customer: customerSortExpr,
             customerPhone: sql<string | null>`coalesce(${customerTable.phoneNumber}, ${customerTable.phoneNumberSecondary})`,
             collaborator: sql<string>`coalesce(nullif(concat_ws(' ', ${collaboratorTable.firstName}, ${collaboratorTable.lastName}), ''), '-')`,
             createdAt: interventionTable.created_at,
@@ -90,11 +107,11 @@ export const listInterventions = async ({
         .innerJoin(collaboratorTable, eq(collaboratorTable.id, interventionTable.collaboratorId));
 
     if (page == null || pageSize == null) {
-        return baseQuery.where(whereClause).orderBy(desc(interventionTable.created_at));
+        return baseQuery.where(whereClause).orderBy(orderByClause);
     }
 
     const [items, totalCountRows] = await Promise.all([
-        baseQuery.where(whereClause).orderBy(desc(interventionTable.created_at)).limit(pageSize).offset((page - 1) * pageSize),
+        baseQuery.where(whereClause).orderBy(orderByClause).limit(pageSize).offset((page - 1) * pageSize),
         db.select({ total: sql<number>`count(*)` })
             .from(interventionTable)
             .innerJoin(customerTable, eq(customerTable.id, interventionTable.customerId))

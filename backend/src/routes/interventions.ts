@@ -38,6 +38,8 @@ const interventionIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+const interventionSortFields = ["createdAt", "interventionDate", "customer", "status"] as const;
+
 const interventionListQuerySchema = z.object({
     page: z.coerce.number().int().min(1).optional(),
     pageSize: z.coerce.number().int().min(1).max(1000).optional(),
@@ -47,6 +49,8 @@ const interventionListQuerySchema = z.object({
     dateFrom: z.string().regex(dateRegex).optional(),
     dateTo: z.string().regex(dateRegex).optional(),
     scheduledDate: z.string().regex(dateRegex).optional(),
+    sortBy: z.enum(interventionSortFields).optional(),
+    sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
 const interventionBodySchema = z
@@ -89,7 +93,7 @@ const interventionUpdateBodySchema = interventionBodySchema.partial().refine((va
 });
 
 interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search, status, type, dateFrom, dateTo, scheduledDate } = req.query as unknown as {
+    const { page, pageSize, search, status, type, dateFrom, dateTo, scheduledDate, sortBy, sortOrder } = req.query as unknown as {
         page?: number;
         pageSize?: number;
         search?: string;
@@ -98,6 +102,8 @@ interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), a
         dateFrom?: string;
         dateTo?: string;
         scheduledDate?: string;
+        sortBy?: (typeof interventionSortFields)[number];
+        sortOrder?: "asc" | "desc";
     };
 
     const interventions = await listInterventions({
@@ -109,6 +115,8 @@ interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), a
         dateFrom,
         dateTo,
         scheduledDate,
+        sortBy,
+        sortOrder,
     });
 
     sendListResponse(res, interventions, page, pageSize);

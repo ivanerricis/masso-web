@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { customerColumns } from "./components/customer-columns";
 import CustomersFilters from "./components/customers-filters";
 import CustomersTable from "./components/customers-table";
+import { DEFAULT_CUSTOMER_SORT_OPTION, type CustomerSortOption } from "./components/types";
 import { useCustomersRows } from "./hooks/useCustomersRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
@@ -30,6 +31,7 @@ const CustomersPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
+    const [sortOption, setSortOption] = useState<CustomerSortOption>(DEFAULT_CUSTOMER_SORT_OPTION);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [customerToEdit, setCustomerToEdit] = useState<CustomerDto | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<CustomerDto | null>(null);
@@ -37,9 +39,10 @@ const CustomersPage = () => {
     const [printReportsCustomerId, setPrintReportsCustomerId] = useState<number | null>(null);
     const [printInterventionsCustomerId, setPrintInterventionsCustomerId] = useState<number | null>(null);
     const pageSize = useTableRowsPerPage();
-    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
+    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, sortOption, pageSize] });
     const { customerRows, totalItems, totalPages, isLoading, loadCustomers } = useCustomersRows({
         searchText,
+        sortOption,
         currentPage,
         pageSize,
     });
@@ -211,7 +214,12 @@ const CustomersPage = () => {
                 />
             )}
 
-            <CustomersFilters searchText={searchText} onSearchTextChange={setSearchText} />
+            <CustomersFilters
+                searchText={searchText}
+                onSearchTextChange={setSearchText}
+                sortOption={sortOption}
+                onSortOptionChange={setSortOption}
+            />
 
             <div className="flex flex-col gap-4">
                 <CustomersTable

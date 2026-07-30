@@ -26,7 +26,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { reportColumns } from "./components/report-columns";
 import ReportsFilters from "./components/reports-filters";
 import ReportsTable from "./components/reports-table";
-import type { ReportVisibilityFilter } from "./components/types";
+import { DEFAULT_REPORT_SORT_OPTION, type ReportSortOption, type ReportVisibilityFilter } from "./components/types";
 import { useReportsRows } from "./hooks/useReportsRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
@@ -121,15 +121,17 @@ const ReportsPage = () => {
     }
 
     const [searchText, setSearchText] = useState("");
+    const [sortOption, setSortOption] = useState<ReportSortOption>(DEFAULT_REPORT_SORT_OPTION);
     const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
     const [dateTo, setDateTo] = useState<string | undefined>(undefined);
     const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [searchText, visibilityFilter, dateFrom, dateTo, pageSize],
+        resetDependencies: [searchText, visibilityFilter, sortOption, dateFrom, dateTo, pageSize],
     });
     const { reportRows, totalItems, totalPages, isLoading, loadReports, updateReportRow } = useReportsRows({
         searchText,
         visibilityFilter,
+        sortOption,
         dateFrom,
         dateTo,
         currentPage,
@@ -379,6 +381,8 @@ const ReportsPage = () => {
                     onSearchTextChange={setSearchText}
                     visibilityFilter={visibilityFilter}
                     onVisibilityFilterChange={handleVisibilityFilterChange}
+                    sortOption={sortOption}
+                    onSortOptionChange={setSortOption}
                     dateFrom={dateFrom}
                     onDateFromChange={setDateFrom}
                     dateTo={dateTo}

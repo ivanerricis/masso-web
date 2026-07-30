@@ -55,6 +55,8 @@ export type ReportCreateInput = {
     price?: number;
 };
 
+export type ReportSortBy = "createdAt" | "customer" | "totalPrice";
+
 export type ListReportsParams = {
     page?: number;
     pageSize?: number;
@@ -62,6 +64,8 @@ export type ListReportsParams = {
     visibility?: "all" | "open" | "closed";
     dateFrom?: string;
     dateTo?: string;
+    sortBy?: ReportSortBy;
+    sortOrder?: "asc" | "desc";
 };
 
 export function listReports(): Promise<ReportDto[]>;
@@ -80,6 +84,8 @@ export async function listReports(params?: ListReportsParams) {
             visibility: params.visibility,
             dateFrom: params.dateFrom,
             dateTo: params.dateTo,
+            sortBy: params.sortBy,
+            sortOrder: params.sortOrder,
         },
     });
 

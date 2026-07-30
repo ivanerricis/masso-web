@@ -3,12 +3,13 @@ import type { InterventionDto } from "@/types/dtos";
 import { useCallback } from "react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { usePaginatedRows } from "@/hooks/usePaginatedRows";
-import type { InterventionStatusFilter, InterventionTypeFilter } from "../components/types";
+import type { InterventionSortOption, InterventionStatusFilter, InterventionTypeFilter } from "../components/types";
 
 type UseInterventionsRowsParams = {
     searchText: string;
     statusFilter: InterventionStatusFilter;
     typeFilter: InterventionTypeFilter;
+    sortOption: InterventionSortOption;
     dateFrom?: string;
     dateTo?: string;
     currentPage: number;
@@ -19,12 +20,14 @@ export const useInterventionsRows = ({
     searchText,
     statusFilter,
     typeFilter,
+    sortOption,
     dateFrom,
     dateTo,
     currentPage,
     pageSize,
 }: UseInterventionsRowsParams) => {
     const debouncedSearchText = useDebouncedValue(searchText);
+    const [sortBy, sortOrder] = sortOption.split(":") as ["createdAt" | "interventionDate" | "customer", "asc" | "desc"];
     const { rows, totalItems, totalPages, isLoading, reload, updateRow } =
         usePaginatedRows<InterventionDto>({
             fetchRows: () =>
@@ -34,6 +37,8 @@ export const useInterventionsRows = ({
                     search: debouncedSearchText,
                     status: statusFilter,
                     type: typeFilter,
+                    sortBy,
+                    sortOrder,
                     dateFrom,
                     dateTo,
                 }),
@@ -43,6 +48,7 @@ export const useInterventionsRows = ({
                 debouncedSearchText,
                 statusFilter,
                 typeFilter,
+                sortOption,
                 dateFrom,
                 dateTo,
             ],

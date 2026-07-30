@@ -1,4 +1,4 @@
-import { desc, eq, or, sql } from "drizzle-orm";
+import { asc, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { customerTable } from "../schema";
 import type { NewCustomer, UpdateCustomer } from "../types";
@@ -7,9 +7,11 @@ type ListCustomersParams = {
     page?: number;
     pageSize?: number;
     search?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
 };
 
-export const listCustomers = async ({ page, pageSize, search }: ListCustomersParams) => {
+export const listCustomers = async ({ page, pageSize, search, sortBy = "createdAt", sortOrder = "desc" }: ListCustomersParams) => {
     const trimmedSearch = search?.trim();
     const searchPattern = `%${trimmedSearch ?? ""}%`;
     const searchConditions = trimmedSearch
@@ -25,7 +27,13 @@ export const listCustomers = async ({ page, pageSize, search }: ListCustomersPar
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const baseQuery = db.select().from(customerTable).where(whereClause).orderBy(desc(customerTable.created_at));
+    const orderByClause =
+        sortBy === "name"
+            ? sortOrder === "asc"
+                ? [asc(customerTable.firstName), asc(customerTable.lastName)]
+                : [desc(customerTable.firstName), desc(customerTable.lastName)]
+            : [sortOrder === "asc" ? asc(customerTable.created_at) : desc(customerTable.created_at)];
+    const baseQuery = db.select().from(customerTable).where(whereClause).orderBy(...orderByClause);
 
     if (page == null || pageSize == null) {
         return baseQuery;
