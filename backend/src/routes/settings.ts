@@ -15,6 +15,7 @@ import {
     testSmbConnection,
     updateBackupSettings,
 } from "../services/backupManager";
+import { CompanyManagerError, getCompanySettings, updateCompanySettings } from "../services/companyManager";
 import { EmailManagerError, getEmailSettings, testEmailConnection, updateEmailSettings } from "../services/emailManager";
 import { LogoManagerError, getLogoStatus, resetLogo, saveLogo } from "../services/logoManager";
 import { LogManagerError, getLogFilePath, listLogFiles, readLogEntries } from "../services/logManager";
@@ -26,6 +27,16 @@ const dumpUpload = multer({ storage: multer.memoryStorage() });
 
 const handleBackupError = (error: unknown, res: Response) => {
     if (error instanceof BackupManagerError) {
+        res.locals.apiErrorMessage = error.message;
+        res.status(error.statusCode).json({ message: error.message });
+        return true;
+    }
+
+    return false;
+};
+
+const handleCompanyError = (error: unknown, res: Response) => {
+    if (error instanceof CompanyManagerError) {
         res.locals.apiErrorMessage = error.message;
         res.status(error.statusCode).json({ message: error.message });
         return true;
@@ -103,6 +114,13 @@ const smbTestSchema = z.object({
     port: z.coerce.number().int().min(1).max(65535),
     username: z.string().trim().min(1).max(255),
     password: z.string().min(1).max(512),
+}).strict();
+
+const companySettingsSchema = z.object({
+    name: z.string().trim().min(1).max(255),
+    email: z.string().trim().max(255),
+    address: z.string().trim().max(512),
+    phone: z.string().trim().max(50),
 }).strict();
 
 const emailSettingsSchema = z.object({
@@ -252,6 +270,30 @@ settingsRouter.post("/backup/smb/test", validate({ body: smbTestSchema }), async
             return;
         }
 
+        next(error);
+    }
+});
+
+settingsRouter.get("/company", async (_req, res, next) => {
+    try {
+        const settings = await getCompanySettings();
+        res.json(settings);
+    } catch (error) {
+        if (handleCompanyError(error, res)) {
+            return;
+        }
+        next(error);
+    }
+});
+
+settingsRouter.put("/company", validate({ body: companySettingsSchema }), async (req, res, next) => {
+    try {
+        const settings = await updateCompanySettings(req.body);
+        res.json(settings);
+    } catch (error) {
+        if (handleCompanyError(error, res)) {
+            return;
+        }
         next(error);
     }
 });

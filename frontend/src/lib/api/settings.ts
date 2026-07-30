@@ -154,6 +154,20 @@ export const listLogEntries = async (dayKey: string, params: ListLogEntriesParam
 export const getLogDownloadUrl = (dayKey: string) =>
     api.getUri({ url: `/settings/logs/${encodeURIComponent(dayKey)}/download` });
 
+export type CompanySettingsDto = {
+    name: string;
+    email: string;
+    address: string;
+    phone: string;
+};
+
+export type CompanySettingsInput = CompanySettingsDto;
+
+export const getCompanySettings = async () => (await api.get<CompanySettingsDto>("/settings/company")).data;
+
+export const updateCompanySettings = async (payload: CompanySettingsInput) =>
+    (await api.put<CompanySettingsDto>("/settings/company", payload)).data;
+
 export type EmailSettingsDto = {
     enabled: boolean;
     host: string;

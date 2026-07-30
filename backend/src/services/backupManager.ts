@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { decryptSecret, encryptSecret } from "./secretCrypto";
+import { invalidateCompanySettingsCache } from "./companyManager";
 import { invalidateEmailSettingsCache, isStoredEmailPasswordUsable } from "./emailManager";
 import { recordNotification } from "./notificationManager";
 
@@ -33,7 +34,7 @@ const archiveDataEntry = "data";
 // finisce nel backup per sbaglio. `secret.key` è escluso di proposito (aprirebbe i
 // segreti cifrati custoditi nello stesso archivio, che finisce anche su NAS), e con
 // esso `initial-admin-password.txt`, che è una credenziale in chiaro.
-const backedUpDataEntries = ["email-settings.json", "backup-settings.json", "logo"];
+const backedUpDataEntries = ["email-settings.json", "backup-settings.json", "company-settings.json", "logo"];
 const defaultSmbPort = 445;
 const smbTestTimeoutMs = 15_000;
 const smbMkdirTimeoutMs = 15_000;
@@ -801,6 +802,7 @@ const restoreDataEntries = async (dataDir: string) => {
     // I file sono cambiati sotto le cache in memoria dei due manager.
     cachedState = null;
     invalidateEmailSettingsCache();
+    invalidateCompanySettingsCache();
 };
 
 // I segreti sono cifrati con data/secret.key, esclusa dai backup di proposito. Su una

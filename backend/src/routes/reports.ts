@@ -154,7 +154,7 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
 
     const report = reportRows[0];
     const customerName = `${report.customerFirstName} ${report.customerLastName ?? ""}`.trim();
-    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = getLabConfig(req);
+    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = await getLabConfig(req);
     const customerPhoneLabel = formatPhoneLabel(report.customerPhone, report.customerPhoneSecondary);
     const technicianPrice = Number(technicianPriceRows[0]?.technicianPrice ?? 0);
     const totalPrice = Number(report.price ?? 0) + technicianPrice;

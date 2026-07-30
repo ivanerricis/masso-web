@@ -158,7 +158,7 @@ const loadInterventionPrintContext = async (id: number, req: { protocol: string;
     const intervention = interventionRows[0];
     const customerName = `${intervention.customerFirstName} ${intervention.customerLastName ?? ""}`.trim();
     const collaboratorName = `${intervention.collaboratorFirstName} ${intervention.collaboratorLastName ?? ""}`.trim();
-    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = getLabConfig(req);
+    const { labName, labEmail, labAddress, labPhone, labLogoUrl } = await getLabConfig(req);
     const customerPhoneLabel = formatPhoneLabel(
         intervention.customerPhone,
         intervention.customerPhoneSecondary

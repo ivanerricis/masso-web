@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom";
-import { Database, Image, Mail, Palette, RefreshCw, ScrollText, Users } from "lucide-react";
+import { Building2, Database, Image, Mail, Palette, RefreshCw, ScrollText, Users } from "lucide-react";
 import BackupSettingsPanel from "@/components/settings/backupSettingsPanel";
+import CompanySettingsPanel from "@/components/settings/companySettingsPanel";
 import EmailSettingsPanel from "@/components/settings/emailSettingsPanel";
 import LogoSettingsPanel from "@/components/settings/logoSettingsPanel";
 import LogsSettingsPanel from "@/components/settings/logsSettingsPanel";
@@ -12,9 +13,18 @@ import ThemeSettingsSection from "@/components/settings/themeSettingsSection";
 import UsersSettingsSection from "@/components/settings/usersSettingsSection";
 import { useAuth } from "@/components/use-auth";
 
-type SettingsSectionKey = "theme" | "users" | "logo" | "email" | "backup" | "update" | "logs";
+type SettingsSectionKey = "theme" | "users" | "company" | "logo" | "email" | "backup" | "update" | "logs";
 
-const settingsSectionKeys: SettingsSectionKey[] = ["theme", "users", "logo", "email", "backup", "update", "logs"];
+const settingsSectionKeys: SettingsSectionKey[] = [
+    "theme",
+    "users",
+    "company",
+    "logo",
+    "email",
+    "backup",
+    "update",
+    "logs",
+];
 
 const settingsSections: Array<{
     key: SettingsSectionKey;
@@ -33,6 +43,12 @@ const settingsSections: Array<{
         label: "Utenti",
         description: "Account che possono accedere all'app",
         icon: Users,
+    },
+    {
+        key: "company",
+        label: "Azienda",
+        description: "Nome, email, indirizzo e telefono nei PDF",
+        icon: Building2,
     },
     {
         key: "logo",
@@ -139,6 +155,8 @@ const SettingsPage = () => {
                     <ThemeSettingsSection />
                 ) : activeSection === "users" && user?.isAdmin ? (
                     <UsersSettingsSection />
+                ) : activeSection === "company" ? (
+                    <CompanySettingsPanel />
                 ) : activeSection === "logo" ? (
                     <LogoSettingsPanel />
                 ) : activeSection === "email" ? (

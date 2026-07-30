@@ -75,7 +75,7 @@ const loadCustomerPrintContext = async (req: Request, id: number) => {
         customerName: `${customer.firstName} ${customer.lastName ?? ""}`.trim(),
         customerPhone: formatPhoneLabel(customer.phoneNumber, customer.phoneNumberSecondary),
         customerEmail: customer.email ?? "-",
-        ...getLabConfig(req),
+        ...(await getLabConfig(req)),
     };
 };
 
