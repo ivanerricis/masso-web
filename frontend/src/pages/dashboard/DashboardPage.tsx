@@ -270,12 +270,37 @@ const DashboardPage = () => {
                     onClick={() => goToReportsPage("closed")}
                 />
 
+                <CardDashboard
+                    text="Interventi programmati"
+                    mobileText="Programmati"
+                    icon={CalendarClock}
+                    number={String(scheduledInterventions)}
+                    iconColor="text-destructive"
+                    onClick={() => goToInterventionsPage("programmato")}
+                />
+                <CardDashboard
+                    text="Interventi in lavorazione"
+                    mobileText="In lavorazione"
+                    icon={Loader}
+                    number={String(inProgressInterventions)}
+                    iconColor="text-yellow-400"
+                    onClick={() => goToInterventionsPage("in_lavorazione")}
+                />
+                <CardDashboard
+                    text="Interventi completati"
+                    mobileText="Completati"
+                    icon={CircleCheck}
+                    number={String(completedInterventions)}
+                    iconColor="text-green-400"
+                    onClick={() => goToInterventionsPage("completato")}
+                />
+
                 <Dialog>
                     <DialogTrigger asChild>
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-auto w-full flex-col items-start gap-0.5 rounded-lg border-primary/20 p-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2 sm:px-4 sm:py-3"
+                            className="h-auto w-full flex-1 flex-col items-start gap-0.5 rounded-lg border-primary/20 p-2 sm:min-w-56 sm:flex-row sm:items-center sm:gap-2 sm:px-4 sm:py-3"
                         >
                             <Euro className="size-4 text-yellow-400 sm:size-5" />
                             <span className="truncate text-xs font-medium text-primary sm:text-base">Incassi mese</span>
@@ -375,31 +400,6 @@ const DashboardPage = () => {
                         </div>
                     </DialogContent>
                 </Dialog>
-
-                <CardDashboard
-                    text="Interventi programmati"
-                    mobileText="Programmati"
-                    icon={CalendarClock}
-                    number={String(scheduledInterventions)}
-                    iconColor="text-destructive"
-                    onClick={() => goToInterventionsPage("programmato")}
-                />
-                <CardDashboard
-                    text="Interventi in lavorazione"
-                    mobileText="In lavorazione"
-                    icon={Loader}
-                    number={String(inProgressInterventions)}
-                    iconColor="text-yellow-400"
-                    onClick={() => goToInterventionsPage("in_lavorazione")}
-                />
-                <CardDashboard
-                    text="Interventi completati"
-                    mobileText="Completati"
-                    icon={CircleCheck}
-                    number={String(completedInterventions)}
-                    iconColor="text-green-400"
-                    onClick={() => goToInterventionsPage("completato")}
-                />
             </div>
 
             <Suspense fallback={<LoadingPage className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]" />}>

@@ -17,7 +17,7 @@ const CardDashboard = ({ text, mobileText, icon: Icon, number, iconColor, onClic
     return (
         <div
             className={cn(
-                "flex flex-col w-full gap-0.5 rounded-lg border bg-card p-2 shadow sm:w-56 sm:gap-1 sm:p-4",
+                "flex flex-1 flex-col w-full gap-0.5 rounded-lg border bg-card p-2 shadow sm:min-w-56 sm:gap-1 sm:p-4",
                 isInteractive && "cursor-pointer *:cursor-pointer *:*:cursor-pointer hover:bg-accent/35"
             )}
             onClick={onClick}
