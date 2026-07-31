@@ -250,7 +250,7 @@ const InterventionsPage = () => {
     };
 
     return (
-        <div className="relative flex flex-col gap-4 w-full h-full">
+        <div className="relative flex h-full min-h-0 w-full flex-col gap-4">
             <>
                 <PageHeader
                     title="Interventi"
@@ -311,16 +311,18 @@ const InterventionsPage = () => {
                     onDateToChange={setDateTo}
                 />
 
-                <div className="flex flex-col gap-4">
-                    <InterventionsTable
-                        columns={interventionColumns}
-                        rows={interventionRows}
-                        onOpenIntervention={handleOpenIntervention}
-                        onEditIntervention={handleOpenEditDialog}
-                        onPrintIntervention={handlePrintIntervention}
-                        onSendEmailIntervention={handleSendEmailIntervention}
-                        onDeleteIntervention={handleOpenDeleteDialog}
-                    />
+                <div className="flex min-h-0 flex-1 flex-col gap-4">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                        <InterventionsTable
+                            columns={interventionColumns}
+                            rows={interventionRows}
+                            onOpenIntervention={handleOpenIntervention}
+                            onEditIntervention={handleOpenEditDialog}
+                            onPrintIntervention={handlePrintIntervention}
+                            onSendEmailIntervention={handleSendEmailIntervention}
+                            onDeleteIntervention={handleOpenDeleteDialog}
+                        />
+                    </div>
                     <TablePagination
                         currentPage={currentPage}
                         totalPages={totalPages}

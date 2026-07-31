@@ -174,7 +174,11 @@ const UpdateSettingsPanel = () => {
                         <Button type="button" variant="outline" disabled={isBusy} onClick={() => void handleCheck()}>
                             {isChecking ? "Verifica in corso..." : "Verifica aggiornamenti"}
                         </Button>
-                        <Button type="button" disabled={isBusy} onClick={() => setIsConfirmOpen(true)}>
+                        <Button
+                            type="button"
+                            disabled={isBusy || !status?.updateAvailable}
+                            onClick={() => setIsConfirmOpen(true)}
+                        >
                             {isUpdating ? "Aggiornamento in corso..." : "Aggiorna adesso"}
                         </Button>
                     </>

@@ -92,7 +92,7 @@ const DevicesPage = () => {
     }, [loadDevices]);
 
     return (
-        <div className="relative flex flex-col gap-4 w-full">
+        <div className="relative flex h-full min-h-0 w-full flex-col gap-4">
             <PageHeader
                 title="Dispositivi"
                 description="Gestisci i dispositivi del laboratorio."
@@ -138,13 +138,15 @@ const DevicesPage = () => {
 
             <DevicesFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            <div className="flex flex-col gap-4">
-                <DevicesTable
-                    columns={deviceColumns}
-                    rows={deviceRows}
-                    onEditDevice={handleOpenEditDialog}
-                    onDeleteDevice={handleOpenDeleteDialog}
-                />
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <DevicesTable
+                        columns={deviceColumns}
+                        rows={deviceRows}
+                        onEditDevice={handleOpenEditDialog}
+                        onDeleteDevice={handleOpenDeleteDialog}
+                    />
+                </div>
                 <TablePagination
                     currentPage={currentPage}
                     totalPages={totalPages}

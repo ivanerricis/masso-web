@@ -92,7 +92,7 @@ const IssuesPage = () => {
     }, [loadIssues]);
 
     return (
-        <div className="relative flex flex-col gap-4 w-full">
+        <div className="relative flex h-full min-h-0 w-full flex-col gap-4">
             <PageHeader
                 title="Difetti"
                 description="Gestisci i difetti del laboratorio."
@@ -137,13 +137,15 @@ const IssuesPage = () => {
 
             <IssuesFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            <div className="flex flex-col gap-4">
-                <IssuesTable
-                    columns={issueColumns}
-                    rows={issueRows}
-                    onEditIssue={handleOpenEditDialog}
-                    onDeleteIssue={handleOpenDeleteDialog}
-                />
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <IssuesTable
+                        columns={issueColumns}
+                        rows={issueRows}
+                        onEditIssue={handleOpenEditDialog}
+                        onDeleteIssue={handleOpenDeleteDialog}
+                    />
+                </div>
                 <TablePagination
                     currentPage={currentPage}
                     totalPages={totalPages}

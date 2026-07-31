@@ -142,7 +142,7 @@ const CustomersPage = () => {
     };
 
     return (
-        <div className="relative flex flex-col gap-4 w-full">
+        <div className="relative flex h-full min-h-0 w-full flex-col gap-4">
             <PageHeader
                 title="Clienti"
                 description="Gestisci i clienti del laboratorio."
@@ -221,16 +221,18 @@ const CustomersPage = () => {
                 onSortOptionChange={setSortOption}
             />
 
-            <div className="flex flex-col gap-4">
-                <CustomersTable
-                    columns={customerColumns}
-                    rows={customerRows}
-                    onOpenCustomer={handleOpenCustomer}
-                    onPrintCustomerReports={handlePrintCustomerReports}
-                    onPrintCustomerInterventions={handlePrintCustomerInterventions}
-                    onEditCustomer={handleOpenEditDialog}
-                    onDeleteCustomer={handleOpenDeleteDialog}
-                />
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <CustomersTable
+                        columns={customerColumns}
+                        rows={customerRows}
+                        onOpenCustomer={handleOpenCustomer}
+                        onPrintCustomerReports={handlePrintCustomerReports}
+                        onPrintCustomerInterventions={handlePrintCustomerInterventions}
+                        onEditCustomer={handleOpenEditDialog}
+                        onDeleteCustomer={handleOpenDeleteDialog}
+                    />
+                </div>
                 <TablePagination
                     currentPage={currentPage}
                     totalPages={totalPages}

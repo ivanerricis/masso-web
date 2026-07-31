@@ -98,7 +98,7 @@ const CollaboratorsPage = () => {
     };
 
     return (
-        <div className="relative flex flex-col gap-4 w-full">
+        <div className="relative flex h-full min-h-0 w-full flex-col gap-4">
             <PageHeader
                 title="Collaboratori"
                 description="Gestisci i collaboratori del laboratorio."
@@ -144,14 +144,16 @@ const CollaboratorsPage = () => {
 
             <CollaboratorsFilters searchText={searchText} onSearchTextChange={setSearchText} />
 
-            <div className="flex flex-col gap-4">
-                <CollaboratorsTable
-                    columns={collaboratorColumns}
-                    rows={collaboratorRows}
-                    onOpenCollaborator={handleOpenCollaborator}
-                    onEditCollaborator={handleOpenEditDialog}
-                    onDeleteCollaborator={handleOpenDeleteDialog}
-                />
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <CollaboratorsTable
+                        columns={collaboratorColumns}
+                        rows={collaboratorRows}
+                        onOpenCollaborator={handleOpenCollaborator}
+                        onEditCollaborator={handleOpenEditDialog}
+                        onDeleteCollaborator={handleOpenDeleteDialog}
+                    />
+                </div>
                 <TablePagination
                     currentPage={currentPage}
                     totalPages={totalPages}

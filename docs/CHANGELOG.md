@@ -11,6 +11,24 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-07-31 — Scroll delle tabelle contenuto e stato del bottone di aggiornamento
+
+- **Bottone "Aggiorna adesso" disabilitato quando non c'è nulla da aggiornare.** Prima
+  restava cliccabile anche a `updateAvailable: false`, permettendo di avviare un
+  aggiornamento (rebuild dei container, breve downtime) senza motivo.
+  → [frontend/src/components/settings/updateSettingsPanel.tsx](../frontend/src/components/settings/updateSettingsPanel.tsx)
+
+- **Solo la tabella scorre, non l'intera pagina.** Nelle liste (Clienti, Interventi,
+  Rapporti, Tecnici, Difetti, Collaboratori, Dispositivi), con molte righe scorreva
+  l'intero `<main>`, portando fuori vista intestazione, filtri e paginazione.
+  *Perché:* queste pagine erano un flex-column senza un contenitore verticale delimitato:
+  il contenuto cresceva oltre il viewport e il browser applicava lo scroll al livello più
+  esterno che lo consentiva (`<main>`). Ora ogni pagina occupa `h-full` e solo il blocco
+  della tabella è `flex-1 overflow-y-auto`; la paginazione, fuori da quel blocco, resta
+  sempre visibile in fondo. Verificato con Playwright iniettando righe extra: `main` non
+  supera più l'altezza del viewport, solo il contenitore della tabella scrolla.
+  → `frontend/src/pages/{customers/CustomersPage,interventions/InterventionsPage,reports/ReportsPage,technicians/TechniciansPage,issues/IssuesPage,collaborators/CollaboratorsPage,devices/DevicesPage}.tsx`
+
 ## 2026-07-31 — Affidabilità, test del frontend e riduzione dei file monolitici
 
 Passata di manutenzione su punti emersi da una revisione del codice. Nessuna modifica
