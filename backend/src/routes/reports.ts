@@ -10,12 +10,7 @@ import {
     updateReportById,
 } from "../db/queries/report";
 import { db } from "../db";
-import {
-    customerTable,
-    deviceTable,
-    reportTechnicianTable,
-    reportTable,
-} from "../db/schema";
+import { customerTable, deviceTable, reportTechnicianTable, reportTable } from "../db/schema";
 import { createReportPdfBuffer } from "../services/reportPdf";
 import { getLabConfig } from "../config/lab";
 import { formatDateLabel, formatPhoneLabel } from "./formatting";
@@ -38,8 +33,14 @@ const reportListQuerySchema = z.object({
     pageSize: z.coerce.number().int().min(1).max(1000).optional(),
     search: z.string().trim().max(255).optional(),
     visibility: z.enum(["all", "open", "closed"]).optional(),
-    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateFrom: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
+    dateTo: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
     sortBy: z.enum(reportSortFields).optional(),
     sortOrder: z.enum(["asc", "desc"]).optional(),
 });
@@ -107,7 +108,10 @@ reportsRouter.get("/", validate({ query: reportListQuerySchema }), async (req, r
 });
 
 const reportStatsQuerySchema = z.object({
-    month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+    month: z
+        .string()
+        .regex(/^\d{4}-\d{2}$/)
+        .optional(),
 });
 
 reportsRouter.get("/stats", validate({ query: reportStatsQuerySchema }), async (req, res) => {
@@ -142,7 +146,8 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
             .innerJoin(customerTable, eq(customerTable.id, reportTable.customerId))
             .innerJoin(deviceTable, eq(deviceTable.id, reportTable.deviceId))
             .where(eq(reportTable.id, id)),
-        db.select({ technicianPrice: sql<number>`coalesce(sum(${reportTechnicianTable.price}), 0)::int` })
+        db
+            .select({ technicianPrice: sql<number>`coalesce(sum(${reportTechnicianTable.price}), 0)::int` })
             .from(reportTechnicianTable)
             .where(eq(reportTechnicianTable.reportId, id)),
     ]);
@@ -201,7 +206,9 @@ reportsRouter.post("/", validate({ body: reportCreateBodySchema }), async (req, 
     const price = req.body.price ?? 0;
 
     if (paidPaymentMethods.has(paymentMethod) && price <= 0) {
-        res.status(400).json({ message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0" });
+        res.status(400).json({
+            message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0",
+        });
         return;
     }
 
@@ -230,7 +237,9 @@ reportsRouter.put(
         const nextPrice = req.body.price ?? existingReport[0].price;
 
         if (paidPaymentMethods.has(nextPaymentMethod) && nextPrice <= 0) {
-            res.status(400).json({ message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0" });
+            res.status(400).json({
+                message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0",
+            });
             return;
         }
 

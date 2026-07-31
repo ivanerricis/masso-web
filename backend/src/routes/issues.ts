@@ -1,11 +1,5 @@
 import { z } from "zod";
-import {
-    createIssue,
-    deleteIssueById,
-    getIssueById,
-    listIssues,
-    updateIssueById,
-} from "../db/queries/issue";
+import { createIssue, deleteIssueById, getIssueById, listIssues, updateIssueById } from "../db/queries/issue";
 import { createCrudRouter } from "./crudRouter";
 
 const issueCreateBodySchema = z
@@ -14,11 +8,9 @@ const issueCreateBodySchema = z
     })
     .strict();
 
-const issueUpdateBodySchema = issueCreateBodySchema
-    .partial()
-    .refine((value) => Object.keys(value).length > 0, {
-        message: "At least one field is required",
-    });
+const issueUpdateBodySchema = issueCreateBodySchema.partial().refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required",
+});
 
 const issuesRouter = createCrudRouter({
     notFoundMessage: "Issue not found",

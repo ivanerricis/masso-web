@@ -46,8 +46,25 @@ services:
       # container, che viene ricreato a ogni `up --build`: si perderebbero a ogni
       # aggiornamento automatico.
       - backend_logs:/app/logs
+    # `exec` è necessario, non stilistico: senza, `sh` resta PID 1 e non inoltra SIGTERM
+    # al processo Node, quindi allo spegnimento il container verrebbe ucciso con SIGKILL
+    # e l'arresto pulito in src/index.ts non verrebbe mai eseguito. Con `exec` Node
+    # sostituisce la shell e riceve il segnale direttamente.
+    # (L'echo di DATABASE_URL è stato rimosso: stampava la password del database nei log.)
     command: >-
-      sh -c 'echo "DATABASE_URL=$$DATABASE_URL"; node migrate.js; if [ $$? -ne 0 ]; then exit 1; fi; npm run start'
+      sh -c 'node migrate.js && exec node dist/src/index.js'
+    # Lo shutdown applicativo si dà 10s di tempo: la finestra di Docker deve essere più
+    # ampia, altrimenti SIGKILL arriva prima che finisca.
+    stop_grace_period: 30s
+    healthcheck:
+      # wget è fornito da busybox nell'immagine alpine, nessun pacchetto aggiuntivo.
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # `restart: always` copre il processo morto; l'healthcheck serve per il processo vivo
+      # ma bloccato, e per far partire il frontend solo quando le API rispondono davvero.
+      start_period: 30s
     depends_on:
       db:
         condition: service_healthy
@@ -63,8 +80,15 @@ services:
     logging: *default-logging
     ports:
       - "80:80"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:

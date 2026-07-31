@@ -1,15 +1,6 @@
 import path from "node:path";
 import pdfmake from "pdfmake";
 
-import { createLegacyReportPdfBuffer } from "./reportPdfLegacy";
-
-/**
- * Layout del PDF del singolo report: "sections" e' quello nuovo (barre di sezione come
- * nel PDF degli interventi), "legacy" ripristina il vecchio design conservato in
- * reportPdfLegacy.ts. Si cambia con la variabile d'ambiente REPORT_PDF_LAYOUT.
- */
-const REPORT_PDF_LAYOUT = process.env.REPORT_PDF_LAYOUT === "legacy" ? "legacy" : "sections";
-
 /** Altezza A4 in punti, come la usa pdfmake. */
 const PAGE_HEIGHT = 841.89;
 const PAGE_MARGIN = 14;
@@ -194,14 +185,16 @@ const fullWidthRow = (text: string, style: string, margin: number[]) => [
 const buildReportMetaBlock = (report: ReportPrintData) => ({
     table: {
         widths: [120],
-        body: [[
-            {
-                stack: [
-                    { text: `Rapporto #${report.id}`, style: "metaTitle", alignment: "right" },
-                    { text: report.createdAtLabel, style: "metaDate", alignment: "right" },
-                ],
-            },
-        ]],
+        body: [
+            [
+                {
+                    stack: [
+                        { text: `Rapporto #${report.id}`, style: "metaTitle", alignment: "right" },
+                        { text: report.createdAtLabel, style: "metaDate", alignment: "right" },
+                    ],
+                },
+            ],
+        ],
     },
     layout: {
         hLineWidth: () => 1,
@@ -239,7 +232,10 @@ const buildHeader = (report: ReportPrintData, logoDataUrl: string | null, compac
                           width: "*",
                           stack: [
                               { text: report.labName, style: "brandName" },
-                              { text: `${report.labAddress}\n${report.labEmail}\n${report.labPhone}`, style: "brandInfo" },
+                              {
+                                  text: `${report.labAddress}\n${report.labEmail}\n${report.labPhone}`,
+                                  style: "brandInfo",
+                              },
                           ],
                           margin: [0, 0, 0, 0],
                       },
@@ -257,15 +253,19 @@ const buildHeader = (report: ReportPrintData, logoDataUrl: string | null, compac
 const buildCustomerSummaryMetaBlock = (customer: CustomerReportsPrintData) => ({
     table: {
         widths: [140],
-        body: [[
-            {
-                stack: [
-                    { text: `Cliente #${customer.customerId}`, style: "metaTitle", alignment: "right" },
-                    ...(customer.rangeLabel ? [{ text: customer.rangeLabel, style: "metaDate", alignment: "right" as const }] : []),
-                    { text: `${customer.reportCount} report`, style: "metaDate", alignment: "right" },
-                ],
-            },
-        ]],
+        body: [
+            [
+                {
+                    stack: [
+                        { text: `Cliente #${customer.customerId}`, style: "metaTitle", alignment: "right" },
+                        ...(customer.rangeLabel
+                            ? [{ text: customer.rangeLabel, style: "metaDate", alignment: "right" as const }]
+                            : []),
+                        { text: `${customer.reportCount} report`, style: "metaDate", alignment: "right" },
+                    ],
+                },
+            ],
+        ],
     },
     layout: {
         hLineWidth: () => 1,
@@ -292,7 +292,10 @@ const buildCustomerSummaryHeader = (customer: CustomerReportsPrintData, logoData
                     width: "*",
                     stack: [
                         { text: customer.labName, style: "brandName" },
-                        { text: `${customer.labAddress}\n${customer.labEmail}\n${customer.labPhone}`, style: "brandInfo" },
+                        {
+                            text: `${customer.labAddress}\n${customer.labEmail}\n${customer.labPhone}`,
+                            style: "brandInfo",
+                        },
                     ],
                     margin: [0, 0, 0, 0],
                 },
@@ -454,10 +457,7 @@ const buildWorkSection = (rowHeight: number, rowPadding: number) => ({
         widths: ["*"],
         // La prima riga e' la barra di sezione, le altre restano vuote da compilare a mano.
         heights: (row: number) => (row === 0 ? "auto" : rowHeight),
-        body: [
-            sectionBarRow("LAVORO ESEGUITO", 1),
-            ...Array.from({ length: WORK_ROW_COUNT }, () => [emptyCell()]),
-        ],
+        body: [sectionBarRow("LAVORO ESEGUITO", 1), ...Array.from({ length: WORK_ROW_COUNT }, () => [emptyCell()])],
     },
     layout: reportTableLayout(rowPadding),
     margin: [0, 0, 0, 5],
@@ -467,10 +467,7 @@ const boxedTable = (title: string, cell: object, rowPadding: number) => ({
     table: {
         widths: ["*"],
         heights: (row: number) => (row === 0 ? "auto" : 42),
-        body: [
-            sectionBarRow(title, 1),
-            [cell],
-        ],
+        body: [sectionBarRow(title, 1), [cell]],
     },
     layout: reportTableLayout(rowPadding),
 });
@@ -514,10 +511,7 @@ const buildNotesAndPaymentSection = (report: ReportPrintData, rowPadding: number
                 heights: (row: number) => (row === 0 ? "auto" : 42),
                 body: [
                     sectionBarRow("PAGAMENTO", 2),
-                    [
-                        paymentIconCell(cashIconSvg, "Contanti"),
-                        paymentIconCell(cardIconSvg, "Carta"),
-                    ],
+                    [paymentIconCell(cashIconSvg, "Contanti"), paymentIconCell(cardIconSvg, "Carta")],
                 ],
             },
             layout: reportTableLayout(rowPadding),
@@ -638,9 +632,11 @@ const createSectionedReportPdfBuffer = async (report: ReportPrintData, logoDataU
     const measureContentBottom = async (workRowHeight: number, rowPadding: number) => {
         let bottom: number | null = null;
         await pdfmake
-            .createPdf(buildDocumentDefinition(workRowHeight, rowPadding, (top, pageNumber) => {
-                bottom = pageNumber === 1 ? top : null;
-            }))
+            .createPdf(
+                buildDocumentDefinition(workRowHeight, rowPadding, (top, pageNumber) => {
+                    bottom = pageNumber === 1 ? top : null;
+                })
+            )
             .getBuffer();
 
         return bottom as number | null;
@@ -685,10 +681,6 @@ const createSectionedReportPdfBuffer = async (report: ReportPrintData, logoDataU
 
 export const createReportPdfBuffer = async (report: ReportPrintData) => {
     const logoDataUrl = await loadImageDataUrl(report.labLogoUrl);
-
-    if (REPORT_PDF_LAYOUT === "legacy") {
-        return await createLegacyReportPdfBuffer(report, logoDataUrl);
-    }
 
     return await createSectionedReportPdfBuffer(report, logoDataUrl);
 };

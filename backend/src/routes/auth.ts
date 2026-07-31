@@ -1,11 +1,6 @@
 import { Router, type Response } from "express";
 import { z } from "zod";
-import {
-    AuthManagerError,
-    changeOwnPassword,
-    deleteSession,
-    login,
-} from "../services/authManager";
+import { AuthManagerError, changeOwnPassword, deleteSession, login } from "../services/authManager";
 import { requireAuth, sessionCookieName, sessionCookieOptions } from "../middleware/requireAuth";
 import { validate } from "./validation";
 
@@ -23,15 +18,19 @@ const handleAuthError = (error: unknown, res: Response) => {
     return false;
 };
 
-const loginBodySchema = z.object({
-    username: z.string().trim().min(1).max(50),
-    password: z.string().min(1).max(512),
-}).strict();
+const loginBodySchema = z
+    .object({
+        username: z.string().trim().min(1).max(50),
+        password: z.string().min(1).max(512),
+    })
+    .strict();
 
-const passwordBodySchema = z.object({
-    currentPassword: z.string().min(1).max(512),
-    newPassword: z.string().min(8).max(512),
-}).strict();
+const passwordBodySchema = z
+    .object({
+        currentPassword: z.string().min(1).max(512),
+        newPassword: z.string().min(8).max(512),
+    })
+    .strict();
 
 authRouter.post("/login", validate({ body: loginBodySchema }), async (req, res, next) => {
     try {

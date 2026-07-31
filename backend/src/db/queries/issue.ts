@@ -2,6 +2,7 @@ import { desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { IssueTable } from "../schema";
 import type { NewIssue, UpdateIssue } from "../types";
+import { takeUnpaginated } from "./pagination";
 
 type ListIssuesParams = {
     page?: number;
@@ -24,12 +25,15 @@ export const listIssues = async ({ page, pageSize, search }: ListIssuesParams) =
     const baseQuery = db.select().from(IssueTable).where(whereClause).orderBy(desc(IssueTable.created_at));
 
     if (page == null || pageSize == null) {
-        return baseQuery;
+        return takeUnpaginated(baseQuery, "issues");
     }
 
     const [items, totalCountRows] = await Promise.all([
         baseQuery.limit(pageSize).offset((page - 1) * pageSize),
-        db.select({ total: sql<number>`count(*)` }).from(IssueTable).where(whereClause),
+        db
+            .select({ total: sql<number>`count(*)` })
+            .from(IssueTable)
+            .where(whereClause),
     ]);
 
     return {
@@ -38,17 +42,11 @@ export const listIssues = async ({ page, pageSize, search }: ListIssuesParams) =
     };
 };
 
-export const getIssueById = (id: number) =>
-    db.select().from(IssueTable).where(eq(IssueTable.id, id));
+export const getIssueById = (id: number) => db.select().from(IssueTable).where(eq(IssueTable.id, id));
 
-export const createIssue = (data: NewIssue) =>
-    db.insert(IssueTable).values(data).returning();
+export const createIssue = (data: NewIssue) => db.insert(IssueTable).values(data).returning();
 
 export const updateIssueById = (id: number, data: UpdateIssue) =>
-    db.update(IssueTable)
-        .set(data)
-        .where(eq(IssueTable.id, id))
-        .returning();
+    db.update(IssueTable).set(data).where(eq(IssueTable.id, id)).returning();
 
-export const deleteIssueById = (id: number) =>
-    db.delete(IssueTable).where(eq(IssueTable.id, id)).returning();
+export const deleteIssueById = (id: number) => db.delete(IssueTable).where(eq(IssueTable.id, id)).returning();

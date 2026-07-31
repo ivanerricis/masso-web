@@ -2,6 +2,7 @@ import { desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { deviceTable } from "../schema";
 import type { NewDevice, UpdateDevice } from "../types";
+import { takeUnpaginated } from "./pagination";
 
 type ListDevicesParams = {
     page?: number;
@@ -24,12 +25,15 @@ export const listDevices = async ({ page, pageSize, search }: ListDevicesParams)
     const baseQuery = db.select().from(deviceTable).where(whereClause).orderBy(desc(deviceTable.created_at));
 
     if (page == null || pageSize == null) {
-        return baseQuery;
+        return takeUnpaginated(baseQuery, "devices");
     }
 
     const [items, totalCountRows] = await Promise.all([
         baseQuery.limit(pageSize).offset((page - 1) * pageSize),
-        db.select({ total: sql<number>`count(*)` }).from(deviceTable).where(whereClause),
+        db
+            .select({ total: sql<number>`count(*)` })
+            .from(deviceTable)
+            .where(whereClause),
     ]);
 
     return {
@@ -38,17 +42,11 @@ export const listDevices = async ({ page, pageSize, search }: ListDevicesParams)
     };
 };
 
-export const getDeviceById = (id: number) =>
-    db.select().from(deviceTable).where(eq(deviceTable.id, id));
+export const getDeviceById = (id: number) => db.select().from(deviceTable).where(eq(deviceTable.id, id));
 
-export const createDevice = (data: NewDevice) =>
-    db.insert(deviceTable).values(data).returning();
+export const createDevice = (data: NewDevice) => db.insert(deviceTable).values(data).returning();
 
 export const updateDeviceById = (id: number, data: UpdateDevice) =>
-    db.update(deviceTable)
-        .set(data)
-        .where(eq(deviceTable.id, id))
-        .returning();
+    db.update(deviceTable).set(data).where(eq(deviceTable.id, id)).returning();
 
-export const deleteDeviceById = (id: number) =>
-    db.delete(deviceTable).where(eq(deviceTable.id, id)).returning();
+export const deleteDeviceById = (id: number) => db.delete(deviceTable).where(eq(deviceTable.id, id)).returning();

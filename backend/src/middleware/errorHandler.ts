@@ -100,7 +100,7 @@ export const errorHandler = (
     error: unknown,
     _req: express.Request,
     res: express.Response,
-    _next: express.NextFunction,
+    _next: express.NextFunction
 ) => {
     const pgError = findPgError(error);
     const { code, detail, message } = pgError;

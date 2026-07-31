@@ -51,13 +51,10 @@ export const userActionLogger = (request: Request, _response: Response, next: Ne
         const status = response.statusCode;
         const rawUsername = request.user?.username ?? "";
         const user = rawUsername.replace(/\|/g, "/").replace(/\s+/g, " ").trim() || "-";
-        const rawErrorMessage = typeof response.locals.apiErrorMessage === "string"
-            ? response.locals.apiErrorMessage
-            : "";
+        const rawErrorMessage =
+            typeof response.locals.apiErrorMessage === "string" ? response.locals.apiErrorMessage : "";
         const cleanErrorMessage = rawErrorMessage.replace(/\s+/g, " ").trim();
-        const errorPart = status >= 400
-            ? ` | error=${cleanErrorMessage || `HTTP ${status}`}`
-            : "";
+        const errorPart = status >= 400 ? ` | error=${cleanErrorMessage || `HTTP ${status}`}` : "";
         const logLine = `${timestamp} | ip=${ip} | user=${user} | action=${action} | status=${status}${errorPart}\n`;
 
         void appendUserActionLog(logLine, dayKey).catch((error) => {

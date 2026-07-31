@@ -5,6 +5,9 @@ Applicazione full stack per la gestione di un laboratorio, composta da:
 - backend Node.js + Express
 - database PostgreSQL
 
+Questo README è la guida operativa (installazione, backup, aggiornamento). Per l'evoluzione
+tecnica del codice — cosa è cambiato e perché — vedi [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 ## Prerequisiti
 
 Sviluppo locale:

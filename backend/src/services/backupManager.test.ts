@@ -103,9 +103,7 @@ describe("composeSmbErrorMessage", () => {
     });
 
     it("unisce i due flussi quando ci sono entrambi", () => {
-        expect(composeSmbErrorMessage("warn", "NT_STATUS_ACCESS_DENIED", 1)).toBe(
-            "warn | NT_STATUS_ACCESS_DENIED"
-        );
+        expect(composeSmbErrorMessage("warn", "NT_STATUS_ACCESS_DENIED", 1)).toBe("warn | NT_STATUS_ACCESS_DENIED");
     });
 
     it("ripiega sul codice di uscita solo se non c'e output", () => {
@@ -133,9 +131,9 @@ describe("isAlreadyExistsSmbError", () => {
 
 describe("restoreBackupFromUpload", () => {
     it("rifiuta le estensioni diverse da .sql e .tar.gz", async () => {
-        await expect(
-            restoreBackupFromUpload(Buffer.from("x"), "malware.exe", false)
-        ).rejects.toThrow("Il file caricato deve avere estensione .sql o .tar.gz");
+        await expect(restoreBackupFromUpload(Buffer.from("x"), "malware.exe", false)).rejects.toThrow(
+            "Il file caricato deve avere estensione .sql o .tar.gz"
+        );
     });
 
     it("rifiuta un archivio con estensione parziale", async () => {

@@ -1,7 +1,15 @@
 import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
-import { collaboratorTable, customerTable, deviceTable, IssueTable, reportTable, reportTechnicianTable } from "../schema";
+import {
+    collaboratorTable,
+    customerTable,
+    deviceTable,
+    IssueTable,
+    reportTable,
+    reportTechnicianTable,
+} from "../schema";
 import type { NewReport, UpdateReport } from "../types";
+import { takeUnpaginated } from "./pagination";
 
 type ReportSortBy = "createdAt" | "customer" | "totalPrice";
 
@@ -72,7 +80,11 @@ export const listReports = async ({
           ]
         : [];
     const visibilityCondition =
-        visibility === "open" ? eq(reportTable.closed, false) : visibility === "closed" ? eq(reportTable.closed, true) : undefined;
+        visibility === "open"
+            ? eq(reportTable.closed, false)
+            : visibility === "closed"
+              ? eq(reportTable.closed, true)
+              : undefined;
     const dateCondition =
         dateFrom && dateTo
             ? sql`${reportTable.created_at}::date BETWEEN ${dateFrom} AND ${dateTo}`
@@ -91,7 +103,11 @@ export const listReports = async ({
     const customerSortExpr = sql<string>`coalesce(nullif(concat_ws(' ', ${customerTable.firstName}, ${customerTable.lastName}), ''), '-')`;
     const totalPriceSortExpr = sql<number>`(${reportTable.price} + coalesce(${technicianPriceSubquery.technicianPrice}, 0))`;
     const sortColumn =
-        sortBy === "customer" ? customerSortExpr : sortBy === "totalPrice" ? totalPriceSortExpr : reportTable.created_at;
+        sortBy === "customer"
+            ? customerSortExpr
+            : sortBy === "totalPrice"
+              ? totalPriceSortExpr
+              : reportTable.created_at;
     const orderByClause = sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
 
     const baseQuery = db
@@ -111,7 +127,9 @@ export const listReports = async ({
             paymentMethod: reportTable.paymentMethod,
             price: reportTable.price,
             customer: customerSortExpr,
-            customerPhone: sql<string | null>`coalesce(${customerTable.phoneNumber}, ${customerTable.phoneNumberSecondary})`,
+            customerPhone: sql<
+                string | null
+            >`coalesce(${customerTable.phoneNumber}, ${customerTable.phoneNumberSecondary})`,
             device: deviceTable.name,
             issue: IssueTable.description,
             technician: sql<string>`coalesce(nullif(concat_ws(' ', ${collaboratorTable.firstName}, ${collaboratorTable.lastName}), ''), '-')`,
@@ -130,12 +148,17 @@ export const listReports = async ({
         .leftJoin(technicianPriceSubquery, eq(technicianPriceSubquery.reportId, reportTable.id));
 
     if (page == null || pageSize == null) {
-        return baseQuery.where(whereClause).orderBy(orderByClause);
+        return takeUnpaginated(baseQuery.where(whereClause).orderBy(orderByClause), "reports");
     }
 
     const [items, totalCountRows] = await Promise.all([
-        baseQuery.where(whereClause).orderBy(orderByClause).limit(pageSize).offset((page - 1) * pageSize),
-        db.select({ total: sql<number>`count(*)` })
+        baseQuery
+            .where(whereClause)
+            .orderBy(orderByClause)
+            .limit(pageSize)
+            .offset((page - 1) * pageSize),
+        db
+            .select({ total: sql<number>`count(*)` })
             .from(reportTable)
             .innerJoin(customerTable, eq(customerTable.id, reportTable.customerId))
             .innerJoin(deviceTable, eq(deviceTable.id, reportTable.deviceId))
@@ -176,13 +199,15 @@ export const getReportStats = async (month?: string) => {
         .as("technician_prices");
 
     const [statusCountRows, revenueRows] = await Promise.all([
-        db.select({ closed: reportTable.closed, count: sql<number>`count(*)::int` })
+        db
+            .select({ closed: reportTable.closed, count: sql<number>`count(*)::int` })
             .from(reportTable)
             .groupBy(reportTable.closed),
-        db.select({
-            month: sql<string>`to_char(${reportTable.created_at}, 'YYYY-MM')`,
-            revenue: sql<number>`coalesce(sum(${reportTable.price} + coalesce(${technicianPriceSubquery.technicianPrice}, 0)), 0)::int`,
-        })
+        db
+            .select({
+                month: sql<string>`to_char(${reportTable.created_at}, 'YYYY-MM')`,
+                revenue: sql<number>`coalesce(sum(${reportTable.price} + coalesce(${technicianPriceSubquery.technicianPrice}, 0)), 0)::int`,
+            })
             .from(reportTable)
             .leftJoin(technicianPriceSubquery, eq(technicianPriceSubquery.reportId, reportTable.id))
             .where(and(eq(reportTable.closed, true), sql`${reportTable.created_at} >= ${rangeStartDate}`))
@@ -202,14 +227,13 @@ export const getReportStats = async (month?: string) => {
     };
 };
 
-export const getReportById = (id: number) =>
-    db.select().from(reportTable).where(eq(reportTable.id, id));
+export const getReportById = (id: number) => db.select().from(reportTable).where(eq(reportTable.id, id));
 
-export const createReport = (data: NewReport) =>
-    db.insert(reportTable).values(data).returning();
+export const createReport = (data: NewReport) => db.insert(reportTable).values(data).returning();
 
 export const updateReportById = (id: number, data: UpdateReport) =>
-    db.update(reportTable)
+    db
+        .update(reportTable)
         .set({
             ...data,
             updated_at: new Date(),
@@ -217,5 +241,4 @@ export const updateReportById = (id: number, data: UpdateReport) =>
         .where(eq(reportTable.id, id))
         .returning();
 
-export const deleteReportById = (id: number) =>
-    db.delete(reportTable).where(eq(reportTable.id, id)).returning();
+export const deleteReportById = (id: number) => db.delete(reportTable).where(eq(reportTable.id, id)).returning();

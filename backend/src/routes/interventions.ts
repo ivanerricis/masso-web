@@ -14,11 +14,7 @@ import { collaboratorTable, customerTable, interventionTable } from "../db/schem
 import { EmailManagerError, sendEmail } from "../services/emailManager";
 import { createInterventionPdfBuffer } from "../services/interventionPdf";
 import { getLabConfig } from "../config/lab";
-import {
-    formatDateLabel,
-    formatDayLabel,
-    formatPhoneLabel,
-} from "./formatting";
+import { formatDateLabel, formatDayLabel, formatPhoneLabel } from "./formatting";
 import { sendListResponse } from "./crudRouter";
 import { validate } from "./validation";
 
@@ -83,7 +79,11 @@ const interventionCreateBodySchema = interventionBodySchema.superRefine((value, 
     }
 
     if (value.startTime && value.endTime && value.startTime >= value.endTime) {
-        ctx.addIssue({ code: "custom", message: "L'ora di fine deve essere successiva all'ora di inizio", path: ["endTime"] });
+        ctx.addIssue({
+            code: "custom",
+            message: "L'ora di fine deve essere successiva all'ora di inizio",
+            path: ["endTime"],
+        });
     }
 });
 
@@ -92,18 +92,19 @@ const interventionUpdateBodySchema = interventionBodySchema.partial().refine((va
 });
 
 interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search, status, type, dateFrom, dateTo, scheduledDate, sortBy, sortOrder } = req.query as unknown as {
-        page?: number;
-        pageSize?: number;
-        search?: string;
-        status?: "all" | (typeof interventionStatuses)[number];
-        type?: "all" | InterventionType;
-        dateFrom?: string;
-        dateTo?: string;
-        scheduledDate?: string;
-        sortBy?: (typeof interventionSortFields)[number];
-        sortOrder?: "asc" | "desc";
-    };
+    const { page, pageSize, search, status, type, dateFrom, dateTo, scheduledDate, sortBy, sortOrder } =
+        req.query as unknown as {
+            page?: number;
+            pageSize?: number;
+            search?: string;
+            status?: "all" | (typeof interventionStatuses)[number];
+            type?: "all" | InterventionType;
+            dateFrom?: string;
+            dateTo?: string;
+            scheduledDate?: string;
+            sortBy?: (typeof interventionSortFields)[number];
+            sortOrder?: "asc" | "desc";
+        };
 
     const interventions = await listInterventions({
         page,
@@ -127,7 +128,10 @@ interventionsRouter.get("/stats", async (_req, res) => {
     res.json(stats);
 });
 
-const loadInterventionPrintContext = async (id: number, req: { protocol: string; get: (name: string) => string | undefined }) => {
+const loadInterventionPrintContext = async (
+    id: number,
+    req: { protocol: string; get: (name: string) => string | undefined }
+) => {
     const interventionRows = await db
         .select({
             id: interventionTable.id,
@@ -159,10 +163,7 @@ const loadInterventionPrintContext = async (id: number, req: { protocol: string;
     const customerName = `${intervention.customerFirstName} ${intervention.customerLastName ?? ""}`.trim();
     const collaboratorName = `${intervention.collaboratorFirstName} ${intervention.collaboratorLastName ?? ""}`.trim();
     const { labName, labEmail, labAddress, labPhone, labLogoUrl } = await getLabConfig(req);
-    const customerPhoneLabel = formatPhoneLabel(
-        intervention.customerPhone,
-        intervention.customerPhoneSecondary
-    );
+    const customerPhoneLabel = formatPhoneLabel(intervention.customerPhone, intervention.customerPhoneSecondary);
 
     return {
         customerName,
@@ -182,9 +183,7 @@ const loadInterventionPrintContext = async (id: number, req: { protocol: string;
             type: intervention.type as InterventionType,
             status: intervention.status as (typeof interventionStatuses)[number],
             description: intervention.description,
-            interventionDateLabel: intervention.interventionDate
-                ? formatDayLabel(intervention.interventionDate)
-                : null,
+            interventionDateLabel: intervention.interventionDate ? formatDayLabel(intervention.interventionDate) : null,
             startTime: intervention.startTime,
             endTime: intervention.endTime,
             createdAtLabel: formatDateLabel(intervention.createdAt),
@@ -218,42 +217,46 @@ interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSch
     res.send(pdfBuffer);
 });
 
-interventionsRouter.post("/:id/send-email", validate({ params: interventionIdParamsSchema }), async (req, res, next) => {
-    const { id } = req.params as unknown as { id: number };
+interventionsRouter.post(
+    "/:id/send-email",
+    validate({ params: interventionIdParamsSchema }),
+    async (req, res, next) => {
+        const { id } = req.params as unknown as { id: number };
 
-    try {
-        const context = await loadInterventionPrintContext(id, req);
+        try {
+            const context = await loadInterventionPrintContext(id, req);
 
-        if (!context) {
-            res.status(404).json({ message: "Intervento non trovato" });
-            return;
+            if (!context) {
+                res.status(404).json({ message: "Intervento non trovato" });
+                return;
+            }
+
+            if (!context.customerEmail) {
+                res.status(400).json({ message: "Il cliente non ha un indirizzo email configurato" });
+                return;
+            }
+
+            const pdfBuffer = await createInterventionPdfBuffer(context.pdfData);
+
+            await sendEmail({
+                to: context.customerEmail,
+                subject: `Intervento #${id} - ${context.labName}`,
+                text: `Gentile ${context.customerName},\n\nin allegato trova il riepilogo dell'intervento #${id}.\n\nCordiali saluti,\n${context.labName}`,
+                attachment: {
+                    filename: `intervento-${id}.pdf`,
+                    content: pdfBuffer,
+                },
+            });
+
+            res.json({ message: "Email inviata con successo" });
+        } catch (error) {
+            if (handleEmailError(error, res)) {
+                return;
+            }
+            next(error);
         }
-
-        if (!context.customerEmail) {
-            res.status(400).json({ message: "Il cliente non ha un indirizzo email configurato" });
-            return;
-        }
-
-        const pdfBuffer = await createInterventionPdfBuffer(context.pdfData);
-
-        await sendEmail({
-            to: context.customerEmail,
-            subject: `Intervento #${id} - ${context.labName}`,
-            text: `Gentile ${context.customerName},\n\nin allegato trova il riepilogo dell'intervento #${id}.\n\nCordiali saluti,\n${context.labName}`,
-            attachment: {
-                filename: `intervento-${id}.pdf`,
-                content: pdfBuffer,
-            },
-        });
-
-        res.json({ message: "Email inviata con successo" });
-    } catch (error) {
-        if (handleEmailError(error, res)) {
-            return;
-        }
-        next(error);
     }
-});
+);
 
 interventionsRouter.get("/:id", validate({ params: interventionIdParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
@@ -277,8 +280,8 @@ interventionsRouter.post("/", validate({ body: interventionCreateBodySchema }), 
         customerId: req.body.customerId,
         collaboratorId: req.body.collaboratorId,
         interventionDate: req.body.interventionDate ?? null,
-        startTime: isOnSite ? req.body.startTime ?? null : null,
-        endTime: isOnSite ? req.body.endTime ?? null : null,
+        startTime: isOnSite ? (req.body.startTime ?? null) : null,
+        endTime: isOnSite ? (req.body.endTime ?? null) : null,
     });
 
     res.status(201).json(createdIntervention[0]);
@@ -299,9 +302,10 @@ interventionsRouter.put(
         const existing = existingRows[0];
         const nextType = (req.body.type ?? existing.type) as InterventionType;
         const isOnSite = onSiteInterventionTypes.has(nextType);
-        const nextInterventionDate = "interventionDate" in req.body ? req.body.interventionDate ?? null : existing.interventionDate;
-        const nextStartTime = "startTime" in req.body ? req.body.startTime ?? null : existing.startTime;
-        const nextEndTime = "endTime" in req.body ? req.body.endTime ?? null : existing.endTime;
+        const nextInterventionDate =
+            "interventionDate" in req.body ? (req.body.interventionDate ?? null) : existing.interventionDate;
+        const nextStartTime = "startTime" in req.body ? (req.body.startTime ?? null) : existing.startTime;
+        const nextEndTime = "endTime" in req.body ? (req.body.endTime ?? null) : existing.endTime;
 
         if (!nextInterventionDate) {
             res.status(400).json({ message: "La data dell'intervento è obbligatoria" });
@@ -309,7 +313,9 @@ interventionsRouter.put(
         }
 
         if (isOnSite && (!nextStartTime || !nextEndTime)) {
-            res.status(400).json({ message: "Per interventi in sede o da remoto sono richiesti ora inizio e ora fine" });
+            res.status(400).json({
+                message: "Per interventi in sede o da remoto sono richiesti ora inizio e ora fine",
+            });
             return;
         }
 

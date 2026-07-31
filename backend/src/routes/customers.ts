@@ -12,18 +12,19 @@ import { listInterventions } from "../db/queries/intervention";
 import { createCustomerReportsPdfBuffer } from "../services/reportPdf";
 import { createCustomerInterventionsPdfBuffer } from "../services/interventionPdf";
 import { getLabConfig } from "../config/lab";
-import {
-    buildDateRangeLabel,
-    formatDateLabel,
-    formatPhoneLabel,
-    formatScheduleLabel,
-} from "./formatting";
+import { buildDateRangeLabel, formatDateLabel, formatPhoneLabel, formatScheduleLabel } from "./formatting";
 import { createCrudRouter, idParamsSchema } from "./crudRouter";
 import { validate } from "./validation";
 
 const printRangeQuerySchema = z.object({
-    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateFrom: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
+    dateTo: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
 });
 
 const customerBodySchemaBase = z.object({
@@ -160,10 +161,7 @@ const customersRouter = createCrudRouter({
                     interventions: interventions.map((intervention) => ({
                         id: intervention.id,
                         createdAtLabel: formatDateLabel(intervention.createdAt),
-                        type: intervention.type as
-                            | "consegna_materiale"
-                            | "intervento_sede"
-                            | "intervento_remoto",
+                        type: intervention.type as "consegna_materiale" | "intervento_sede" | "intervento_remoto",
                         status: intervention.status as "programmato" | "in_lavorazione" | "completato",
                         description: intervention.description,
                         scheduleLabel: formatScheduleLabel(
@@ -175,10 +173,7 @@ const customersRouter = createCrudRouter({
                 });
 
                 res.setHeader("Content-Type", "application/pdf");
-                res.setHeader(
-                    "Content-Disposition",
-                    `inline; filename=customer-${id}-interventions.pdf`
-                );
+                res.setHeader("Content-Disposition", `inline; filename=customer-${id}-interventions.pdf`);
                 res.send(pdfBuffer);
             }
         );

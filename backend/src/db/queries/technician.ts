@@ -2,6 +2,7 @@ import { desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { technicianTable } from "../schema";
 import type { NewTechnician, UpdateTechnician } from "../types";
+import { takeUnpaginated } from "./pagination";
 
 type ListTechniciansParams = {
     page?: number;
@@ -27,12 +28,15 @@ export const listTechnicians = async ({ page, pageSize, search }: ListTechnician
     const baseQuery = db.select().from(technicianTable).where(whereClause).orderBy(desc(technicianTable.created_at));
 
     if (page == null || pageSize == null) {
-        return baseQuery;
+        return takeUnpaginated(baseQuery, "technicians");
     }
 
     const [items, totalCountRows] = await Promise.all([
         baseQuery.limit(pageSize).offset((page - 1) * pageSize),
-        db.select({ total: sql<number>`count(*)` }).from(technicianTable).where(whereClause),
+        db
+            .select({ total: sql<number>`count(*)` })
+            .from(technicianTable)
+            .where(whereClause),
     ]);
 
     return {
@@ -41,17 +45,12 @@ export const listTechnicians = async ({ page, pageSize, search }: ListTechnician
     };
 };
 
-export const getTechnicianById = (id: number) =>
-    db.select().from(technicianTable).where(eq(technicianTable.id, id));
+export const getTechnicianById = (id: number) => db.select().from(technicianTable).where(eq(technicianTable.id, id));
 
-export const createTechnician = (data: NewTechnician) =>
-    db.insert(technicianTable).values(data).returning();
+export const createTechnician = (data: NewTechnician) => db.insert(technicianTable).values(data).returning();
 
 export const updateTechnicianById = (id: number, data: UpdateTechnician) =>
-    db.update(technicianTable)
-        .set(data)
-        .where(eq(technicianTable.id, id))
-        .returning();
+    db.update(technicianTable).set(data).where(eq(technicianTable.id, id)).returning();
 
 export const deleteTechnicianById = (id: number) =>
     db.delete(technicianTable).where(eq(technicianTable.id, id)).returning();

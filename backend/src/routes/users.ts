@@ -1,6 +1,13 @@
 import { Router, type Response } from "express";
 import { z } from "zod";
-import { AuthManagerError, createUser, deleteUser, listUsers, regeneratePassword, setUserActive } from "../services/authManager";
+import {
+    AuthManagerError,
+    createUser,
+    deleteUser,
+    listUsers,
+    regeneratePassword,
+    setUserActive,
+} from "../services/authManager";
 import { validate } from "./validation";
 
 const usersRouter = Router();
@@ -19,9 +26,11 @@ const userIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
-const createUserBodySchema = z.object({
-    username: z.string().trim().min(1).max(50),
-}).strict();
+const createUserBodySchema = z
+    .object({
+        username: z.string().trim().min(1).max(50),
+    })
+    .strict();
 
 usersRouter.get("/", async (_req, res, next) => {
     try {

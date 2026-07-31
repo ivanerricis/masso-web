@@ -19,13 +19,9 @@ const buildApp = () => {
         }
     );
 
-    app.post(
-        "/items",
-        validate({ body: z.object({ name: z.string().trim().min(1) }).strict() }),
-        (req, res) => {
-            res.status(201).json(req.body);
-        }
-    );
+    app.post("/items", validate({ body: z.object({ name: z.string().trim().min(1) }).strict() }), (req, res) => {
+        res.status(201).json(req.body);
+    });
 
     return app;
 };

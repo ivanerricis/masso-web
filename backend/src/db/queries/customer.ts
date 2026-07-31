@@ -2,6 +2,7 @@ import { asc, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { customerTable } from "../schema";
 import type { NewCustomer, UpdateCustomer } from "../types";
+import { takeUnpaginated } from "./pagination";
 
 type ListCustomersParams = {
     page?: number;
@@ -11,7 +12,13 @@ type ListCustomersParams = {
     sortOrder?: "asc" | "desc";
 };
 
-export const listCustomers = async ({ page, pageSize, search, sortBy = "createdAt", sortOrder = "desc" }: ListCustomersParams) => {
+export const listCustomers = async ({
+    page,
+    pageSize,
+    search,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+}: ListCustomersParams) => {
     const trimmedSearch = search?.trim();
     const searchPattern = `%${trimmedSearch ?? ""}%`;
     const searchConditions = trimmedSearch
@@ -33,15 +40,22 @@ export const listCustomers = async ({ page, pageSize, search, sortBy = "createdA
                 ? [asc(customerTable.firstName), asc(customerTable.lastName)]
                 : [desc(customerTable.firstName), desc(customerTable.lastName)]
             : [sortOrder === "asc" ? asc(customerTable.created_at) : desc(customerTable.created_at)];
-    const baseQuery = db.select().from(customerTable).where(whereClause).orderBy(...orderByClause);
+    const baseQuery = db
+        .select()
+        .from(customerTable)
+        .where(whereClause)
+        .orderBy(...orderByClause);
 
     if (page == null || pageSize == null) {
-        return baseQuery;
+        return takeUnpaginated(baseQuery, "customers");
     }
 
     const [items, totalCountRows] = await Promise.all([
         baseQuery.limit(pageSize).offset((page - 1) * pageSize),
-        db.select({ total: sql<number>`count(*)` }).from(customerTable).where(whereClause),
+        db
+            .select({ total: sql<number>`count(*)` })
+            .from(customerTable)
+            .where(whereClause),
     ]);
 
     return {
@@ -50,17 +64,11 @@ export const listCustomers = async ({ page, pageSize, search, sortBy = "createdA
     };
 };
 
-export const getCustomerById = (id: number) =>
-    db.select().from(customerTable).where(eq(customerTable.id, id));
+export const getCustomerById = (id: number) => db.select().from(customerTable).where(eq(customerTable.id, id));
 
-export const createCustomer = (data: NewCustomer) =>
-    db.insert(customerTable).values(data).returning();
+export const createCustomer = (data: NewCustomer) => db.insert(customerTable).values(data).returning();
 
 export const updateCustomerById = (id: number, data: UpdateCustomer) =>
-    db.update(customerTable)
-        .set(data)
-        .where(eq(customerTable.id, id))
-        .returning();
+    db.update(customerTable).set(data).where(eq(customerTable.id, id)).returning();
 
-export const deleteCustomerById = (id: number) =>
-    db.delete(customerTable).where(eq(customerTable.id, id)).returning();
+export const deleteCustomerById = (id: number) => db.delete(customerTable).where(eq(customerTable.id, id)).returning();

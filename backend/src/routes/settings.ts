@@ -16,7 +16,12 @@ import {
     updateBackupSettings,
 } from "../services/backupManager";
 import { CompanyManagerError, getCompanySettings, updateCompanySettings } from "../services/companyManager";
-import { EmailManagerError, getEmailSettings, testEmailConnection, updateEmailSettings } from "../services/emailManager";
+import {
+    EmailManagerError,
+    getEmailSettings,
+    testEmailConnection,
+    updateEmailSettings,
+} from "../services/emailManager";
 import { LogoManagerError, getLogoStatus, resetLogo, saveLogo } from "../services/logoManager";
 import { LogManagerError, getLogFilePath, listLogFiles, readLogEntries } from "../services/logManager";
 import { UpdateManagerError, getUpdateStatus, requestUpdate, requestUpdateCheck } from "../services/updateManager";
@@ -85,75 +90,91 @@ const handleLogError = (error: unknown, res: Response) => {
     return false;
 };
 
-const backupSettingsSchema = z.object({
-    autoEnabled: z.boolean(),
-    frequencyDays: z.coerce.number().int().min(1).max(365),
-    runAt: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
-    outputDir: z.string().trim().min(1).max(512),
-    maxBackupsToKeep: z.coerce.number().int().min(1).max(365),
-    notifyEmailOnFailure: z.boolean(),
-    smbEnabled: z.boolean(),
-    smbHost: z.string().trim().max(255),
-    smbShare: z.string().trim().max(255),
-    smbPath: z.string().trim().max(512),
-    smbDomain: z.string().trim().max(255),
-    smbPort: z.coerce.number().int().min(1).max(65535),
-    smbUsername: z.string().trim().max(255),
-    smbPassword: z.string().max(512).optional(),
-}).strict();
+const backupSettingsSchema = z
+    .object({
+        autoEnabled: z.boolean(),
+        frequencyDays: z.coerce.number().int().min(1).max(365),
+        runAt: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        outputDir: z.string().trim().min(1).max(512),
+        maxBackupsToKeep: z.coerce.number().int().min(1).max(365),
+        notifyEmailOnFailure: z.boolean(),
+        smbEnabled: z.boolean(),
+        smbHost: z.string().trim().max(255),
+        smbShare: z.string().trim().max(255),
+        smbPath: z.string().trim().max(512),
+        smbDomain: z.string().trim().max(255),
+        smbPort: z.coerce.number().int().min(1).max(65535),
+        smbUsername: z.string().trim().max(255),
+        smbPassword: z.string().max(512).optional(),
+    })
+    .strict();
 
-const backupRestoreSchema = z.object({
-    fileName: z.string().trim().min(1).max(255),
-    resetSchema: z.boolean(),
-}).strict();
+const backupRestoreSchema = z
+    .object({
+        fileName: z.string().trim().min(1).max(255),
+        resetSchema: z.boolean(),
+    })
+    .strict();
 
-const smbTestSchema = z.object({
-    host: z.string().trim().min(1).max(255),
-    share: z.string().trim().min(1).max(255),
-    path: z.string().trim().max(512),
-    domain: z.string().trim().max(255),
-    port: z.coerce.number().int().min(1).max(65535),
-    username: z.string().trim().min(1).max(255),
-    password: z.string().min(1).max(512),
-}).strict();
+const smbTestSchema = z
+    .object({
+        host: z.string().trim().min(1).max(255),
+        share: z.string().trim().min(1).max(255),
+        path: z.string().trim().max(512),
+        domain: z.string().trim().max(255),
+        port: z.coerce.number().int().min(1).max(65535),
+        username: z.string().trim().min(1).max(255),
+        password: z.string().min(1).max(512),
+    })
+    .strict();
 
-const companySettingsSchema = z.object({
-    name: z.string().trim().min(1).max(255),
-    email: z.string().trim().max(255),
-    address: z.string().trim().max(512),
-    phone: z.string().trim().max(50),
-}).strict();
+const companySettingsSchema = z
+    .object({
+        name: z.string().trim().min(1).max(255),
+        email: z.string().trim().max(255),
+        address: z.string().trim().max(512),
+        phone: z.string().trim().max(50),
+    })
+    .strict();
 
-const emailSettingsSchema = z.object({
-    enabled: z.boolean(),
-    host: z.string().trim().max(255),
-    port: z.coerce.number().int().min(1).max(65535),
-    secure: z.boolean(),
-    username: z.string().trim().max(255),
-    password: z.string().max(512).optional(),
-    fromName: z.string().trim().max(255),
-    fromEmail: z.string().trim().max(255),
-}).strict();
+const emailSettingsSchema = z
+    .object({
+        enabled: z.boolean(),
+        host: z.string().trim().max(255),
+        port: z.coerce.number().int().min(1).max(65535),
+        secure: z.boolean(),
+        username: z.string().trim().max(255),
+        password: z.string().max(512).optional(),
+        fromName: z.string().trim().max(255),
+        fromEmail: z.string().trim().max(255),
+    })
+    .strict();
 
-const emailTestSchema = z.object({
-    host: z.string().trim().min(1).max(255),
-    port: z.coerce.number().int().min(1).max(65535),
-    secure: z.boolean(),
-    username: z.string().trim().min(1).max(255),
-    password: z.string().min(1).max(512),
-    fromName: z.string().trim().max(255),
-    fromEmail: z.string().trim().min(1).email().max(255),
-}).strict();
+const emailTestSchema = z
+    .object({
+        host: z.string().trim().min(1).max(255),
+        port: z.coerce.number().int().min(1).max(65535),
+        secure: z.boolean(),
+        username: z.string().trim().min(1).max(255),
+        password: z.string().min(1).max(512),
+        fromName: z.string().trim().max(255),
+        fromEmail: z.string().trim().min(1).email().max(255),
+    })
+    .strict();
 
-const logDayKeyParamsSchema = z.object({
-    dayKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-}).strict();
+const logDayKeyParamsSchema = z
+    .object({
+        dayKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    })
+    .strict();
 
-const logEntriesQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).optional(),
-    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
-    search: z.string().trim().max(255).optional(),
-}).strict();
+const logEntriesQuerySchema = z
+    .object({
+        page: z.coerce.number().int().min(1).optional(),
+        pageSize: z.coerce.number().int().min(1).max(1000).optional(),
+        search: z.string().trim().max(255).optional(),
+    })
+    .strict();
 
 settingsRouter.get("/logs", async (_req, res, next) => {
     try {
@@ -173,7 +194,11 @@ settingsRouter.get(
     async (req, res, next) => {
         try {
             const { dayKey } = req.params as { dayKey: string };
-            const { page = 1, pageSize = 50, search } = req.query as {
+            const {
+                page = 1,
+                pageSize = 50,
+                search,
+            } = req.query as {
                 page?: number;
                 pageSize?: number;
                 search?: string;
@@ -183,8 +208,10 @@ settingsRouter.get(
             const normalizedSearch = search?.toLowerCase();
             const filteredEntries = normalizedSearch
                 ? allEntries.filter((entry) =>
-                    `${entry.action} ${entry.ip} ${entry.user} ${entry.error ?? ""}`.toLowerCase().includes(normalizedSearch)
-                )
+                      `${entry.action} ${entry.ip} ${entry.user} ${entry.error ?? ""}`
+                          .toLowerCase()
+                          .includes(normalizedSearch)
+                  )
                 : allEntries;
 
             const totalItems = filteredEntries.length;
@@ -423,28 +450,23 @@ settingsRouter.post(
     }
 );
 
-settingsRouter.post(
-    "/backup/restore/upload",
-    requireAdmin,
-    dumpUpload.single("dump"),
-    async (req, res, next) => {
-        try {
-            if (!req.file) {
-                res.status(400).json({ message: "Nessun file caricato" });
-                return;
-            }
-
-            const resetSchema = req.body.resetSchema === "true";
-            const result = await restoreBackupFromUpload(req.file.buffer, req.file.originalname, resetSchema);
-            res.json(result);
-        } catch (error) {
-            if (handleBackupError(error, res)) {
-                return;
-            }
-            next(error);
+settingsRouter.post("/backup/restore/upload", requireAdmin, dumpUpload.single("dump"), async (req, res, next) => {
+    try {
+        if (!req.file) {
+            res.status(400).json({ message: "Nessun file caricato" });
+            return;
         }
+
+        const resetSchema = req.body.resetSchema === "true";
+        const result = await restoreBackupFromUpload(req.file.buffer, req.file.originalname, resetSchema);
+        res.json(result);
+    } catch (error) {
+        if (handleBackupError(error, res)) {
+            return;
+        }
+        next(error);
     }
-);
+});
 
 settingsRouter.get("/update", async (_req, res, next) => {
     try {

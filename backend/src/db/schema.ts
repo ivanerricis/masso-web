@@ -1,109 +1,152 @@
-import { integer, pgTable, varchar, boolean, timestamp, date, time, text, primaryKey, index } from "drizzle-orm/pg-core";
+import {
+    integer,
+    pgTable,
+    varchar,
+    boolean,
+    timestamp,
+    date,
+    time,
+    text,
+    primaryKey,
+    index,
+} from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 const timestamps = {
     updated_at: timestamp(),
     created_at: timestamp().defaultNow().notNull(),
-}
+};
 
 const userFields = {
     firstName: varchar("first_name", { length: 255 }).notNull(),
     lastName: varchar("last_name", { length: 255 }),
     phoneNumber: varchar("phone_number", { length: 20 }),
-}
+};
 
-export const reportTable = pgTable("report", {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    note: varchar("note", { length: 255 }),
-    password: varchar("password", { length: 255 }),
-    issueDescription: varchar("issue_description", { length: 255 }),
-    serviceDescription: varchar("service_description", { length: 255 }),
-    dataBackup: boolean("data_backup").notNull().default(false),
-    charger: boolean("charger").notNull().default(false),
-    alerted: boolean("alerted").notNull().default(false),
-    closed: boolean("closed").notNull().default(false),
-    paymentMethod: varchar("payment_method", { length: 20 }).notNull().default("non_paid"),
-    price: integer("price").notNull().default(0),
-    ...timestamps,
-    deviceId: integer("device_id").notNull().references(() => deviceTable.id),
-    issueId: integer("issue_id").notNull().references(() => IssueTable.id),
-    collaboratorId: integer("collaborator_id").references(() => collaboratorTable.id),
-    customerId: integer("customer_id").notNull().references(() => customerTable.id),
-}, (table) => [
-    index("report_device_id_idx").on(table.deviceId),
-    index("report_issue_id_idx").on(table.issueId),
-    index("report_collaborator_id_idx").on(table.collaboratorId),
-    index("report_customer_id_idx").on(table.customerId),
-    index("report_note_trgm_idx").using("gin", sql`${table.note} gin_trgm_ops`),
-    index("report_password_trgm_idx").using("gin", sql`${table.password} gin_trgm_ops`),
-    index("report_issue_description_trgm_idx").using("gin", sql`${table.issueDescription} gin_trgm_ops`),
-    index("report_service_description_trgm_idx").using("gin", sql`${table.serviceDescription} gin_trgm_ops`),
-    index("report_created_at_idx").on(table.created_at),
-]);
-
-export const customerTable = pgTable("customer", {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    ...userFields,
-    phoneNumberSecondary: varchar("phone_number_secondary", { length: 20 }),
-    email: varchar("email", { length: 255 }),
-    ...timestamps
-}, (table) => [
-    index("customer_first_name_trgm_idx").using("gin", sql`${table.firstName} gin_trgm_ops`),
-    index("customer_last_name_trgm_idx").using("gin", sql`${table.lastName} gin_trgm_ops`),
-    index("customer_phone_number_trgm_idx").using("gin", sql`${table.phoneNumber} gin_trgm_ops`),
-    index("customer_phone_number_secondary_trgm_idx").using("gin", sql`${table.phoneNumberSecondary} gin_trgm_ops`),
-    index("customer_email_trgm_idx").using("gin", sql`${table.email} gin_trgm_ops`),
-    index("customer_created_at_idx").on(table.created_at),
-])
-
-export const collaboratorTable = pgTable("collaborator", {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    ...userFields,
-    ...timestamps
-}, (table) => [
-    index("collaborator_first_name_trgm_idx").using("gin", sql`${table.firstName} gin_trgm_ops`),
-    index("collaborator_last_name_trgm_idx").using("gin", sql`${table.lastName} gin_trgm_ops`),
-    index("collaborator_phone_number_trgm_idx").using("gin", sql`${table.phoneNumber} gin_trgm_ops`),
-])
-
-export const technicianTable = pgTable("technician", {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    ...userFields,
-    vatNumber: varchar("vat_number", { length: 20 }).unique(),
-    ...timestamps
-}, (table) => [
-    index("technician_first_name_trgm_idx").using("gin", sql`${table.firstName} gin_trgm_ops`),
-    index("technician_last_name_trgm_idx").using("gin", sql`${table.lastName} gin_trgm_ops`),
-    index("technician_phone_number_trgm_idx").using("gin", sql`${table.phoneNumber} gin_trgm_ops`),
-    index("technician_vat_number_trgm_idx").using("gin", sql`${table.vatNumber} gin_trgm_ops`),
-])
-
-export const deviceTable = pgTable("device", {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    name: varchar("name", { length: 255 }).notNull().unique(),
-    ...timestamps
-}, (table) => [
-    index("device_name_trgm_idx").using("gin", sql`${table.name} gin_trgm_ops`),
-    index("device_created_at_idx").on(table.created_at),
-])
-
-export const IssueTable = pgTable("issue", {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    description: varchar("description", { length: 255 }).notNull().unique(),
-    ...timestamps
-}, (table) => [
-    index("issue_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`),
-])
-
-export const reportTechnicianTable = pgTable("report_technician",
+export const reportTable = pgTable(
+    "report",
     {
-        reportId: integer("report_id").notNull().references(() => reportTable.id),
-        technicianId: integer("technician_id").notNull().references(() => technicianTable.id),
+        id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+        note: varchar("note", { length: 255 }),
+        password: varchar("password", { length: 255 }),
+        issueDescription: varchar("issue_description", { length: 255 }),
+        serviceDescription: varchar("service_description", { length: 255 }),
+        dataBackup: boolean("data_backup").notNull().default(false),
+        charger: boolean("charger").notNull().default(false),
+        alerted: boolean("alerted").notNull().default(false),
+        closed: boolean("closed").notNull().default(false),
+        paymentMethod: varchar("payment_method", { length: 20 }).notNull().default("non_paid"),
         price: integer("price").notNull().default(0),
-    }, (table) => ([
-        primaryKey({ columns: [table.reportId] }),
-    ])
-)
+        ...timestamps,
+        deviceId: integer("device_id")
+            .notNull()
+            .references(() => deviceTable.id),
+        issueId: integer("issue_id")
+            .notNull()
+            .references(() => IssueTable.id),
+        collaboratorId: integer("collaborator_id").references(() => collaboratorTable.id),
+        customerId: integer("customer_id")
+            .notNull()
+            .references(() => customerTable.id),
+    },
+    (table) => [
+        index("report_device_id_idx").on(table.deviceId),
+        index("report_issue_id_idx").on(table.issueId),
+        index("report_collaborator_id_idx").on(table.collaboratorId),
+        index("report_customer_id_idx").on(table.customerId),
+        index("report_note_trgm_idx").using("gin", sql`${table.note} gin_trgm_ops`),
+        index("report_password_trgm_idx").using("gin", sql`${table.password} gin_trgm_ops`),
+        index("report_issue_description_trgm_idx").using("gin", sql`${table.issueDescription} gin_trgm_ops`),
+        index("report_service_description_trgm_idx").using("gin", sql`${table.serviceDescription} gin_trgm_ops`),
+        index("report_created_at_idx").on(table.created_at),
+    ]
+);
+
+export const customerTable = pgTable(
+    "customer",
+    {
+        id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+        ...userFields,
+        phoneNumberSecondary: varchar("phone_number_secondary", { length: 20 }),
+        email: varchar("email", { length: 255 }),
+        ...timestamps,
+    },
+    (table) => [
+        index("customer_first_name_trgm_idx").using("gin", sql`${table.firstName} gin_trgm_ops`),
+        index("customer_last_name_trgm_idx").using("gin", sql`${table.lastName} gin_trgm_ops`),
+        index("customer_phone_number_trgm_idx").using("gin", sql`${table.phoneNumber} gin_trgm_ops`),
+        index("customer_phone_number_secondary_trgm_idx").using("gin", sql`${table.phoneNumberSecondary} gin_trgm_ops`),
+        index("customer_email_trgm_idx").using("gin", sql`${table.email} gin_trgm_ops`),
+        index("customer_created_at_idx").on(table.created_at),
+    ]
+);
+
+export const collaboratorTable = pgTable(
+    "collaborator",
+    {
+        id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+        ...userFields,
+        ...timestamps,
+    },
+    (table) => [
+        index("collaborator_first_name_trgm_idx").using("gin", sql`${table.firstName} gin_trgm_ops`),
+        index("collaborator_last_name_trgm_idx").using("gin", sql`${table.lastName} gin_trgm_ops`),
+        index("collaborator_phone_number_trgm_idx").using("gin", sql`${table.phoneNumber} gin_trgm_ops`),
+    ]
+);
+
+export const technicianTable = pgTable(
+    "technician",
+    {
+        id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+        ...userFields,
+        vatNumber: varchar("vat_number", { length: 20 }).unique(),
+        ...timestamps,
+    },
+    (table) => [
+        index("technician_first_name_trgm_idx").using("gin", sql`${table.firstName} gin_trgm_ops`),
+        index("technician_last_name_trgm_idx").using("gin", sql`${table.lastName} gin_trgm_ops`),
+        index("technician_phone_number_trgm_idx").using("gin", sql`${table.phoneNumber} gin_trgm_ops`),
+        index("technician_vat_number_trgm_idx").using("gin", sql`${table.vatNumber} gin_trgm_ops`),
+    ]
+);
+
+export const deviceTable = pgTable(
+    "device",
+    {
+        id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+        name: varchar("name", { length: 255 }).notNull().unique(),
+        ...timestamps,
+    },
+    (table) => [
+        index("device_name_trgm_idx").using("gin", sql`${table.name} gin_trgm_ops`),
+        index("device_created_at_idx").on(table.created_at),
+    ]
+);
+
+export const IssueTable = pgTable(
+    "issue",
+    {
+        id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+        description: varchar("description", { length: 255 }).notNull().unique(),
+        ...timestamps,
+    },
+    (table) => [index("issue_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`)]
+);
+
+export const reportTechnicianTable = pgTable(
+    "report_technician",
+    {
+        reportId: integer("report_id")
+            .notNull()
+            .references(() => reportTable.id),
+        technicianId: integer("technician_id")
+            .notNull()
+            .references(() => technicianTable.id),
+        price: integer("price").notNull().default(0),
+    },
+    (table) => [primaryKey({ columns: [table.reportId] })]
+);
 
 export const userTable = pgTable("user", {
     id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
@@ -114,55 +157,69 @@ export const userTable = pgTable("user", {
     ...timestamps,
 });
 
-export const sessionTable = pgTable("session", {
-    token: varchar("token", { length: 64 }).primaryKey(),
-    userId: integer("user_id").notNull().references(() => userTable.id, { onDelete: "cascade" }),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-    index("session_user_id_idx").on(table.userId),
-]);
+export const sessionTable = pgTable(
+    "session",
+    {
+        token: varchar("token", { length: 64 }).primaryKey(),
+        userId: integer("user_id")
+            .notNull()
+            .references(() => userTable.id, { onDelete: "cascade" }),
+        expiresAt: timestamp("expires_at").notNull(),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (table) => [index("session_user_id_idx").on(table.userId)]
+);
 
 export const notificationSeverities = ["info", "warning"] as const;
 
-export const notificationTable = pgTable("notification", {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    // Identifica l'evento, non la riga: un guasto che si ripete (es. il backup notturno
-    // che fallisce ogni notte) aggiorna la riga esistente invece di accumularne una nuova.
-    dedupeKey: varchar("dedupe_key", { length: 255 }).notNull().unique(),
-    severity: varchar("severity", { length: 20 }).notNull().default("info"),
-    title: varchar("title", { length: 255 }).notNull(),
-    message: text("message"),
-    /** Rotta dell'app aperta cliccando la notifica. */
-    link: varchar("link", { length: 512 }),
-    occurrences: integer("occurrences").notNull().default(1),
-    lastOccurredAt: timestamp("last_occurred_at").defaultNow().notNull(),
-    // Chiusura condivisa: chi legge la notifica la chiude per tutti.
-    dismissedAt: timestamp("dismissed_at"),
-    ...timestamps,
-}, (table) => [
-    index("notification_last_occurred_at_idx").on(table.lastOccurredAt),
-]);
+export const notificationTable = pgTable(
+    "notification",
+    {
+        id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+        // Identifica l'evento, non la riga: un guasto che si ripete (es. il backup notturno
+        // che fallisce ogni notte) aggiorna la riga esistente invece di accumularne una nuova.
+        dedupeKey: varchar("dedupe_key", { length: 255 }).notNull().unique(),
+        severity: varchar("severity", { length: 20 }).notNull().default("info"),
+        title: varchar("title", { length: 255 }).notNull(),
+        message: text("message"),
+        /** Rotta dell'app aperta cliccando la notifica. */
+        link: varchar("link", { length: 512 }),
+        occurrences: integer("occurrences").notNull().default(1),
+        lastOccurredAt: timestamp("last_occurred_at").defaultNow().notNull(),
+        // Chiusura condivisa: chi legge la notifica la chiude per tutti.
+        dismissedAt: timestamp("dismissed_at"),
+        ...timestamps,
+    },
+    (table) => [index("notification_last_occurred_at_idx").on(table.lastOccurredAt)]
+);
 
 export const interventionTypes = ["consegna_materiale", "intervento_sede", "intervento_remoto"] as const;
 export const interventionStatuses = ["programmato", "in_lavorazione", "completato"] as const;
 
-export const interventionTable = pgTable("intervention", {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    type: varchar("type", { length: 30 }).notNull(),
-    description: text("description").notNull(),
-    status: varchar("status", { length: 20 }).notNull().default("programmato"),
-    interventionDate: date("intervention_date"),
-    startTime: time("start_time"),
-    endTime: time("end_time"),
-    ...timestamps,
-    customerId: integer("customer_id").notNull().references(() => customerTable.id),
-    collaboratorId: integer("collaborator_id").notNull().references(() => collaboratorTable.id),
-}, (table) => [
-    index("intervention_customer_id_idx").on(table.customerId),
-    index("intervention_collaborator_id_idx").on(table.collaboratorId),
-    index("intervention_type_idx").on(table.type),
-    index("intervention_status_idx").on(table.status),
-    index("intervention_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`),
-    index("intervention_created_at_idx").on(table.created_at),
-]);
+export const interventionTable = pgTable(
+    "intervention",
+    {
+        id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+        type: varchar("type", { length: 30 }).notNull(),
+        description: text("description").notNull(),
+        status: varchar("status", { length: 20 }).notNull().default("programmato"),
+        interventionDate: date("intervention_date"),
+        startTime: time("start_time"),
+        endTime: time("end_time"),
+        ...timestamps,
+        customerId: integer("customer_id")
+            .notNull()
+            .references(() => customerTable.id),
+        collaboratorId: integer("collaborator_id")
+            .notNull()
+            .references(() => collaboratorTable.id),
+    },
+    (table) => [
+        index("intervention_customer_id_idx").on(table.customerId),
+        index("intervention_collaborator_id_idx").on(table.collaboratorId),
+        index("intervention_type_idx").on(table.type),
+        index("intervention_status_idx").on(table.status),
+        index("intervention_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`),
+        index("intervention_created_at_idx").on(table.created_at),
+    ]
+);

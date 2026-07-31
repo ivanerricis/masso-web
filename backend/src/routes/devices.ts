@@ -1,11 +1,5 @@
 import { z } from "zod";
-import {
-    createDevice,
-    deleteDeviceById,
-    getDeviceById,
-    listDevices,
-    updateDeviceById,
-} from "../db/queries/device";
+import { createDevice, deleteDeviceById, getDeviceById, listDevices, updateDeviceById } from "../db/queries/device";
 import { createCrudRouter } from "./crudRouter";
 
 const deviceCreateBodySchema = z
@@ -14,11 +8,9 @@ const deviceCreateBodySchema = z
     })
     .strict();
 
-const deviceUpdateBodySchema = deviceCreateBodySchema
-    .partial()
-    .refine((value) => Object.keys(value).length > 0, {
-        message: "At least one field is required",
-    });
+const deviceUpdateBodySchema = deviceCreateBodySchema.partial().refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required",
+});
 
 const devicesRouter = createCrudRouter({
     notFoundMessage: "Device not found",

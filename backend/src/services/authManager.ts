@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { and, asc, eq, ne } from "drizzle-orm";
+import { and, asc, eq, lt, ne } from "drizzle-orm";
 import { db } from "../db";
 import { sessionTable, userTable } from "../db/schema";
 
@@ -16,6 +16,7 @@ const generatedPasswordAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuv
 const generatedPasswordLength = 16;
 const loginRateLimitWindowMs = 15 * 60 * 1000;
 const loginRateLimitMaxAttempts = 10;
+const sessionCleanupIntervalMs = 60 * 60 * 1000;
 
 export class AuthManagerError extends Error {
     statusCode: number;
@@ -134,11 +135,10 @@ export const ensureDefaultAdmin = async (): Promise<void> => {
 
     try {
         await fs.promises.mkdir(dataDir, { recursive: true });
-        await fs.promises.writeFile(
-            initialAdminPasswordFilePath,
-            `username: admin\npassword: ${password}\n`,
-            { encoding: "utf-8", mode: 0o600 }
-        );
+        await fs.promises.writeFile(initialAdminPasswordFilePath, `username: admin\npassword: ${password}\n`, {
+            encoding: "utf-8",
+            mode: 0o600,
+        });
     } catch (error) {
         console.error("Impossibile scrivere il file con la password admin iniziale:", error);
     }
@@ -232,6 +232,56 @@ export const getSessionUser = async (token: string): Promise<PublicUser | null> 
 
 export const deleteSession = (token: string) => db.delete(sessionTable).where(eq(sessionTable.token, token));
 
+/**
+ * `getSessionUser` cancella una sessione scaduta solo se qualcuno presenta proprio quel
+ * token: le sessioni di chi chiude il browser e non torna più resterebbero in tabella
+ * per sempre. Questa passa periodica le rimuove comunque.
+ */
+export const deleteExpiredSessions = async () => {
+    const deleted = await db.delete(sessionTable).where(lt(sessionTable.expiresAt, new Date())).returning({
+        token: sessionTable.token,
+    });
+
+    return deleted.length;
+};
+
+let sessionCleanupTimer: NodeJS.Timeout | null = null;
+
+const runSessionCleanup = async () => {
+    try {
+        const removed = await deleteExpiredSessions();
+        if (removed > 0) {
+            console.log(`Sessioni scadute rimosse: ${removed}`);
+        }
+    } catch (error) {
+        console.error("Errore pulizia sessioni scadute:", error);
+    }
+};
+
+export const startSessionCleanupScheduler = () => {
+    if (sessionCleanupTimer) {
+        return;
+    }
+
+    void runSessionCleanup();
+
+    sessionCleanupTimer = setInterval(() => {
+        void runSessionCleanup();
+    }, sessionCleanupIntervalMs);
+
+    // Come lo scheduler dei backup: non deve tenere vivo il processo allo spegnimento.
+    sessionCleanupTimer.unref();
+};
+
+export const stopSessionCleanupScheduler = () => {
+    if (!sessionCleanupTimer) {
+        return;
+    }
+
+    clearInterval(sessionCleanupTimer);
+    sessionCleanupTimer = null;
+};
+
 export const deleteAllSessionsForUser = (userId: number) =>
     db.delete(sessionTable).where(eq(sessionTable.userId, userId));
 
@@ -249,10 +299,7 @@ export const listUsers = async (): Promise<PublicUser[]> => {
 export const createUser = async (username: string) => {
     const password = generateRandomPassword();
     const passwordHash = await hashPassword(password);
-    const [user] = await db
-        .insert(userTable)
-        .values({ username, passwordHash, mustChangePassword: true })
-        .returning();
+    const [user] = await db.insert(userTable).values({ username, passwordHash, mustChangePassword: true }).returning();
 
     const adminId = await getAdminUserId();
     return { user: toPublicUser(user, user.id === adminId), generatedPassword: password };
@@ -326,10 +373,7 @@ export const changeOwnPassword = async (
     }
 
     const passwordHash = await hashPassword(newPassword);
-    await db
-        .update(userTable)
-        .set({ passwordHash, mustChangePassword: false })
-        .where(eq(userTable.id, userId));
+    await db.update(userTable).set({ passwordHash, mustChangePassword: false }).where(eq(userTable.id, userId));
     // Disconnette tutte le altre sessioni (es. un token rubato), mantenendo attiva solo quella corrente.
     await deleteOtherSessionsForUser(userId, currentSessionToken);
 };

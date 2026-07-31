@@ -15,9 +15,7 @@ describe("secretCrypto", () => {
     });
 
     it("rifiuta un payload malformato", async () => {
-        await expect(decryptSecret("non-un-payload")).rejects.toThrow(
-            "Formato del segreto cifrato non valido"
-        );
+        await expect(decryptSecret("non-un-payload")).rejects.toThrow("Formato del segreto cifrato non valido");
     });
 
     it("rifiuta un payload manomesso (auth tag GCM)", async () => {

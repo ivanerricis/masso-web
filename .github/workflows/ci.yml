@@ -8,7 +8,7 @@ on:
 
 jobs:
   frontend:
-    name: Frontend (lint, typecheck, build)
+    name: Frontend (lint, typecheck, test, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -25,10 +25,11 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
 
   backend:
-    name: Backend (lint, typecheck, test, build)
+    name: Backend (lint, format, typecheck, test, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -44,6 +45,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm run format:check
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

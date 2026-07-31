@@ -26,12 +26,7 @@ export type ListParams = {
 // paginazione, altrimenti items + totale.
 export type ListResult<TRow> = TRow[] | { items: TRow[]; totalItems: number };
 
-export const sendListResponse = <TRow>(
-    res: Response,
-    result: ListResult<TRow>,
-    page?: number,
-    pageSize?: number
-) => {
+export const sendListResponse = <TRow>(res: Response, result: ListResult<TRow>, page?: number, pageSize?: number) => {
     if (page == null || pageSize == null || Array.isArray(result)) {
         res.json(result);
         return;
@@ -105,21 +100,17 @@ export const createCrudRouter = <TRow, TCreate, TUpdate>({
         res.status(201).json(created[0]);
     });
 
-    router.put(
-        "/:id",
-        validate({ params: idParamsSchema, body: updateBodySchema }),
-        async (req, res) => {
-            const { id } = req.params as unknown as { id: number };
-            const updated = await queries.update(id, req.body as TUpdate);
+    router.put("/:id", validate({ params: idParamsSchema, body: updateBodySchema }), async (req, res) => {
+        const { id } = req.params as unknown as { id: number };
+        const updated = await queries.update(id, req.body as TUpdate);
 
-            if (updated.length === 0) {
-                res.status(404).json({ message: notFoundMessage });
-                return;
-            }
-
-            res.json(updated[0]);
+        if (updated.length === 0) {
+            res.status(404).json({ message: notFoundMessage });
+            return;
         }
-    );
+
+        res.json(updated[0]);
+    });
 
     router.delete("/:id", validate({ params: idParamsSchema }), async (req, res) => {
         const { id } = req.params as unknown as { id: number };

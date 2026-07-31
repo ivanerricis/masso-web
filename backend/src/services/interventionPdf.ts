@@ -141,9 +141,7 @@ const dualFieldRow = (label1: string, value1: string, label2: string, value2: st
 
 const buildHeader = (intervention: InterventionPrintData, logoDataUrl: string | null) => ({
     columns: [
-        logoDataUrl
-            ? { width: 56, image: logoDataUrl, fit: [52, 52] }
-            : { width: 56, text: "" },
+        logoDataUrl ? { width: 56, image: logoDataUrl, fit: [52, 52] } : { width: 56, text: "" },
         {
             width: "*",
             alignment: "right",
@@ -179,20 +177,25 @@ const buildActivitySection = (intervention: InterventionPrintData) => ({
         widths: [90, "*", 90, "*"],
         body: [
             sectionBarRow("RAPPORTO ATTIVITÀ", 4),
-            dualFieldRow("Codice", `#${intervention.id}`, "Data", intervention.interventionDateLabel ?? intervention.createdAtLabel),
-            dualFieldRow("Tipologia", formatInterventionType(intervention.type), "Stato", formatInterventionStatus(intervention.status)),
+            dualFieldRow(
+                "Codice",
+                `#${intervention.id}`,
+                "Data",
+                intervention.interventionDateLabel ?? intervention.createdAtLabel
+            ),
+            dualFieldRow(
+                "Tipologia",
+                formatInterventionType(intervention.type),
+                "Stato",
+                formatInterventionStatus(intervention.status)
+            ),
             [
                 { text: descriptionLabel(intervention.type), style: "label", colSpan: 4, margin: [0, 4, 0, 2] },
                 {},
                 {},
                 {},
             ],
-            [
-                { text: intervention.description, style: "value", colSpan: 4, margin: [0, 0, 0, 4] },
-                {},
-                {},
-                {},
-            ],
+            [{ text: intervention.description, style: "value", colSpan: 4, margin: [0, 0, 0, 4] }, {}, {}, {}],
         ],
     },
     layout: tableLayout,
@@ -223,10 +226,12 @@ const buildTechnicianHoursSection = (intervention: InterventionPrintData) => {
                     { text: scheduleLabel, style: "value" },
                 ],
                 ...(hoursWorked
-                    ? [[
-                        { text: "Ore lavorate", style: "label" },
-                        { text: hoursWorked, style: "value" },
-                    ]]
+                    ? [
+                          [
+                              { text: "Ore lavorate", style: "label" },
+                              { text: hoursWorked, style: "value" },
+                          ],
+                      ]
                     : []),
             ],
         },
@@ -261,9 +266,7 @@ const buildSignatureSection = () => ({
             stack: [
                 { text: "Firma del cliente", style: "sectionTitle", alignment: "center", margin: [0, 0, 0, 28] },
                 {
-                    canvas: [
-                        { type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 1, lineColor: "#111" },
-                    ],
+                    canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 1, lineColor: "#111" }],
                 },
             ],
         },
@@ -274,15 +277,19 @@ const buildSignatureSection = () => ({
 const buildCustomerSummaryMetaBlock = (customer: CustomerInterventionsPrintData) => ({
     table: {
         widths: [140],
-        body: [[
-            {
-                stack: [
-                    { text: `Cliente #${customer.customerId}`, style: "metaTitle", alignment: "right" },
-                    ...(customer.rangeLabel ? [{ text: customer.rangeLabel, style: "metaDate", alignment: "right" as const }] : []),
-                    { text: `${customer.interventionCount} interventi`, style: "metaDate", alignment: "right" },
-                ],
-            },
-        ]],
+        body: [
+            [
+                {
+                    stack: [
+                        { text: `Cliente #${customer.customerId}`, style: "metaTitle", alignment: "right" },
+                        ...(customer.rangeLabel
+                            ? [{ text: customer.rangeLabel, style: "metaDate", alignment: "right" as const }]
+                            : []),
+                        { text: `${customer.interventionCount} interventi`, style: "metaDate", alignment: "right" },
+                    ],
+                },
+            ],
+        ],
     },
     layout: {
         hLineWidth: () => 1,
@@ -309,7 +316,10 @@ const buildCustomerSummaryHeader = (customer: CustomerInterventionsPrintData, lo
                     width: "*",
                     stack: [
                         { text: customer.labName, style: "brandName" },
-                        { text: `${customer.labAddress}\n${customer.labEmail}\n${customer.labPhone}`, style: "brandInfo" },
+                        {
+                            text: `${customer.labAddress}\n${customer.labEmail}\n${customer.labPhone}`,
+                            style: "brandInfo",
+                        },
                     ],
                     margin: [0, 0, 0, 0],
                 },
@@ -372,7 +382,13 @@ const buildCustomerInterventionsTable = (interventions: CustomerInterventionSumm
 
     if (interventions.length === 0) {
         body.push([
-            { text: "Nessun intervento disponibile", colSpan: 6, alignment: "center", italics: true, margin: [0, 8, 0, 8] },
+            {
+                text: "Nessun intervento disponibile",
+                colSpan: 6,
+                alignment: "center",
+                italics: true,
+                margin: [0, 8, 0, 8],
+            },
             {},
             {},
             {},

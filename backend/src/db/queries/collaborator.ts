@@ -2,6 +2,7 @@ import { desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { collaboratorTable } from "../schema";
 import type { NewCollaborator, UpdateCollaborator } from "../types";
+import { takeUnpaginated } from "./pagination";
 
 type ListCollaboratorsParams = {
     page?: number;
@@ -23,15 +24,22 @@ export const listCollaborators = async ({ page, pageSize, search }: ListCollabor
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const baseQuery = db.select().from(collaboratorTable).where(whereClause).orderBy(desc(collaboratorTable.created_at));
+    const baseQuery = db
+        .select()
+        .from(collaboratorTable)
+        .where(whereClause)
+        .orderBy(desc(collaboratorTable.created_at));
 
     if (page == null || pageSize == null) {
-        return baseQuery;
+        return takeUnpaginated(baseQuery, "collaborators");
     }
 
     const [items, totalCountRows] = await Promise.all([
         baseQuery.limit(pageSize).offset((page - 1) * pageSize),
-        db.select({ total: sql<number>`count(*)` }).from(collaboratorTable).where(whereClause),
+        db
+            .select({ total: sql<number>`count(*)` })
+            .from(collaboratorTable)
+            .where(whereClause),
     ]);
 
     return {
@@ -44,7 +52,8 @@ export const getCollaboratorById = (id: number) =>
     db.select().from(collaboratorTable).where(eq(collaboratorTable.id, id));
 
 export const createCollaborator = (data: NewCollaborator) =>
-    db.insert(collaboratorTable)
+    db
+        .insert(collaboratorTable)
         .values({
             ...data,
             created_at: new Date(),
@@ -53,7 +62,8 @@ export const createCollaborator = (data: NewCollaborator) =>
         .returning();
 
 export const updateCollaboratorById = (id: number, data: UpdateCollaborator) =>
-    db.update(collaboratorTable)
+    db
+        .update(collaboratorTable)
         .set({
             ...data,
             updated_at: new Date(),

@@ -2,6 +2,7 @@ import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { collaboratorTable, customerTable, interventionTable } from "../schema";
 import type { NewIntervention, UpdateIntervention } from "../types";
+import { takeUnpaginated } from "./pagination";
 
 type InterventionSortBy = "createdAt" | "interventionDate" | "customer" | "status";
 
@@ -97,7 +98,9 @@ export const listInterventions = async ({
             customerId: interventionTable.customerId,
             collaboratorId: interventionTable.collaboratorId,
             customer: customerSortExpr,
-            customerPhone: sql<string | null>`coalesce(${customerTable.phoneNumber}, ${customerTable.phoneNumberSecondary})`,
+            customerPhone: sql<
+                string | null
+            >`coalesce(${customerTable.phoneNumber}, ${customerTable.phoneNumberSecondary})`,
             collaborator: sql<string>`coalesce(nullif(concat_ws(' ', ${collaboratorTable.firstName}, ${collaboratorTable.lastName}), ''), '-')`,
             createdAt: interventionTable.created_at,
             updatedAt: interventionTable.updated_at,
@@ -107,12 +110,17 @@ export const listInterventions = async ({
         .innerJoin(collaboratorTable, eq(collaboratorTable.id, interventionTable.collaboratorId));
 
     if (page == null || pageSize == null) {
-        return baseQuery.where(whereClause).orderBy(orderByClause);
+        return takeUnpaginated(baseQuery.where(whereClause).orderBy(orderByClause), "interventions");
     }
 
     const [items, totalCountRows] = await Promise.all([
-        baseQuery.where(whereClause).orderBy(orderByClause).limit(pageSize).offset((page - 1) * pageSize),
-        db.select({ total: sql<number>`count(*)` })
+        baseQuery
+            .where(whereClause)
+            .orderBy(orderByClause)
+            .limit(pageSize)
+            .offset((page - 1) * pageSize),
+        db
+            .select({ total: sql<number>`count(*)` })
             .from(interventionTable)
             .innerJoin(customerTable, eq(customerTable.id, interventionTable.customerId))
             .innerJoin(collaboratorTable, eq(collaboratorTable.id, interventionTable.collaboratorId))
@@ -143,11 +151,11 @@ export const getInterventionStats = async () => {
 export const getInterventionById = (id: number) =>
     db.select().from(interventionTable).where(eq(interventionTable.id, id));
 
-export const createIntervention = (data: NewIntervention) =>
-    db.insert(interventionTable).values(data).returning();
+export const createIntervention = (data: NewIntervention) => db.insert(interventionTable).values(data).returning();
 
 export const updateInterventionById = (id: number, data: UpdateIntervention) =>
-    db.update(interventionTable)
+    db
+        .update(interventionTable)
         .set({
             ...data,
             updated_at: new Date(),

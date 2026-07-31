@@ -1,0 +1,154 @@
+# Changelog
+
+Registro dei miglioramenti tecnici di masso-web: cosa è cambiato, **perché**, e quali file
+sono coinvolti. Le voci più recenti stanno in cima.
+
+Il README resta la guida operativa (installazione, backup, aggiornamento); qui si annota
+solo l'evoluzione del codice e dell'infrastruttura.
+
+> **Convenzione:** una voce per intervento, con la motivazione. Il "perché" è la parte che
+> non si ricostruisce dal diff — è il motivo per cui questo file esiste.
+
+---
+
+## 2026-07-31 — Affidabilità, test del frontend e riduzione dei file monolitici
+
+Passata di manutenzione su punti emersi da una revisione del codice. Nessuna modifica
+funzionale visibile all'utente: cambiano robustezza, copertura di test e organizzazione.
+
+### Affidabilità in esecuzione
+
+- **Arresto pulito del backend.** `SIGTERM`/`SIGINT` ora fermano gli scheduler, smettono di
+  accettare connessioni, lasciano finire le richieste in volo e chiudono il pool
+  PostgreSQL, con un limite di 10s oltre il quale si esce comunque.
+  *Perché:* l'aggiornamento automatico ricrea i container a ogni update, quindi il backend
+  riceve `SIGTERM` di routine, non in casi eccezionali; prima ogni aggiornamento troncava
+  le richieste in corso (un download PDF, una scrittura di backup) e chiudeva di colpo le
+  connessioni al database.
+  → [backend/src/index.ts](../backend/src/index.ts), [backend/src/db/index.ts](../backend/src/db/index.ts)
+
+- **`exec` nel comando del container backend.** `docker-compose.yml` ora lancia
+  `sh -c 'node migrate.js && exec node dist/src/index.js'` e dichiara
+  `stop_grace_period: 30s`.
+  *Perché:* senza `exec`, `sh` resta PID 1 e non inoltra `SIGTERM` al processo Node —
+  l'arresto pulito qui sopra non verrebbe mai eseguito e Docker ucciderebbe il container
+  con `SIGKILL`. La grace period è più ampia del timeout applicativo così l'arresto ha il
+  tempo di completarsi. Rimosso anche l'`echo "DATABASE_URL=..."` iniziale, che stampava
+  la password del database nei log del container.
+  → [docker-compose.yml](../docker-compose.yml)
+
+- **Healthcheck su backend e frontend.** Prima ce l'aveva solo `db`. Il frontend ora
+  dipende dal backend con `condition: service_healthy`.
+  *Perché:* `restart: always` copre il processo morto, non quello vivo ma bloccato.
+  L'endpoint `/api/health` esisteva già e non lo usava nessuno.
+  → [docker-compose.yml](../docker-compose.yml)
+
+- **Pulizia periodica delle sessioni scadute** (ogni ora, più una passata all'avvio).
+  *Perché:* `getSessionUser` cancellava una sessione scaduta solo se qualcuno presentava
+  proprio quel token; le sessioni di chi chiude il browser e non torna più restavano in
+  tabella per sempre.
+  → [backend/src/services/authManager.ts](../backend/src/services/authManager.ts)
+
+- **Tetto di sicurezza sulle liste non paginate** (5000 righe, con warning nei log quando
+  scatta). Omettere `page`/`pageSize` resta legittimo e voluto — combobox e dashboard
+  hanno bisogno dell'elenco completo — ma la query non è più illimitata.
+  *Perché:* senza `limit` la query cresce con la tabella e a un certo volume carica in
+  memoria l'intero contenuto a ogni richiesta. Il limite è molto sopra i volumi reali,
+  quindi oggi non cambia nulla; il warning serve perché una troncatura silenziosa (una
+  combobox a cui mancano voci) sarebbe difficilissima da diagnosticare.
+  → [backend/src/db/queries/pagination.ts](../backend/src/db/queries/pagination.ts) e le 7 query di lista
+
+- **`ensureDefaultAdmin` ora ha un `.catch`.** Era invocata con `void` e senza gestione
+  dell'errore.
+  *Perché:* trovato durante la verifica in container dello spegnimento pulito — con il
+  database irraggiungibile il backend si avviava, stampava "Server running" e subito dopo
+  moriva per rejection non gestita (Node 24 termina il processo). In produzione il
+  problema è mascherato da `depends_on: service_healthy`, ma un intoppo momentaneo non
+  deve abbattere il server: ora l'errore viene registrato e l'admin sarà creato al
+  riavvio successivo.
+  → [backend/src/index.ts](../backend/src/index.ts)
+
+- **Log per richiesta su stdout** con metodo, percorso, stato e durata, e marcatura
+  `slow=true` oltre 1s. Formato `chiave=valore` come il log azioni utente esistente.
+  *Perché:* mancava qualunque traccia delle GET e dei tempi di risposta: quando qualcosa
+  risultava lento non c'era niente su cui lavorare. Complementare a `userActionLogger`,
+  che registra su file solo le modifiche ai dati, per audit.
+  → [backend/src/middleware/requestLogger.ts](../backend/src/middleware/requestLogger.ts)
+
+### Test
+
+- **Il frontend ora ha dei test.** Vitest + Testing Library + jsdom, 33 test su 6 file,
+  aggiunti allo stesso job CI di lint/typecheck/build.
+  *Perché:* era il buco più grosso rimasto — il backend aveva 40 test, il frontend zero, e
+  la CI si fermava a typecheck e build. La logica più delicata sta lì.
+  Coperti: la guardia anti-race di `usePaginatedRows` (le risposte lente di richieste
+  superate non devono sovrascrivere la tabella), `useTablePagination`,
+  `useDebouncedValue`, `getApiErrorMessage`, le preferenze di tema salvate in
+  `localStorage`, e `AppErrorBoundary` come primo test di componente.
+  *Verifica dei test stessi:* disattivando la guardia in `usePaginatedRows` i due test
+  relativi falliscono, quindi rilevano davvero la regressione.
+  → [frontend/vite.config.ts](../frontend/vite.config.ts), [frontend/src/test/setup.ts](../frontend/src/test/setup.ts), i file `*.test.ts(x)`
+
+### Verifiche eseguite
+
+Pipeline CI completa verde su entrambe le app: lint, format (backend), typecheck, test
+(40 backend + 33 frontend), build. `docker compose --env-file .env.example config`
+interpola correttamente.
+
+Lo spegnimento pulito è stato provato davvero, in container con un PostgreSQL usa e getta,
+perché dipende dalla consegna del segnale e non è verificabile da un test unitario:
+`ps` conferma che PID 1 è `node dist/src/index.js` (quindi `exec` fa il suo lavoro), il
+comando dell'healthcheck restituisce `{"status":"ok"}`, e `docker stop` produce
+"Ricevuto SIGTERM" → "Arresto completato." con uscita 0 in **1 secondo**, invece dei 10
+secondi che precedevano il `SIGKILL`.
+
+### Organizzazione del codice
+
+- **`backupManager.ts` diviso in 7 moduli** (1092 righe → il maggiore è 293). Il file
+  resta la facciata: rotte e test continuano a importare da lì, le riesportazioni tengono
+  stabile l'API pubblica.
+  *Perché:* mescolava impostazioni persistite, invocazione di processi esterni, protocollo
+  SMB, ripristino e scheduler. La suddivisione è per responsabilità, con `backupError` e
+  `backupLock` isolati apposta per non creare cicli di import fra dump e ripristino.
+  → `backend/src/services/backup{Error,Files,Lock,Process,Restore,Smb,State,Manager}.ts`
+
+- **`backupSettingsPanel.tsx` diviso in 8 file** (979 righe → 29 nel pannello). Stato e
+  azioni in `useBackupPanel`, una scheda per file.
+  *Perché:* un solo componente teneva ~25 variabili di stato e ~560 righe di JSX. Le
+  schede ricevono l'oggetto dell'hook come unica prop: condividono lo stesso stato, e
+  enumerarne i campi nelle firme non aggiungerebbe informazione.
+  → [frontend/src/components/settings/backup/](../frontend/src/components/settings/backup/)
+
+- **Prettier anche sul backend**, con config propria (4 spazi, `semi: true`, 120 colonne)
+  invece di quella del frontend (2 spazi, `semi: false`, 80 colonne). `format:check` è ora
+  uno step della CI.
+  *Perché:* riusare la config del frontend avrebbe riformattato l'intero backend
+  seppellendo i diff veri — era il motivo per cui Prettier qui era stato saltato. Una
+  config allineata allo stile già in uso risolve il problema.
+  → [backend/.prettierrc](../backend/.prettierrc), [.github/workflows/ci.yml](../.github/workflows/ci.yml)
+
+### Codice morto rimosso
+
+- **`reportPdfLegacy.ts`** (361 righe) e la variabile `REPORT_PDF_LAYOUT`. Il layout
+  "sections" introdotto in `ac067e4` è ora l'unico.
+  *Perché:* mantenere due generatori PDF allineati a ogni modifica del report è un costo
+  ricorrente per un fallback mai usato. Resta recuperabile da git.
+- **`backend/src/templates/reportPrintTemplate.ts`** (403 righe), generatore HTML
+  precedente al passaggio a pdfmake, non referenziato da nessuna parte.
+
+### Verificato, nessun intervento necessario
+
+- **Accessibilità.** Controllati tutti i `.tsx` fuori da `components/ui/`: ogni bottone con
+  sola icona ha già un `aria-label` (77 in totale), nessun `<img>` è senza `alt`, ogni
+  `<Input>` ha un `<Label>` associato, e `index.html` dichiara già `lang="it"`. La
+  segnalazione iniziale ("aria-label sporadici") derivava da un conteggio per file che
+  contava anche i file privi di bottoni: era sbagliata.
+- **Endpoint `/print`.** Erano indicati come possibile causa di caricamenti illimitati:
+  in realtà sono per-id (un PDF per un record) e non esiste alcun endpoint di stampa
+  massiva. La generazione del PDF resta sincrona, ma per un solo documento.
+
+### Note
+
+- `npm audit` sul frontend segnala 2 vulnerabilità high in `react-router` (advisory
+  GHSA-qwww-vcr4-c8h2). Riguardano la modalità RSC, che questa SPA non usa; la correzione
+  richiederebbe un downgrade breaking a 7.11. Non affrontato in questa passata.

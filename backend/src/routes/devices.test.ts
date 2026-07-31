@@ -12,13 +12,7 @@ vi.mock("../db/queries/device", () => ({
     deleteDeviceById: vi.fn(),
 }));
 
-import {
-    createDevice,
-    deleteDeviceById,
-    getDeviceById,
-    listDevices,
-    updateDeviceById,
-} from "../db/queries/device";
+import { createDevice, deleteDeviceById, getDeviceById, listDevices, updateDeviceById } from "../db/queries/device";
 import devicesRouter from "./devices";
 import { errorHandler } from "../middleware/errorHandler";
 
@@ -115,7 +109,7 @@ describe("devices router", () => {
     it("propaga la violazione di FK all'errorHandler come 400", async () => {
         vi.spyOn(console, "error").mockImplementation(() => {});
         vi.mocked(deleteDeviceById).mockRejectedValue(
-            Object.assign(new Error("update or delete on table \"device\" violates foreign key constraint"), {
+            Object.assign(new Error('update or delete on table "device" violates foreign key constraint'), {
                 code: "23503",
                 constraint: "report_device_id_device_id_fk",
             })
