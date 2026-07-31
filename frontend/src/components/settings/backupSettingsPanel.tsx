@@ -1,6 +1,6 @@
 import { startTransition, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Download, Play, RefreshCw, RotateCcw } from "lucide-react";
 import CustomDialog from "@/components/dialogs/customDialog";
@@ -52,6 +52,7 @@ const defaultForm: BackupSettingsInput = {
     runAt: "02:00",
     outputDir: "backups",
     maxBackupsToKeep: 14,
+    notifyEmailOnFailure: false,
     smbEnabled: false,
     smbHost: "",
     smbShare: "",
@@ -76,6 +77,7 @@ const BackupSettingsPanel = () => {
     const [lastError, setLastError] = useState<string | null>(null);
     const [nextRunAt, setNextRunAt] = useState<string | null>(null);
     const [lastDumpPath, setLastDumpPath] = useState<string | null>(null);
+    const [emailConfigured, setEmailConfigured] = useState(false);
     const [dumpFiles, setDumpFiles] = useState<BackupDumpFileDto[]>([]);
     const [isLoadingDumps, setIsLoadingDumps] = useState(false);
     const [smbPasswordSet, setSmbPasswordSet] = useState(false);
@@ -108,6 +110,7 @@ const BackupSettingsPanel = () => {
                 runAt: settings.runAt,
                 outputDir: settings.outputDir,
                 maxBackupsToKeep: settings.maxBackupsToKeep,
+                notifyEmailOnFailure: settings.notifyEmailOnFailure,
                 smbEnabled: settings.smbEnabled,
                 smbHost: settings.smbHost,
                 smbShare: settings.smbShare,
@@ -124,6 +127,7 @@ const BackupSettingsPanel = () => {
             setLastError(settings.lastError);
             setNextRunAt(settings.nextRunAt);
             setLastDumpPath(settings.lastDumpPath);
+            setEmailConfigured(settings.emailConfigured);
             setSmbPasswordSet(settings.smbPasswordSet);
             setSmbLastRunAt(settings.smbLastRunAt);
             setSmbLastStatus(settings.smbLastStatus);
@@ -184,6 +188,11 @@ const BackupSettingsPanel = () => {
             return;
         }
 
+        if (formValues.notifyEmailOnFailure && !emailConfigured) {
+            toast.error("Configura prima l'invio email nelle impostazioni per attivare questo avviso");
+            return;
+        }
+
         if (formValues.smbEnabled) {
             if (!formValues.smbHost.trim() || !formValues.smbShare.trim() || !formValues.smbUsername.trim()) {
                 toast.error("Per il NAS specifica almeno host, condivisione e utente");
@@ -218,6 +227,7 @@ const BackupSettingsPanel = () => {
             setLastError(settings.lastError);
             setNextRunAt(settings.nextRunAt);
             setLastDumpPath(settings.lastDumpPath);
+            setEmailConfigured(settings.emailConfigured);
             setSmbPasswordSet(settings.smbPasswordSet);
             setSmbLastRunAt(settings.smbLastRunAt);
             setSmbLastStatus(settings.smbLastStatus);
@@ -229,6 +239,7 @@ const BackupSettingsPanel = () => {
                 runAt: settings.runAt,
                 outputDir: settings.outputDir,
                 maxBackupsToKeep: settings.maxBackupsToKeep,
+                notifyEmailOnFailure: settings.notifyEmailOnFailure,
                 smbEnabled: settings.smbEnabled,
                 smbHost: settings.smbHost,
                 smbShare: settings.smbShare,
@@ -538,6 +549,41 @@ const BackupSettingsPanel = () => {
                                     <p className="text-xs text-muted-foreground">
                                         I dump più vecchi oltre questo numero vengono eliminati automaticamente ad ogni
                                         nuovo backup.
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <div className="flex items-center gap-3">
+                                        <Checkbox
+                                            id="notifyEmailOnFailure"
+                                            checked={formValues.notifyEmailOnFailure}
+                                            disabled={!emailConfigured}
+                                            onCheckedChange={(checked) =>
+                                                setFormValues((prev) => ({
+                                                    ...prev,
+                                                    notifyEmailOnFailure: Boolean(checked),
+                                                }))
+                                            }
+                                        />
+                                        <Label
+                                            htmlFor="notifyEmailOnFailure"
+                                            className={cn("cursor-pointer", !emailConfigured && "text-muted-foreground")}
+                                        >
+                                            Invia una email se il backup automatico non va a buon fine
+                                        </Label>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {emailConfigured ? (
+                                            <>L&apos;avviso viene inviato all&apos;email aziendale configurata in Azienda.</>
+                                        ) : (
+                                            <>
+                                                Configura prima l&apos;invio email nella sezione{" "}
+                                                <Link to="/settings?section=email" className="underline underline-offset-2">
+                                                    Email
+                                                </Link>{" "}
+                                                per attivare questo avviso.
+                                            </>
+                                        )}
                                     </p>
                                 </div>
 

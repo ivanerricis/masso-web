@@ -91,6 +91,7 @@ const backupSettingsSchema = z.object({
     runAt: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
     outputDir: z.string().trim().min(1).max(512),
     maxBackupsToKeep: z.coerce.number().int().min(1).max(365),
+    notifyEmailOnFailure: z.boolean(),
     smbEnabled: z.boolean(),
     smbHost: z.string().trim().max(255),
     smbShare: z.string().trim().max(255),

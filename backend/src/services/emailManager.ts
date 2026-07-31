@@ -121,6 +121,11 @@ export type EmailSettingsPublic = Omit<EmailSettingsState, "passwordEncrypted"> 
     passwordSet: boolean;
 };
 
+export const isEmailConfigured = async () => {
+    const state = await loadState();
+    return state.enabled && Boolean(state.host && state.username && state.fromEmail && state.passwordEncrypted);
+};
+
 const toPublicState = (state: EmailSettingsState): EmailSettingsPublic => {
     const { passwordEncrypted, ...rest } = state;
     return { ...rest, passwordSet: Boolean(passwordEncrypted) };
@@ -201,7 +206,7 @@ export type SendEmailInput = {
     to: string;
     subject: string;
     text: string;
-    attachment: {
+    attachment?: {
         filename: string;
         content: Buffer;
     };
@@ -233,7 +238,7 @@ export const sendEmail = async (input: SendEmailInput) => {
             to: input.to,
             subject: input.subject,
             text: input.text,
-            attachments: [input.attachment],
+            attachments: input.attachment ? [input.attachment] : undefined,
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : "Invio email non riuscito";

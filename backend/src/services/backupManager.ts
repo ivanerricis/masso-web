@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { decryptSecret, encryptSecret } from "./secretCrypto";
-import { invalidateCompanySettingsCache } from "./companyManager";
-import { invalidateEmailSettingsCache, isStoredEmailPasswordUsable } from "./emailManager";
+import { getCompanySettings, invalidateCompanySettingsCache } from "./companyManager";
+import { invalidateEmailSettingsCache, isEmailConfigured, isStoredEmailPasswordUsable, sendEmail } from "./emailManager";
 import { recordNotification } from "./notificationManager";
 
 const settingsDir = path.join(process.cwd(), "data");
@@ -53,6 +53,8 @@ export type BackupSettingsState = {
     lastRunOrigin: "manual" | "auto" | null;
     lastError: string | null;
     lastDumpPath: string | null;
+    /** Avvisa via email (oltre alla notifica in app) quando un backup automatico fallisce. */
+    notifyEmailOnFailure: boolean;
     smbEnabled: boolean;
     smbHost: string;
     smbShare: string;
@@ -101,6 +103,7 @@ const defaultState: BackupSettingsState = {
     lastRunOrigin: null,
     lastError: null,
     lastDumpPath: null,
+    notifyEmailOnFailure: false,
     smbEnabled: false,
     smbHost: "",
     smbShare: "",
@@ -215,6 +218,7 @@ const sanitizeState = (input: Partial<BackupSettingsState>): BackupSettingsState
         lastRunOrigin: input.lastRunOrigin === "manual" || input.lastRunOrigin === "auto" ? input.lastRunOrigin : null,
         lastError: typeof input.lastError === "string" ? input.lastError : null,
         lastDumpPath: typeof input.lastDumpPath === "string" ? input.lastDumpPath : null,
+        notifyEmailOnFailure: Boolean(input.notifyEmailOnFailure ?? defaultState.notifyEmailOnFailure),
         smbEnabled: Boolean(input.smbEnabled ?? defaultState.smbEnabled),
         smbHost: typeof input.smbHost === "string" ? input.smbHost.trim() : defaultState.smbHost,
         smbShare: typeof input.smbShare === "string" ? input.smbShare.trim() : defaultState.smbShare,
@@ -448,13 +452,38 @@ const resetPublicSchema = async () => {
     ]);
 };
 
+// L'invio non deve mai far fallire il backup: se non riesce (SMTP giù, credenziali
+// scadute...) l'errore resta solo nei log, la notifica in app è già stata registrata.
+const sendBackupFailureEmail = async (title: string, message: string) => {
+    try {
+        if (!(await isEmailConfigured())) {
+            return;
+        }
+
+        const company = await getCompanySettings();
+
+        if (!company.email) {
+            return;
+        }
+
+        await sendEmail({
+            to: company.email,
+            subject: `${title} - ${company.name}`,
+            text: `${title}\n\n${message}`,
+        });
+    } catch (error) {
+        console.error("Invio email di avviso backup non riuscito:", error);
+    }
+};
+
 // Un'esecuzione manuale ha gia' mostrato l'errore a chi l'ha lanciata; quella automatica
 // gira di notte e senza notifica non la vedrebbe nessuno.
 const notifyAutoBackupFailure = async (
     origin: "manual" | "auto",
     dedupeKey: string,
     title: string,
-    message: string
+    message: string,
+    notifyEmailOnFailure: boolean
 ) => {
     if (origin !== "auto") {
         return;
@@ -467,6 +496,10 @@ const notifyAutoBackupFailure = async (
         link: "/settings?section=backup",
         severity: "warning",
     });
+
+    if (notifyEmailOnFailure) {
+        await sendBackupFailureEmail(title, message);
+    }
 };
 
 const smbTarget = (config: SmbConnectionConfig) => `//${config.host}/${config.share}`;
@@ -627,6 +660,8 @@ export type BackupSettingsPublic = Omit<BackupSettingsState, "smbPasswordEncrypt
     smbPasswordSet: boolean;
     /** Segreti che con la chiave presente non sono leggibili e vanno reinseriti. */
     restoreSecretsToReconfigure: string[];
+    /** Determina se la checkbox di avviso email può essere attivata dal frontend. */
+    emailConfigured: boolean;
 };
 
 // Calcolato a ogni lettura invece di essere persistito: così l'avviso sparisce da
@@ -639,6 +674,7 @@ const toPublicState = async (state: BackupSettingsState): Promise<BackupSettings
         ...rest,
         smbPasswordSet: Boolean(smbPasswordEncrypted),
         restoreSecretsToReconfigure: await findSecretsToReconfigure(state),
+        emailConfigured: await isEmailConfigured(),
     };
 };
 
@@ -654,6 +690,7 @@ export type BackupSettingsInput = Pick<
     | "runAt"
     | "outputDir"
     | "maxBackupsToKeep"
+    | "notifyEmailOnFailure"
     | "smbEnabled"
     | "smbHost"
     | "smbShare"
@@ -671,6 +708,7 @@ export const updateBackupSettings = async (input: BackupSettingsInput) => {
     current.runAt = input.runAt;
     current.outputDir = getConfiguredOutputDir();
     current.maxBackupsToKeep = input.maxBackupsToKeep;
+    current.notifyEmailOnFailure = input.notifyEmailOnFailure;
 
     current.smbEnabled = input.smbEnabled;
     current.smbHost = input.smbHost.trim();
@@ -693,6 +731,13 @@ export const updateBackupSettings = async (input: BackupSettingsInput) => {
 
     if (current.smbEnabled && !current.smbPasswordEncrypted) {
         throw new BackupManagerError("Specifica una password per la connessione al NAS", 400);
+    }
+
+    if (current.notifyEmailOnFailure && !(await isEmailConfigured())) {
+        throw new BackupManagerError(
+            "Per abilitare l'avviso email configura prima l'invio email nelle impostazioni",
+            400
+        );
     }
 
     setNextRunIfNeeded(current, new Date());
@@ -963,7 +1008,8 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
                     origin,
                     "backup:auto-nas-failed",
                     "Copia del backup su NAS non riuscita",
-                    smbMessage
+                    smbMessage,
+                    state.notifyEmailOnFailure
                 );
             }
         }
@@ -984,7 +1030,13 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
         setNextRunIfNeeded(state, now);
         await persistState(state);
 
-        await notifyAutoBackupFailure(origin, "backup:auto-failed", "Backup automatico non riuscito", message);
+        await notifyAutoBackupFailure(
+            origin,
+            "backup:auto-failed",
+            "Backup automatico non riuscito",
+            message,
+            state.notifyEmailOnFailure
+        );
 
         throw error;
     } finally {

@@ -14,6 +14,10 @@ export type BackupSettingsDto = {
     lastRunOrigin: "manual" | "auto" | null;
     lastError: string | null;
     lastDumpPath: string | null;
+    /** Avvisa via email (oltre alla notifica in app) quando un backup automatico fallisce. */
+    notifyEmailOnFailure: boolean;
+    /** True se le impostazioni email sono configurate e la checkbox può essere attivata. */
+    emailConfigured: boolean;
     smbEnabled: boolean;
     smbHost: string;
     smbShare: string;
@@ -40,6 +44,7 @@ export type BackupSettingsInput = Pick<
     | "runAt"
     | "outputDir"
     | "maxBackupsToKeep"
+    | "notifyEmailOnFailure"
     | "smbEnabled"
     | "smbHost"
     | "smbShare"
