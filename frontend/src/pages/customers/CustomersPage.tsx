@@ -94,8 +94,12 @@ const CustomersPage = () => {
         await loadCustomers();
     };
 
-    const handleOpenCustomer = (id: number) => {
+    const handleOpenCustomerReports = (id: number) => {
         navigate(`/clients/${id}`);
+    };
+
+    const handleOpenCustomerInterventions = (id: number) => {
+        navigate(`/clients/${id}/interventions`);
     };
 
     const handlePrintCustomerReports = (id: number) => {
@@ -226,7 +230,8 @@ const CustomersPage = () => {
                     <CustomersTable
                         columns={customerColumns}
                         rows={customerRows}
-                        onOpenCustomer={handleOpenCustomer}
+                        onOpenCustomerReports={handleOpenCustomerReports}
+                        onOpenCustomerInterventions={handleOpenCustomerInterventions}
                         onPrintCustomerReports={handlePrintCustomerReports}
                         onPrintCustomerInterventions={handlePrintCustomerInterventions}
                         onEditCustomer={handleOpenEditDialog}

@@ -11,6 +11,45 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-07-31 — Pagine "report cliente" e "interventi cliente", e fix del live-reload in sviluppo
+
+- **Nuovo bottone "apri interventi" nella tabella Clienti, distinto da "apri report".**
+  Prima la tabella Clienti aveva un solo bottone (icona generica) per aprire la pagina dei
+  report del cliente; mancava l'equivalente per gli interventi. Ora ogni riga ha due
+  bottoni di apertura: `ClipboardList` (giallo) per i report, `HardHat` (azzurro) per gli
+  interventi — le stesse icone già usate per le voci "Rapporti" e "Interventi" nella
+  sidebar. I due bottoni di stampa resoconto restano `Printer`, stessi colori di prima.
+  → [frontend/src/pages/customers/components/customers-table.tsx](../frontend/src/pages/customers/components/customers-table.tsx)
+
+- **La pagina dei report di un cliente (`/clients/:id`) ora usa una tabella invece delle
+  card**, per essere coerente con Rapporti/Interventi/tutte le altre liste dell'app (stessa
+  struttura tabella desktop + card list mobile, stesso colore di riga per stato). Aggiunto
+  anche un bottone "Stampa" in alto a destra (prima la stampa del resoconto era disponibile
+  solo dalla tabella Clienti).
+  → [frontend/src/pages/customers/CustomerPage.tsx](../frontend/src/pages/customers/CustomerPage.tsx)
+
+- **Nuova pagina `/clients/:id/interventions`**, analoga alla precedente ma per gli
+  interventi del cliente: tabella con filtro per stato, paginazione e bottone "Stampa" in
+  alto a destra.
+  → [frontend/src/pages/customers/CustomerInterventionsPage.tsx](../frontend/src/pages/customers/CustomerInterventionsPage.tsx)
+
+- **Vite non rilevava le modifiche ai file nel container di sviluppo.** Su Docker Desktop
+  per Windows i bind mount non propagano gli eventi inotify nativi nel container Linux:
+  il file cambiava (visibile dentro il container), ma chokidar non se ne accorgeva e
+  l'HMR non scattava mai. Aggiunto `server.watch.usePolling: true` a `vite.config.ts`.
+  → [frontend/vite.config.ts](../frontend/vite.config.ts)
+
+- **Volume `frontend_node_modules` disallineato da `package.json`.** Il volume nominato
+  persisteva da prima dell'introduzione di Vitest (commit `ae577c8`) e non veniva mai
+  aggiornato ai riavvii, perché Docker ripopola un volume nominato solo se vuoto: il
+  container falliva ad avviarsi con `Cannot find package 'vitest'` non appena veniva
+  ricreato/riavviato. Reinstallate le dipendenze nel volume esistente. Notato anche che
+  il tag immagine `masso-web-frontend:latest` è condiviso tra `docker-compose.yml`
+  (produzione, nginx) e `docker-compose.dev.yml` (sviluppo, Vite): nessuno dei due
+  specifica un `image:` esplicito, quindi l'ultima build eseguita sovrascrive il tag
+  dell'altra. Da valutare l'assegnazione di nomi immagine distinti per evitare che una
+  build di produzione rompa silenziosamente l'ambiente di sviluppo (o viceversa).
+
 ## 2026-07-31 — Scroll delle tabelle contenuto e stato del bottone di aggiornamento
 
 - **Bottone "Aggiorna adesso" disabilitato quando non c'è nulla da aggiornare.** Prima

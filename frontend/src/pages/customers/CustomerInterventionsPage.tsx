@@ -8,32 +8,59 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import TablePagination from "@/components/table-pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getApiErrorMessage, getCustomerReportsPrintUrl, listCustomers, listDevices, listReports } from "@/lib/api";
+import { getApiErrorMessage, getCustomerInterventionsPrintUrl, listCustomers, listInterventions } from "@/lib/api";
 import { openPrintWindow } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { formatInterventionStatus, formatInterventionTime, formatInterventionType, interventionStatusOptions } from "@/lib/interventions";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Printer } from "lucide-react";
-import type { ReportVisibilityFilter } from "../reports/components/types";
+import type { InterventionStatus } from "@/types/dtos";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
-type CustomerReportRow = {
+type InterventionStatusFilter = "all" | InterventionStatus;
+
+type CustomerInterventionRow = {
     id: number;
-    deviceName: string;
-    closed: boolean;
+    type: string;
+    schedule: string;
+    status: InterventionStatus;
 };
 
-const getAccentClassName = (row: CustomerReportRow) => (row.closed ? "border-t-green-500" : "border-t-red-500");
+const accentClassNameByStatus: Record<InterventionStatus, string> = {
+    programmato: "border-t-red-500",
+    in_lavorazione: "border-t-yellow-400",
+    completato: "border-t-green-500",
+};
 
-const CustomerPage = () => {
+const statusColorByStatus: Record<InterventionStatus, string> = {
+    programmato: "red",
+    in_lavorazione: "yellow",
+    completato: "green",
+};
+
+const formatSchedule = (interventionDate: string | null, startTime: string | null, endTime: string | null) => {
+    if (!interventionDate) {
+        return "-";
+    }
+
+    if (!startTime || !endTime) {
+        return formatDate(interventionDate);
+    }
+
+    return `${formatDate(interventionDate)} ${formatInterventionTime(startTime)}-${formatInterventionTime(endTime)}`;
+};
+
+const CustomerInterventionsPage = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const customerId = Number(id);
     const [isLoading, setIsLoading] = useState(true);
     const [customerName, setCustomerName] = useState("Cliente");
-    const [reportRows, setReportRows] = useState<CustomerReportRow[]>([]);
-    const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>("all");
+    const [interventionRows, setInterventionRows] = useState<CustomerInterventionRow[]>([]);
+    const [statusFilter, setStatusFilter] = useState<InterventionStatusFilter>("all");
     const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
     const hasValidCustomerId = useMemo(
@@ -46,28 +73,27 @@ const CustomerPage = () => {
     };
 
     const handleConfirmPrint = (range: { dateFrom?: string; dateTo?: string }) => {
-        openPrintWindow(getCustomerReportsPrintUrl(customerId, range));
+        openPrintWindow(getCustomerInterventionsPrintUrl(customerId, range));
     };
 
-    const visibleReportRows = useMemo(() => {
-        if (visibilityFilter === "open") {
-            return reportRows.filter((report) => !report.closed);
+    const visibleInterventionRows = useMemo(() => {
+        if (statusFilter === "all") {
+            return interventionRows;
         }
 
-        if (visibilityFilter === "closed") {
-            return reportRows.filter((report) => report.closed);
-        }
-
-        return reportRows;
-    }, [reportRows, visibilityFilter]);
+        return interventionRows.filter((intervention) => intervention.status === statusFilter);
+    }, [interventionRows, statusFilter]);
 
     const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [visibilityFilter, pageSize],
+        resetDependencies: [statusFilter, pageSize],
     });
-    const totalItems = visibleReportRows.length;
+    const totalItems = visibleInterventionRows.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-    const paginatedReportRows = visibleReportRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const paginatedInterventionRows = visibleInterventionRows.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
 
     useEffect(() => {
         if (!hasValidCustomerId) {
@@ -79,34 +105,25 @@ const CustomerPage = () => {
         const loadData = async () => {
             try {
                 setIsLoading(true);
-                const [reports, customers, devices] = await Promise.all([
-                    listReports(),
-                    listCustomers(),
-                    listDevices(),
-                ]);
+                const [interventions, customers] = await Promise.all([listInterventions(), listCustomers()]);
 
                 const customer = customers.find((item) => item.id === customerId);
                 if (customer) {
                     setCustomerName(`${customer.firstName} ${customer.lastName ?? ""}`.trim());
                 }
 
-                const deviceById = new Map(devices.map((device) => [device.id, device]));
+                const rows = interventions
+                    .filter((intervention) => intervention.customerId === customerId)
+                    .map((intervention) => ({
+                        id: intervention.id,
+                        type: formatInterventionType(intervention.type),
+                        schedule: formatSchedule(intervention.interventionDate, intervention.startTime, intervention.endTime),
+                        status: intervention.status,
+                    }));
 
-                const rows = reports
-                    .filter((report) => report.customerId === customerId)
-                    .map((report) => {
-                        const device = deviceById.get(report.deviceId);
-
-                        return {
-                            id: report.id,
-                            deviceName: device?.name ?? "Dispositivo sconosciuto",
-                            closed: report.closed,
-                        };
-                    });
-
-                setReportRows(rows);
+                setInterventionRows(rows);
             } catch (error) {
-                toast.error(getApiErrorMessage(error, "Impossibile caricare i report del cliente"));
+                toast.error(getApiErrorMessage(error, "Impossibile caricare gli interventi del cliente"));
             } finally {
                 setIsLoading(false);
             }
@@ -124,7 +141,7 @@ const CustomerPage = () => {
             <PrintRangeDialog
                 open={isPrintDialogOpen}
                 onOpenChange={setIsPrintDialogOpen}
-                title="Stampa resoconto report"
+                title="Stampa resoconto interventi"
                 onConfirm={handleConfirmPrint}
             />
 
@@ -147,26 +164,29 @@ const CustomerPage = () => {
                             size="lg"
                             className="self-end lg:self-auto"
                             onClick={() => setIsPrintDialogOpen(true)}
-                            aria-label="Stampa resoconto report"
+                            aria-label="Stampa resoconto interventi"
                         >
                             <Printer className="size-5" />
                             <Label className="hidden lg:inline text-lg">Stampa</Label>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Stampa resoconto report</TooltipContent>
+                    <TooltipContent>Stampa resoconto interventi</TooltipContent>
                 </Tooltip>
             </div>
 
-            <p className="ml-12">Rapporti del cliente</p>
+            <p className="ml-12">Interventi del cliente</p>
             <div className="ml-12">
-                <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as ReportVisibilityFilter)}>
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as InterventionStatusFilter)}>
                     <SelectTrigger className="w-full sm:w-56">
                         <SelectValue placeholder="Filtra per stato" />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                        <SelectItem value="all">Tutti i rapportini</SelectItem>
-                        <SelectItem value="open">Rapportini aperti</SelectItem>
-                        <SelectItem value="closed">Rapportini chiusi</SelectItem>
+                        <SelectItem value="all">Tutti gli interventi</SelectItem>
+                        {interventionStatusOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
@@ -177,30 +197,32 @@ const CustomerPage = () => {
                         <TableHeader className="w-full">
                             <TableRow>
                                 <TableHead>ID</TableHead>
-                                <TableHead>Dispositivo</TableHead>
+                                <TableHead>Tipo</TableHead>
+                                <TableHead>Data/Orario</TableHead>
                                 <TableHead>Stato</TableHead>
                                 <TableHead className="text-right">Azioni</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedReportRows.length === 0 ? (
+                            {paginatedInterventionRows.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                                        Nessun report associato a questo cliente.
+                                    <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                                        Nessun intervento associato a questo cliente.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedReportRows.map((report) => (
-                                    <TableRow key={report.id} data-status-color={report.closed ? "green" : "red"}>
-                                        <TableCell>Rapporto #{report.id}</TableCell>
-                                        <TableCell>{report.deviceName}</TableCell>
-                                        <TableCell>{report.closed ? "Chiuso" : "Aperto"}</TableCell>
+                                paginatedInterventionRows.map((intervention) => (
+                                    <TableRow key={intervention.id} data-status-color={statusColorByStatus[intervention.status]}>
+                                        <TableCell>{intervention.id}</TableCell>
+                                        <TableCell>{intervention.type}</TableCell>
+                                        <TableCell>{intervention.schedule}</TableCell>
+                                        <TableCell>{formatInterventionStatus(intervention.status)}</TableCell>
                                         <TableCell className="bg-background text-foreground text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <OpenEntityButton
                                                     size="icon-lg"
-                                                    onClick={() => navigate(`/reports/${report.id}`)}
-                                                    aria-label={`Apri report ${report.id}`}
+                                                    onClick={() => navigate(`/interventions/${intervention.id}`)}
+                                                    aria-label={`Apri intervento ${intervention.id}`}
                                                 />
                                             </div>
                                         </TableCell>
@@ -213,21 +235,26 @@ const CustomerPage = () => {
                     <EntityCardList
                         className="sm:hidden"
                         columns={[
-                            { key: "id", header: "ID", render: (row: CustomerReportRow) => `Rapporto #${row.id}` },
-                            { key: "deviceName", header: "Dispositivo", render: (row: CustomerReportRow) => row.deviceName },
-                            { key: "closed", header: "Stato", render: (row: CustomerReportRow) => (row.closed ? "Chiuso" : "Aperto") },
+                            { key: "id", header: "ID", render: (row: CustomerInterventionRow) => row.id },
+                            { key: "type", header: "Tipo", render: (row: CustomerInterventionRow) => row.type },
+                            { key: "schedule", header: "Data/Orario", render: (row: CustomerInterventionRow) => row.schedule },
+                            {
+                                key: "status",
+                                header: "Stato",
+                                render: (row: CustomerInterventionRow) => formatInterventionStatus(row.status),
+                            },
                         ]}
-                        rows={paginatedReportRows}
+                        rows={paginatedInterventionRows}
                         getRowKey={(row) => row.id}
-                        getAccentClassName={getAccentClassName}
+                        getAccentClassName={(row) => accentClassNameByStatus[row.status]}
                         renderActions={(row) => (
                             <OpenEntityButton
                                 size="icon-lg"
-                                onClick={() => navigate(`/reports/${row.id}`)}
-                                aria-label={`Apri report ${row.id}`}
+                                onClick={() => navigate(`/interventions/${row.id}`)}
+                                aria-label={`Apri intervento ${row.id}`}
                             />
                         )}
-                        emptyMessage="Nessun report associato a questo cliente."
+                        emptyMessage="Nessun intervento associato a questo cliente."
                     />
                 </div>
                 <TablePagination
@@ -242,4 +269,4 @@ const CustomerPage = () => {
     );
 };
 
-export default CustomerPage;
+export default CustomerInterventionsPage;
