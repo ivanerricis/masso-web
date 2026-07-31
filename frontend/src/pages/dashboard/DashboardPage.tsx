@@ -1,6 +1,7 @@
 import { CalendarClock, ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro, Loader } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
+import CreateInterventionDialog, { type CreateInterventionSubmitValues } from "@/components/dialogs/create/createInterventionDialog";
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,11 @@ import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "r
 const InterventionsCalendar = lazy(() => import("@/pages/calendar/components/interventions-calendar"));
 import CreateEntityButton from "@/components/create-entity-button";
 import {
+    createIntervention,
     createIssue,
     createReport,
     getReportPrintUrl,
+    getInterventionPrintUrl,
     getApiErrorMessage,
     getInterventionStats,
     getReportStats,
@@ -31,6 +34,7 @@ import {
 import { cn, formatEuro, openPrintWindow } from "@/lib/utils";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useCalendarInterventions } from "@/pages/calendar/hooks/useCalendarInterventions";
 
 const getMonthKey = (date: Date) => {
     const year = date.getFullYear();
@@ -72,6 +76,8 @@ const shiftMonthKey = (monthKey: string, deltaMonths: number) => {
 const DashboardPage = () => {
     const navigate = useNavigate();
     const [dialogCreateReportOpen, setDialogCreateReportOpen] = useState(false);
+    const [dialogCreateInterventionOpen, setDialogCreateInterventionOpen] = useState(false);
+    const { events: calendarEvents, isLoading: isCalendarLoading, loadEvents: loadCalendarEvents } = useCalendarInterventions();
     const [selectedRevenueMonth, setSelectedRevenueMonth] = useState(() => getMonthKey(new Date()));
     const [openReports, setOpenReports] = useState(0);
     const [closedReports, setClosedReports] = useState(0);
@@ -228,6 +234,51 @@ const DashboardPage = () => {
         }
     };
 
+    const handleCreateIntervention = async (values: CreateInterventionSubmitValues) => {
+        try {
+            let customerId = values.customerId;
+
+            if (customerId == null) {
+                const customers = await listCustomers();
+                const selectedCustomer = customers.find(
+                    (customer) =>
+                        formatCustomerOption(
+                            customer.firstName,
+                            customer.lastName,
+                            customer.phoneNumber,
+                            customer.phoneNumberSecondary
+                        ) === values.customer
+                );
+
+                if (!selectedCustomer) {
+                    throw new Error("Seleziona un cliente esistente o creane uno nuovo.");
+                }
+
+                customerId = selectedCustomer.id;
+            }
+
+            const createdIntervention = await createIntervention({
+                type: values.type,
+                status: values.status,
+                description: values.description,
+                customerId,
+                collaboratorId: values.collaboratorId,
+                interventionDate: values.interventionDate,
+                startTime: values.startTime,
+                endTime: values.endTime,
+            });
+
+            await Promise.all([loadCalendarEvents(), loadDashboardMetrics(selectedRevenueMonth)]);
+
+            if (window.confirm("Intervento creato. Vuoi stamparlo adesso?")) {
+                openPrintWindow(getInterventionPrintUrl(createdIntervention.id));
+            }
+        } catch (error) {
+            toast.error(getApiErrorMessage(error, "Impossibile creare l'intervento"));
+            throw error;
+        }
+    };
+
     useEffect(() => {
         startTransition(() => {
             void loadDashboardMetrics(selectedRevenueMonth);
@@ -248,7 +299,10 @@ const DashboardPage = () => {
                 title="Dashboard"
                 description="Panoramica del laboratorio e stato delle riparazioni."
                 action={
-                    <CreateEntityButton label="Nuovo rapportino" onClick={() => setDialogCreateReportOpen(true)} />
+                    <div className="flex flex-wrap items-center gap-2">
+                        <CreateEntityButton label="Nuovo rapportino" onClick={() => setDialogCreateReportOpen(true)} />
+                        <CreateEntityButton label="Nuovo intervento" onClick={() => setDialogCreateInterventionOpen(true)} />
+                    </div>
                 }
             />
 
@@ -403,7 +457,12 @@ const DashboardPage = () => {
             </div>
 
             <Suspense fallback={<LoadingPage className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]" />}>
-                <InterventionsCalendar className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]" />
+                <InterventionsCalendar
+                    className="h-[calc(100vh-16rem)] min-h-[24rem] sm:min-h-[28rem]"
+                    events={calendarEvents}
+                    isLoading={isCalendarLoading}
+                    onCreateIntervention={handleCreateIntervention}
+                />
             </Suspense>
 
             {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
@@ -412,6 +471,12 @@ const DashboardPage = () => {
                 open={dialogCreateReportOpen}
                 onOpenChange={setDialogCreateReportOpen}
                 onSubmit={handleCreateReport}
+            />
+
+            <CreateInterventionDialog
+                open={dialogCreateInterventionOpen}
+                onOpenChange={setDialogCreateInterventionOpen}
+                onSubmit={handleCreateIntervention}
             />
         </div>
     );

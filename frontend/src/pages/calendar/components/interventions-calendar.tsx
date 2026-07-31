@@ -2,16 +2,17 @@ import LoadingPage from "@/components/loadingPage";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getStoredCalendarView, setStoredCalendarView } from "@/lib/calendarView";
+import CreateInterventionDialog, { type CreateInterventionSubmitValues } from "@/components/dialogs/create/createInterventionDialog";
 import type { InterventionStatus } from "@/types/dtos";
 import { format, getDay, parse, startOfWeek } from "date-fns";
 import { it } from "date-fns/locale";
 import { useMemo, useState } from "react";
-import { Calendar, dateFnsLocalizer, type EventPropGetter, type Messages, type View } from "react-big-calendar";
+import { Calendar, dateFnsLocalizer, type EventPropGetter, type Messages, type SlotInfo, type View } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../calendar-theme.css";
 import CalendarEventPopover from "./calendar-event-popover";
 import { useNavigate } from "react-router-dom";
-import { useCalendarInterventions, type InterventionCalendarEvent } from "../hooks/useCalendarInterventions";
+import type { InterventionCalendarEvent } from "../hooks/useCalendarInterventions";
 
 const locales = { it };
 
@@ -54,12 +55,16 @@ const components = { event: CalendarEventPopover };
 
 type Props = Readonly<{
     className?: string;
+    events: InterventionCalendarEvent[];
+    isLoading: boolean;
+    onCreateIntervention: (values: CreateInterventionSubmitValues) => Promise<void> | void;
 }>;
 
-const InterventionsCalendar = ({ className }: Props) => {
+const InterventionsCalendar = ({ className, events, isLoading, onCreateIntervention }: Props) => {
     const navigate = useNavigate();
-    const { events, isLoading } = useCalendarInterventions();
     const [view, setView] = useState<View>(() => getStoredCalendarView());
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [initialInterventionDate, setInitialInterventionDate] = useState("");
 
     const eventPropGetter = useMemo<EventPropGetter<InterventionCalendarEvent>>(
         () => (event) => ({
@@ -71,6 +76,18 @@ const InterventionsCalendar = ({ className }: Props) => {
     const handleViewChange = (nextView: View) => {
         setView(nextView);
         setStoredCalendarView(nextView);
+    };
+
+    // Il doppio click su una cella libera del calendario apre la creazione di un
+    // nuovo intervento con la data precompilata; il click singolo (usato per il
+    // drag-to-select) non deve aprire nulla.
+    const handleSelectSlot = (slotInfo: SlotInfo) => {
+        if (slotInfo.action !== "doubleClick") {
+            return;
+        }
+
+        setInitialInterventionDate(format(slotInfo.start, "yyyy-MM-dd"));
+        setIsCreateDialogOpen(true);
     };
 
     return (
@@ -86,10 +103,19 @@ const InterventionsCalendar = ({ className }: Props) => {
                     eventPropGetter={eventPropGetter}
                     components={components}
                     onSelectEvent={(event) => navigate(`/interventions/${event.id}`)}
+                    selectable
+                    onSelectSlot={handleSelectSlot}
                     popup
                     style={{ height: "100%" }}
                 />
             </CardContent>
+
+            <CreateInterventionDialog
+                open={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+                onSubmit={onCreateIntervention}
+                initialDate={initialInterventionDate}
+            />
 
             {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
         </Card>

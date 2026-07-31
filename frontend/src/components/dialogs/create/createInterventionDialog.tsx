@@ -49,9 +49,10 @@ type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit?: (values: CreateInterventionSubmitValues) => Promise<void> | void;
+    initialDate?: string;
 };
 
-const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
+const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }: Props) => {
     const [formValues, setFormValues] = useState({
         type: "consegna_materiale" as InterventionType,
         status: "programmato" as InterventionStatus,
@@ -81,7 +82,7 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 description: "",
                 customer: "",
                 collaboratorId: "",
-                interventionDate: "",
+                interventionDate: initialDate ?? "",
                 startTime: "",
                 endTime: "",
             });
@@ -98,7 +99,7 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit }: Props) => {
         };
 
         void loadCollaborators();
-    }, [open]);
+    }, [open, initialDate]);
 
     const searchCustomers = useCallback(async (query: string) => {
         const customers = await listCustomers({ pageSize: 8, search: query || undefined });

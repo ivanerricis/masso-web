@@ -11,6 +11,33 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-07-31 — Doppio click sul calendario per creare un intervento, hover righe tabella più rapido
+
+- **Doppio click su una cella libera del calendario interventi (dashboard) apre "Nuovo
+  intervento" con la data già precompilata.** Il click singolo resta riservato al
+  drag-to-select nativo di `react-big-calendar`, quindi si distingue tramite
+  `slotInfo.action === "doubleClick"` in `onSelectSlot` (richiede la prop `selectable`).
+  Aggiunta la prop opzionale `initialDate` a `CreateInterventionDialog` per precompilare il
+  campo data all'apertura.
+  → [frontend/src/pages/calendar/components/interventions-calendar.tsx](../frontend/src/pages/calendar/components/interventions-calendar.tsx),
+  [frontend/src/components/dialogs/create/createInterventionDialog.tsx](../frontend/src/components/dialogs/create/createInterventionDialog.tsx)
+
+- **Nuovo bottone "Nuovo intervento" in dashboard, accanto a "Nuovo rapportino".** La
+  creazione dell'intervento (risoluzione cliente, chiamata API, refresh) è stata spostata
+  da `interventions-calendar.tsx` a `DashboardPage`, che ora possiede anche l'hook
+  `useCalendarInterventions` e lo passa come props (`events`, `isLoading`) al calendario:
+  così sia il bottone in alto sia il doppio click su una cella condividono la stessa
+  logica di creazione, e il calendario e i contatori delle card si aggiornano insieme
+  senza reload della pagina.
+  → [frontend/src/pages/dashboard/DashboardPage.tsx](../frontend/src/pages/dashboard/DashboardPage.tsx),
+  [frontend/src/pages/calendar/components/interventions-calendar.tsx](../frontend/src/pages/calendar/components/interventions-calendar.tsx)
+
+- **Transizione hover delle righe tabella accorciata** (da 150ms di default Tailwind a
+  50ms) perché risultava percettibilmente lenta.
+  → [frontend/src/components/ui/table.tsx](../frontend/src/components/ui/table.tsx)
+
+---
+
 ## 2026-07-31 — Pagine "report cliente" e "interventi cliente", e fix del live-reload in sviluppo
 
 - **Nuovo bottone "apri interventi" nella tabella Clienti, distinto da "apri report".**
