@@ -106,10 +106,14 @@ const LogsSettingsPanel = () => {
     };
 
     return (
-        <SettingsSection>
+        <SettingsSection className="flex h-full min-h-0 flex-col">
             <SettingsCard
                 title="Log azioni"
                 description="Consulta il registro delle azioni eseguite sull'applicazione, giorno per giorno."
+                className="min-h-0 flex-1"
+                contentClassName={
+                    logFiles.length === 0 ? undefined : "flex min-h-0 flex-1 flex-col gap-3 pt-4"
+                }
                 action={
                     <>
                         <Tooltip>
@@ -162,7 +166,7 @@ const LogsSettingsPanel = () => {
                             <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca nel log..." />
                         </div>
 
-                        <div className="rounded-md border border-primary/15">
+                        <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-primary/15">
                             <Table>
                                 <TableHeader>
                                     <TableRow>

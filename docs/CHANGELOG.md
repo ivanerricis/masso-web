@@ -11,6 +11,21 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-07-31 — Contenuto lo scroll della tabella Log in Impostazioni
+
+- **La sezione Log delle Impostazioni scrollava per intero** (filtri, tabella e paginazione
+  insieme), invece di contenere lo scroll nella sola tabella come nelle altre pagine
+  (Interventi, Rapporti, ecc.). `SettingsCard` non esponeva un `className` per il `Card`
+  esterno, quindi `LogsSettingsPanel` non poteva farlo diventare una colonna flex a
+  altezza piena con la tabella come unica area `overflow-y-auto`. Aggiunta la prop
+  `className` a `SettingsCard` (usata solo da questo pannello: gli altri restano invariati)
+  e reso `LogsSettingsPanel` una colonna flex con selettore data/ricerca e paginazione
+  fissi e solo il riquadro della tabella scrollabile.
+  → [frontend/src/components/settings/settingsUi.tsx](../frontend/src/components/settings/settingsUi.tsx),
+  [frontend/src/components/settings/logsSettingsPanel.tsx](../frontend/src/components/settings/logsSettingsPanel.tsx)
+
+---
+
 ## 2026-07-31 — Doppio click sul calendario per creare un intervento, hover righe tabella più rapido
 
 - **Doppio click su una cella libera del calendario interventi (dashboard) apre "Nuovo

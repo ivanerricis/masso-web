@@ -28,6 +28,7 @@ export const SettingsCard = ({
     description,
     action,
     destructive = false,
+    className,
     contentClassName,
     children,
 }: {
@@ -35,10 +36,11 @@ export const SettingsCard = ({
     description?: ReactNode;
     action?: ReactNode;
     destructive?: boolean;
+    className?: string;
     contentClassName?: string;
     children: ReactNode;
 }) => (
-    <Card size="sm" className={cn("shadow-sm", destructive ? "border-destructive/30" : "border-primary/15")}>
+    <Card size="sm" className={cn("shadow-sm", destructive ? "border-destructive/30" : "border-primary/15", className)}>
         <CardHeader
             className={cn(
                 "border-b",
