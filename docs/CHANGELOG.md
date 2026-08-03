@@ -11,6 +11,18 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-03 — Favicon e icona app al posto del default di Vite
+
+- **L'app usava ancora la favicon di default di Vite** (`vite.svg`), mai sostituita dal
+  set di icone del progetto. Aggiunto il set EasyLab (`svg`, `32px`, `apple-touch 180px`,
+  `192`/`512`) in `frontend/public/` e collegato da `index.html`; aggiunto anche un
+  `site.webmanifest` che referenzia le icone 192/512 per il salvataggio in home screen su
+  mobile (nessun service worker/PWA plugin configurato, resta solo l'icona).
+  → [frontend/index.html](../frontend/index.html),
+  [frontend/public/site.webmanifest](../frontend/public/site.webmanifest)
+
+---
+
 ## 2026-07-31 — Contenuto lo scroll della tabella Log in Impostazioni
 
 - **La sezione Log delle Impostazioni scrollava per intero** (filtri, tabella e paginazione
