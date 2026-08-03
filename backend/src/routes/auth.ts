@@ -2,6 +2,7 @@ import { Router, type Response } from "express";
 import { z } from "zod";
 import { AuthManagerError, changeOwnPassword, deleteSession, login } from "../services/authManager";
 import { requireAuth, sessionCookieName, sessionCookieOptions } from "../middleware/requireAuth";
+import { getClientIp } from "../middleware/clientIp";
 import { validate } from "./validation";
 
 const authRouter = Router();
@@ -35,7 +36,7 @@ const passwordBodySchema = z
 authRouter.post("/login", validate({ body: loginBodySchema }), async (req, res, next) => {
     try {
         const { username, password } = req.body as { username: string; password: string };
-        const { token, user } = await login(username, password, req.ip ?? "unknown");
+        const { token, user } = await login(username, password, getClientIp(req));
 
         res.cookie(sessionCookieName, token, { ...sessionCookieOptions, maxAge: sessionMaxAgeMs });
         res.json(user);

@@ -1,5 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import { appendUserActionLog, getDayKey } from "../services/logManager";
+// Prima qui c'era una copia locale che prendeva la prima entry di X-Forwarded-For: un
+// valore scrivibile dal chiamante, quindi un IP a piacere nel registro delle azioni.
+// Un log di controllo falsificabile da chi lo dovrebbe incriminare non serve a niente.
+import { getClientIp } from "./clientIp";
 
 const actionVerbByMethod: Record<string, string> = {
     POST: "creato",
@@ -16,20 +20,6 @@ const formatAction = (method: string, routePath: string) => {
 };
 
 const trackedMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
-
-const getClientIp = (request: Request) => {
-    const forwardedFor = request.headers["x-forwarded-for"];
-
-    if (typeof forwardedFor === "string" && forwardedFor.trim() !== "") {
-        return forwardedFor.split(",")[0].trim();
-    }
-
-    if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
-        return forwardedFor[0] ?? request.ip;
-    }
-
-    return request.ip;
-};
 
 export const userActionLogger = (request: Request, _response: Response, next: NextFunction) => {
     if (

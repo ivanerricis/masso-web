@@ -36,8 +36,9 @@ services:
       LAB_PHONE: ${LAB_PHONE}
       LAB_LOGO_TEXT: ${LAB_LOGO_TEXT}
       LAB_LOGO_URL: ${LAB_LOGO_URL}
-    ports:
-      - "3000:3000"
+    # Nessuna porta pubblicata: il backend è raggiungibile solo dalla rete interna della
+    # compose, dove lo contatta nginx del frontend. Esporlo sull'host significherebbe
+    # aggirare nginx, e con esso l'unico punto in cui l'IP reale del client è affidabile.
     volumes:
       - ${BACKUP_HOST_DIR}:/app/backups
       - ./ops/update:/app/update-signal
@@ -78,8 +79,10 @@ services:
     container_name: frontend
     restart: always
     logging: *default-logging
-    ports:
-      - "80:80"
+    # Nessuna porta pubblicata sull'host: si entra solo dal dominio pubblico, attraverso
+    # cloudflared, che raggiunge questo container dalla rete interna della compose. Per un
+    # accesso di emergenza dalla LAN (tunnel non funzionante) riaggiungere qui
+    # temporaneamente `ports: ["80:80"]` e rifare `docker compose up -d`.
     healthcheck:
       test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1" ]
       interval: 30s
@@ -88,6 +91,27 @@ services:
       start_period: 10s
     depends_on:
       backend:
+        condition: service_healthy
+
+  # Espone il frontend sul dominio pubblico senza aprire nessuna porta in ingresso: è
+  # cloudflared ad aprire la connessione verso Cloudflare, non il contrario. È questo che
+  # permette di convivere con l'altro servizio che occupa già 80/443 sull'IP pubblico.
+  #
+  # Il tunnel è gestito localmente: credenziali e ingress stanno in ops/cloudflared sulla
+  # VM, generati da scripts/install-tunnel.sh. Il dominio si trova in config.yml, quindi
+  # cambiarlo è una modifica di configurazione e un riavvio, senza ricostruire immagini.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: always
+    logging: *default-logging
+    # --no-autoupdate: l'aggiornamento va col resto dello stack (`up --build` ripesca
+    # l'immagine), non a sorpresa dentro un container in esecuzione.
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./ops/cloudflared:/etc/cloudflared:ro
+    depends_on:
+      frontend:
         condition: service_healthy
 
 volumes:

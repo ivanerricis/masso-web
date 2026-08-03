@@ -11,6 +11,100 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-03 — Esposizione su dominio pubblico via Cloudflare Tunnel
+
+Fine della modalità "solo LAN": l'app viene pubblicata su un dominio, e le scorciatoie
+prese quando la rete era considerata fidata vanno tolte tutte insieme — a metà sarebbero
+peggio che non fatte.
+
+- **Il limitatore dei tentativi di login era aggirabile in modo banale.** `app.set("trust
+  proxy", true)` dice a Express di credere a qualunque `X-Forwarded-For` in arrivo, e da
+  quell'header Express ricava `req.ip`, che era la chiave del limitatore: bastava mandare
+  un valore diverso a ogni tentativo per avere login illimitati. In LAN era un difetto
+  teorico, su internet avrebbe reso il limitatore puramente decorativo. Ora ci si fida di
+  un solo hop (nginx del frontend, l'unico che può raggiungere il backend) e l'IP reale si
+  legge da `CF-Connecting-IP`, che Cloudflare **sovrascrive** scartando quanto inviato dal
+  chiamante. È affidabile solo perché non esiste un percorso alternativo per raggiungere
+  l'origine: nessuna porta pubblicata, nessun port forward.
+  → [backend/src/middleware/clientIp.ts](../backend/src/middleware/clientIp.ts),
+  [backend/src/index.ts](../backend/src/index.ts)
+
+- **La mappa dei tentativi era memoria che un estraneo poteva far crescere.** Ogni IP
+  sorgente creava una entry, e le entry venivano rimosse solo al login riuscito: mai per
+  scadenza. Con IP che ruotano — la norma su internet, l'eccezione in LAN — cresceva senza
+  limite. Il limitatore è stato estratto in un modulo proprio (senza dipendenze dal
+  database, quindi testabile davvero), con scadenza effettiva, tetto massimo di entry e
+  soglia portata da 10 a 5 tentativi per finestra.
+  *Volutamente non fatto:* la persistenza tra riavvii. Il conteggio si azzera a ogni
+  aggiornamento automatico, ma i riavvii non sono provocabili da chi attacca, e una
+  tabella dedicata costerebbe una migrazione per un guadagno marginale.
+  → [backend/src/services/loginRateLimit.ts](../backend/src/services/loginRateLimit.ts)
+
+- **Il registro delle azioni utente aveva una copia locale della stessa logica**, che
+  prendeva la prima entry di `X-Forwarded-For`: un log di controllo in cui l'IP è deciso da
+  chi compie l'azione non serve a niente. Ora usa la stessa funzione del limitatore.
+  → [backend/src/middleware/userActionLogger.ts](../backend/src/middleware/userActionLogger.ts)
+
+- **Il cookie di sessione viaggiava senza `secure`**, cosa corretta finché l'unico accesso
+  era HTTP in LAN. Ora è `secure` in produzione e resta in chiaro solo in sviluppo, dove il
+  frontend gira su `http://localhost` e un cookie `secure` non verrebbe proprio inviato.
+  Nessun attributo `domain`, come già prima: è ciò che permette di cambiare dominio senza
+  toccare il codice.
+  → [backend/src/middleware/requireAuth.ts](../backend/src/middleware/requireAuth.ts)
+
+- **Il CORS è stato rimosso invece che ristretto.** Era `origin: true`, cioè "rifletti
+  qualunque origine". Il piano era di fissarlo sull'origine di produzione, ma in produzione
+  non esiste nessuna richiesta cross-origin: nginx serve frontend e `/api` dalla stessa
+  origine. Non attivare il middleware è più sicuro che configurarlo, e toglie di mezzo
+  l'unico valore che sarebbe andato aggiornato a ogni cambio di dominio. Resta attivabile
+  in sviluppo tramite `CORS_ORIGIN`, dove Vite su `:5173` chiama il backend su `:3000` e le
+  richieste sono cross-origin per davvero.
+  → [backend/src/index.ts](../backend/src/index.ts),
+  [docker-compose.dev.yml](../docker-compose.dev.yml)
+
+- **Nessun container pubblica più porte sull'host.** La `3000:3000` del backend permetteva
+  di scavalcare nginx, e con esso l'unico punto in cui l'IP del client è attendibile; la
+  `80:80` del frontend non serve più, visto che cloudflared raggiunge nginx dalla rete
+  interna della compose. Conseguenza voluta: dalla LAN, via IP, non si entra più. Il modo
+  di riaprire un accesso di emergenza è annotato nel compose e nel README.
+  → [docker-compose.yml](../docker-compose.yml)
+
+- **Aggiunti gli header di sicurezza** (`nosniff`, `X-Frame-Options`/`frame-ancestors`,
+  `Referrer-Policy`, HSTS), che non c'erano affatto. Stanno in uno snippet incluso, non
+  scritti una volta sola nel blocco `server`, per un motivo preciso: in nginx un
+  `add_header` dentro un `location` **annulla** tutti quelli ereditati, e due location qui
+  ne hanno già uno per `Cache-Control` — sarebbero rimaste scoperte proprio `index.html` e
+  gli asset statici. Lo snippet sta fuori da `conf.d/` perché nginx include da sé ogni
+  `conf.d/*.conf` nel blocco `http`. Verificato che su tutte e tre le location gli header
+  escano e il `Cache-Control` resti quello di prima.
+  → [frontend/security-headers.conf](../frontend/security-headers.conf),
+  [frontend/nginx.conf](../frontend/nginx.conf)
+
+- **Il dominio si sceglie durante l'installazione** (`scripts/install-tunnel.sh`): lo
+  script lo chiede, autorizza l'account Cloudflare, crea tunnel, ingress e record DNS.
+  Rilanciarlo è anche il modo di cambiare dominio, perché modificare `config.yml` a mano
+  aggiornerebbe l'ingress ma non il DNS. Il tunnel è gestito localmente e non a token
+  proprio per questo: la configurazione deve stare sulla VM, non nella dashboard.
+  L'applicazione continua a non conoscere il proprio dominio — `PUBLIC_DOMAIN` in `.env`
+  serve solo a stamparlo all'avvio — quindi il cambio resta configurazione, mai una
+  ricostruzione. Aggiunto a `edit-env.sh`, che riscrivendo `.env` dalla propria lista di
+  chiavi altrimenti lo avrebbe cancellato a ogni esecuzione.
+  Il record DNS viene creato **senza** `--overwrite-dns` al primo tentativo, chiedendo
+  conferma solo se esiste già: il dominio ospita altri sottodomini in uso, e un errore di
+  battitura avrebbe altrimenti dirottato in silenzio uno di quelli su EasyLab.
+  → [scripts/install-tunnel.sh](../scripts/install-tunnel.sh),
+  [scripts/edit-env.sh](../scripts/edit-env.sh),
+  [scripts/start-server.sh](../scripts/start-server.sh)
+
+- **Documentato un limite che si sarebbe scoperto durante un'emergenza:** il piano Free di
+  Cloudflare taglia le richieste sopra i 100 MB, e nginx accetta fino a 2 GB proprio per il
+  caricamento dei dump. Ripristinare un backup più grande dall'interfaccia web fallirà con
+  un 413 generato da Cloudflare, non dall'app. Ripristinare un backup *già sul server* non
+  è soggetto al limite; per un archivio esterno più grande resta `scripts/restore-db.sh`.
+  → [README.md](../README.md), [frontend/nginx.conf](../frontend/nginx.conf)
+
+---
+
 ## 2026-08-03 — Manifest completato per l'installazione come app (Chrome/Brave)
 
 - **Il `site.webmanifest` aggiunto in precedenza (voce sotto) non bastava a far comparire

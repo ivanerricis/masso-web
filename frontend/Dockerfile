@@ -18,5 +18,8 @@ FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Fuori da conf.d di proposito: nginx include da sé ogni conf.d/*.conf nel blocco http, e
+# questo file va incluso solo dove serve, non anche come configurazione a sé stante.
+COPY security-headers.conf /etc/nginx/security-headers.conf
 
 EXPOSE 80

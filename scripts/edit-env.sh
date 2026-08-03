@@ -13,12 +13,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 ENV_PATH="$REPO_ROOT/.env"
 
-declare -a KEYS=(POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB BACKUP_HOST_DIR LAB_NAME LAB_EMAIL LAB_ADDRESS LAB_PHONE LAB_LOGO_TEXT LAB_LOGO_URL)
+declare -a KEYS=(POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB BACKUP_HOST_DIR PUBLIC_DOMAIN LAB_NAME LAB_EMAIL LAB_ADDRESS LAB_PHONE LAB_LOGO_TEXT LAB_LOGO_URL)
 declare -A DEFAULTS=(
     [POSTGRES_USER]="easylab"
     [POSTGRES_PASSWORD]="easylab_password"
     [POSTGRES_DB]="easylab_db"
     [BACKUP_HOST_DIR]="/opt/easylab-web/backups"
+    [PUBLIC_DOMAIN]=""
     [LAB_NAME]="EasyLab"
     [LAB_EMAIL]="info@easylab.local"
     [LAB_ADDRESS]="Indirizzo laboratorio"
@@ -53,7 +54,7 @@ done
 
 {
     echo "# Shared / production-like configuration"
-    for key in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB BACKUP_HOST_DIR; do
+    for key in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB BACKUP_HOST_DIR PUBLIC_DOMAIN; do
         echo "$key=${NEW[$key]}"
     done
     echo ""
@@ -68,12 +69,13 @@ echo ".env aggiornato: $ENV_PATH"
 if [ "$CONFIGURE_UFW" = true ]; then
     echo ""
     echo "Configurazione firewall (ufw)..."
+    # Con Cloudflare Tunnel non serve nessuna porta in ingresso: è cloudflared ad aprire
+    # la connessione verso l'esterno. Restano aperte solo quelle già consentite (SSH).
     if command -v ufw >/dev/null 2>&1; then
-        for port in 80 3000; do
-            ufw allow "$port"/tcp || echo "Impossibile aprire la porta $port su ufw."
-        done
+        echo "Nessuna porta in ingresso da aprire: l'accesso passa da Cloudflare Tunnel."
+        ufw status || true
     else
-        echo "ufw non trovato. Configura manualmente il firewall della VM/Proxmox per le porte 80 e 3000."
+        echo "ufw non trovato. Nessuna porta in ingresso è comunque necessaria."
     fi
 fi
 

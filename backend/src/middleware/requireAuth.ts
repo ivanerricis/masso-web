@@ -3,11 +3,16 @@ import { getSessionUser, type PublicUser } from "../services/authManager";
 
 export const sessionCookieName = "session";
 
-// L'app gira su HTTP semplice in LAN (nessuna terminazione TLS), quindi `secure` resta false.
+// In produzione l'app è raggiungibile solo dal dominio pubblico servito da Cloudflare
+// Tunnel, quindi sempre in HTTPS: il cookie di sessione non deve mai viaggiare in chiaro.
+// In sviluppo il frontend gira su http://localhost, dove un cookie `secure` non verrebbe
+// inviato affatto, quindi lì resta false. Nessun attributo `domain`: il cookie si limita
+// da sé all'host che lo ha emesso, ed è ciò che permette di cambiare dominio senza
+// toccare il codice.
 export const sessionCookieOptions = {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
 };
 

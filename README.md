@@ -47,7 +47,17 @@ In alternativa, produzione su CT Proxmox: vedi [Installazione su Proxmox CT (LXC
 	./scripts/edit-env.sh --configure-ufw
 	```
 
-5. **Primo avvio**:
+5. **Configura il dominio pubblico** (Cloudflare Tunnel):
+
+	```bash
+	sudo ./scripts/install-tunnel.sh
+	```
+
+	Lo script chiede il dominio con cui l'app sarà raggiungibile (es. `easylab.iltuodominio.it`), autorizza l'account Cloudflare, crea il tunnel e il record DNS. Prerequisiti sul lato Cloudflare: vedi [Dominio pubblico e Cloudflare Tunnel](#dominio-pubblico-e-cloudflare-tunnel).
+
+	Rilancia lo stesso script per cambiare dominio in seguito: non serve ricostruire nulla.
+
+6. **Primo avvio**:
 
 	```bash
 	docker compose up --build -d
@@ -55,7 +65,7 @@ In alternativa, produzione su CT Proxmox: vedi [Installazione su Proxmox CT (LXC
 	./scripts/start-server.sh
 	```
 
-	L'app è raggiungibile su `http://<IP_VM>`.
+	L'app è raggiungibile su `https://<dominio configurato>`. Nessun container pubblica porte sull'host: dalla LAN, via IP, non si entra più.
 
 	Al primissimo avvio viene creato automaticamente un utente amministratore (`admin`) con una password casuale sicura, necessaria per accedere all'app. Per recuperarla:
 
@@ -71,7 +81,7 @@ In alternativa, produzione su CT Proxmox: vedi [Installazione su Proxmox CT (LXC
 
 	Dopo il primo accesso, cambia subito la password da Impostazioni > Utenti (o dal badge utente in alto a destra) e crea eventuali altri utenti da lì.
 
-6. **Abilita l'aggiornamento da interfaccia web** (opzionale ma consigliato):
+7. **Abilita l'aggiornamento da interfaccia web** (opzionale ma consigliato):
 
 	```bash
 	sudo ./scripts/install-updater.sh
@@ -171,18 +181,60 @@ In alternativa puoi usare lo script dedicato:
 ./scripts/start-server.sh
 ```
 
-Servizi disponibili:
-- frontend (nginx): http://<IP_SERVER>
-- backend (accessibile anche direttamente): http://<IP_SERVER>:3000/api
+Servizio disponibile:
+- frontend (nginx), via Cloudflare Tunnel: `https://<dominio configurato>`
 
-Lo script di avvio stampa automaticamente gli indirizzi IP locali della macchina con gli URL di collegamento.
+Nessun container pubblica porte sull'host: backend e frontend sono raggiungibili solo dalla rete interna di Docker, e l'unico ingresso dall'esterno è il tunnel. Lo script di avvio stampa il dominio configurato.
 
 Comportamento rete:
 - il frontend usa path relativi (`/api`, `/assets`)
 - nginx inoltra `/api` e `/assets` al backend interno
-- non serve ricompilare il frontend quando cambia IP LAN del server
+- il dominio non è scritto da nessuna parte nel codice né nella build: cambiarlo è una modifica di configurazione, non una ricompilazione
 
-Nota sicurezza: l'app richiede login (utenti gestiti da Impostazioni > Utenti), ma il cookie di sessione viaggia in chiaro perché non c'è terminazione TLS, e la funzione di aggiornamento esegue codice preso da `origin/main` sull'host — tieni la VM raggiungibile solo dalla LAN, non esporla su internet.
+Nota sicurezza: la funzione di aggiornamento esegue codice preso da `origin/main` sull'host. È protetta dal login, ma ora che l'app è su internet un repository GitHub compromesso diventa una via d'attacco diretta: tieni protetto l'account GitHub del repository (2FA).
+
+## Dominio pubblico e Cloudflare Tunnel
+
+L'app è pubblicata su internet tramite **Cloudflare Tunnel**: è il demone `cloudflared` (un container dello stack) ad aprire una connessione in uscita verso Cloudflare, quindi **non serve nessun port forward sul router e nessuna porta in ingresso aperta sulla VM**. È anche il motivo della scelta: l'IP pubblico ha già le porte 80/443 inoltrate a un altro servizio, e un tunnel non entra in conflitto con quello.
+
+### Da fare su Cloudflare (una tantum)
+
+1. Registra o trasferisci il dominio, e aggiungilo al tuo account Cloudflare (piano **Free** sufficiente).
+2. Imposta i **nameserver del dominio su quelli indicati da Cloudflare**, presso il registrar dove il dominio è registrato. La propagazione richiede da pochi minuti a qualche ora; Cloudflare manda un'email a completamento.
+3. Se il dominio aveva già dei record DNS attivi, ricreali in Cloudflare **prima** di cambiare i nameserver, altrimenti i servizi che li usano smettono di rispondere.
+4. Scegli il sottodominio da dedicare a EasyLab (es. `easylab.iltuodominio.it`), diverso da quelli già in uso.
+
+Non serve creare a mano né il tunnel né il record DNS: li crea `scripts/install-tunnel.sh`.
+
+**Convivenza con altri sottodomini:** il tunnel rivendica un solo record DNS, quello del sottodominio indicato. Gli altri sottodomini restano record indipendenti e continuano a funzionare come prima — la regola `404` finale nell'ingress del tunnel riguarda solo il traffico che arriva a questo tunnel, non il dominio nel suo insieme. Se il sottodominio scelto esiste già, lo script si ferma e chiede conferma prima di sovrascriverlo.
+
+### Da fare sulla VM
+
+```bash
+sudo ./scripts/install-tunnel.sh
+```
+
+Lo script chiede il dominio, poi mostra un link di autorizzazione Cloudflare: aprilo in un browser (anche da un altro PC), accedi e seleziona il dominio. Al termine crea il tunnel, scrive `ops/cloudflared/config.yml` e il record DNS. Poi:
+
+```bash
+./scripts/start-server.sh
+```
+
+### Cambiare dominio in seguito
+
+Rilancia `sudo ./scripts/install-tunnel.sh` e indica il nuovo nome, poi `docker compose up -d`. Nessuna immagine da ricostruire: l'applicazione non conosce il proprio dominio (il frontend usa path relativi e il cookie di sessione non ha attributo `domain`, quindi si adatta da sé all'host che lo serve).
+
+### Se il tunnel non funziona
+
+```bash
+docker compose logs -f cloudflared
+```
+
+Per un accesso di emergenza dalla LAN, aggiungi temporaneamente `ports: ["80:80"]` al servizio `frontend` in `docker-compose.yml` e rilancia `docker compose up -d`. Ricordati di rimuoverlo dopo.
+
+### File da conservare
+
+`ops/cloudflared/` contiene `cert.pem` e le credenziali del tunnel: sono **segreti**, esclusi da git, e non finiscono nei backup dell'applicazione. Se perdi la VM, si rigenerano semplicemente rilanciando lo script di installazione.
 
 ## Arresto servizi
 
@@ -220,6 +272,8 @@ Ogni backup produce un archivio `db-backup-YYYYMMDD-HHMMSS.tar.gz`:
 ## Restore database
 
 Il ripristino è disponibile da Impostazioni > Backup database (solo per utenti amministratore): si può scegliere un backup già presente sul server oppure caricarne uno da file, con l'opzione per svuotare prima lo schema `public`. Richiede di digitare `RESTORE` per confermare, essendo un'operazione irreversibile.
+
+> **Limite di caricamento via web:** Cloudflare impone un tetto di **100 MB per richiesta** sul piano Free, quindi il caricamento di un backup più grande di così fallisce dall'interfaccia web (errore 413 generato da Cloudflare, non dall'app). Scegliere un backup **già presente sul server** non è soggetto al limite, perché non carica nulla. Per un archivio esterno più grande di 100 MB, copialo sulla VM e usa lo script da terminale qui sotto.
 
 In alternativa, da terminale:
 

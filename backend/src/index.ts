@@ -27,9 +27,27 @@ import { requestLogger } from "./middleware/requestLogger";
 
 const app = express();
 
-app.set("trust proxy", true);
+// `trust proxy` non può restare `true`: significherebbe accettare come veritiero
+// qualunque `X-Forwarded-For` in arrivo, e quindi lasciar scegliere al chiamante quale IP
+// far vedere al limitatore dei tentativi di login. L'unico hop di cui ci fidiamo è nginx
+// del container frontend, che è anche l'unico a poter raggiungere il backend. L'IP reale
+// del client si ricava da `CF-Connecting-IP` (vedi middleware/clientIp.ts).
+app.set("trust proxy", 1);
 app.use(requestLogger);
-app.use(cors({ origin: true, credentials: true }));
+
+// In produzione frontend e backend sono la stessa origin — nginx fa da proxy su /api e
+// /assets — quindi non esiste nessuna richiesta cross-origin e il CORS non serve: non
+// attivarlo è più sicuro che configurarlo, e toglie di mezzo l'unico valore che sarebbe
+// andato aggiornato a ogni cambio di dominio. Resta attivabile in sviluppo, dove Vite gira
+// su :5173 e chiama il backend su :3000, elencando le origin ammesse in CORS_ORIGIN.
+const corsOrigins = process.env.CORS_ORIGIN?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+if (corsOrigins?.length) {
+    app.use(cors({ origin: corsOrigins, credentials: true }));
+}
+
 app.use(compression());
 app.use(express.json());
 app.use(cookieParser());

@@ -4,6 +4,7 @@ import path from "node:path";
 import { and, asc, eq, lt, ne } from "drizzle-orm";
 import { db } from "../db";
 import { sessionTable, userTable } from "../db/schema";
+import { isLoginRateLimited, registerFailedLogin, registerSuccessfulLogin } from "./loginRateLimit";
 
 const dataDir = path.join(process.cwd(), "data");
 const initialAdminPasswordFilePath = path.join(dataDir, "initial-admin-password.txt");
@@ -14,8 +15,6 @@ const sessionDurationMs = 30 * 24 * 60 * 60 * 1000;
 // Alfabeto senza caratteri ambigui (0/O, 1/l/I, ecc.) per password leggibili a schermo.
 const generatedPasswordAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
 const generatedPasswordLength = 16;
-const loginRateLimitWindowMs = 15 * 60 * 1000;
-const loginRateLimitMaxAttempts = 10;
 const sessionCleanupIntervalMs = 60 * 60 * 1000;
 
 export class AuthManagerError extends Error {
@@ -144,31 +143,10 @@ export const ensureDefaultAdmin = async (): Promise<void> => {
     }
 };
 
-const loginAttemptsByIp = new Map<string, { count: number; resetAt: number }>();
-
 const assertLoginRateLimit = (ip: string): void => {
-    const now = Date.now();
-    const entry = loginAttemptsByIp.get(ip);
-
-    if (entry && entry.resetAt > now && entry.count >= loginRateLimitMaxAttempts) {
+    if (isLoginRateLimited(ip)) {
         throw new AuthManagerError("Troppi tentativi di accesso falliti. Riprova più tardi.", 429);
     }
-};
-
-const registerFailedLogin = (ip: string): void => {
-    const now = Date.now();
-    const entry = loginAttemptsByIp.get(ip);
-
-    if (!entry || entry.resetAt <= now) {
-        loginAttemptsByIp.set(ip, { count: 1, resetAt: now + loginRateLimitWindowMs });
-        return;
-    }
-
-    entry.count += 1;
-};
-
-const registerSuccessfulLogin = (ip: string): void => {
-    loginAttemptsByIp.delete(ip);
 };
 
 export const login = async (username: string, password: string, ip: string) => {

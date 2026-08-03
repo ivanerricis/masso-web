@@ -24,13 +24,15 @@ fi
 echo ""
 echo "Container avviati con successo."
 
-mapfile -t ips < <(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^$' | grep -v '^127\.' | grep -v '^169\.254\.')
+# Non si entra più dall'IP della VM: nessun container pubblica porte sull'host, l'unico
+# ingresso è il dominio pubblico servito da Cloudflare Tunnel.
+PUBLIC_DOMAIN="$(grep -E '^PUBLIC_DOMAIN=' .env 2>/dev/null | cut -d= -f2- || true)"
 
-if [ "${#ips[@]}" -gt 0 ]; then
-    primary_ip="${ips[0]}"
-    echo "Indirizzi di collegamento:"
-    echo "- Frontend: http://$primary_ip"
-    echo "- Backend:  http://$primary_ip:3000/api"
+if [ -n "$PUBLIC_DOMAIN" ]; then
+    echo "Indirizzo di collegamento: https://$PUBLIC_DOMAIN"
+    echo ""
+    echo "Se il sito non risponde, controlla lo stato del tunnel con:"
+    echo "  docker compose logs -f cloudflared"
 else
-    echo "Nessun indirizzo IPv4 trovato. Verifica l'IP della macchina manualmente."
+    echo "Nessun dominio configurato: esegui prima 'sudo scripts/install-tunnel.sh'."
 fi
