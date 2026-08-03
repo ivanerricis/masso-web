@@ -4,10 +4,13 @@
 // Usage: node reset-admin-password.js [username]  (default: admin)
 const crypto = require('crypto');
 const { Pool } = require('pg');
+// Dal modulo compilato invece di una copia locale: questo script aveva il proprio alfabeto
+// di generazione, rimasto indietro quando le password hanno dovuto contenere un numero e
+// un carattere speciale. Uno script di emergenza che consegna una password non conforme è
+// esattamente il momento peggiore per accorgersene.
+const { generateCompliantPassword } = require('./dist/src/services/passwordPolicy');
 
 const scryptKeyLength = 64;
-const generatedPasswordAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-const generatedPasswordLength = 16;
 
 const hashPassword = (password) =>
     new Promise((resolve, reject) => {
@@ -20,15 +23,6 @@ const hashPassword = (password) =>
             resolve(`${salt}:${derivedKey.toString('hex')}`);
         });
     });
-
-const generateRandomPassword = (length = generatedPasswordLength) => {
-    const bytes = crypto.randomBytes(length);
-    let password = '';
-    for (let i = 0; i < length; i += 1) {
-        password += generatedPasswordAlphabet[bytes[i] % generatedPasswordAlphabet.length];
-    }
-    return password;
-};
 
 async function main() {
     const username = process.argv[2] || 'admin';
@@ -44,7 +38,7 @@ async function main() {
         }
 
         const userId = rows[0].id;
-        const password = generateRandomPassword();
+        const password = generateCompliantPassword();
         const passwordHash = await hashPassword(password);
 
         await pool.query(

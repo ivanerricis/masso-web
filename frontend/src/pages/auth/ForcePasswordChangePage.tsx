@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { changeOwnPassword, getApiErrorMessage } from "@/lib/api"
+import { isPasswordCompliant, passwordRequirementsHint } from "@/lib/passwordPolicy"
 import { useAuth } from "@/components/use-auth"
 
 const ForcePasswordChangePage = () => {
@@ -27,8 +28,8 @@ const ForcePasswordChangePage = () => {
             return
         }
 
-        if (newPassword.length < 8) {
-            toast.error("La nuova password deve avere almeno 8 caratteri")
+        if (!isPasswordCompliant(newPassword)) {
+            toast.error(passwordRequirementsHint)
             return
         }
 
@@ -105,6 +106,7 @@ const ForcePasswordChangePage = () => {
                                     </Button>
                                 </div>
                             </div>
+                            <p className="text-xs text-muted-foreground">{passwordRequirementsHint}</p>
                         </div>
 
                         <div className="grid gap-2">

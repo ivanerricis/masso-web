@@ -5,6 +5,7 @@ import { and, asc, eq, lt, ne } from "drizzle-orm";
 import { db } from "../db";
 import { sessionTable, userTable } from "../db/schema";
 import { isLoginRateLimited, registerFailedLogin, registerSuccessfulLogin } from "./loginRateLimit";
+import { generateCompliantPassword } from "./passwordPolicy";
 
 const dataDir = path.join(process.cwd(), "data");
 const initialAdminPasswordFilePath = path.join(dataDir, "initial-admin-password.txt");
@@ -12,9 +13,6 @@ const initialAdminPasswordFilePath = path.join(dataDir, "initial-admin-password.
 const scryptKeyLength = 64;
 const sessionTokenBytes = 32;
 const sessionDurationMs = 30 * 24 * 60 * 60 * 1000;
-// Alfabeto senza caratteri ambigui (0/O, 1/l/I, ecc.) per password leggibili a schermo.
-const generatedPasswordAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-const generatedPasswordLength = 16;
 const sessionCleanupIntervalMs = 60 * 60 * 1000;
 
 export class AuthManagerError extends Error {
@@ -65,15 +63,6 @@ const verifyPassword = (password: string, storedHash: string): Promise<boolean> 
         });
     });
 
-const generateRandomPassword = (length = generatedPasswordLength): string => {
-    const bytes = crypto.randomBytes(length);
-    let password = "";
-    for (let i = 0; i < length; i += 1) {
-        password += generatedPasswordAlphabet[bytes[i] % generatedPasswordAlphabet.length];
-    }
-    return password;
-};
-
 const generateSessionToken = () => crypto.randomBytes(sessionTokenBytes).toString("hex");
 
 // Hash "esca" usato quando lo username non esiste, per far girare comunque scrypt e non
@@ -117,7 +106,7 @@ export const ensureDefaultAdmin = async (): Promise<void> => {
         return;
     }
 
-    const password = generateRandomPassword();
+    const password = generateCompliantPassword();
     const passwordHash = await hashPassword(password);
     await db.insert(userTable).values({ username: "admin", passwordHash, mustChangePassword: true });
 
@@ -275,7 +264,7 @@ export const listUsers = async (): Promise<PublicUser[]> => {
 };
 
 export const createUser = async (username: string) => {
-    const password = generateRandomPassword();
+    const password = generateCompliantPassword();
     const passwordHash = await hashPassword(password);
     const [user] = await db.insert(userTable).values({ username, passwordHash, mustChangePassword: true }).returning();
 
@@ -290,7 +279,7 @@ export const regeneratePassword = async (userId: number) => {
         throw new AuthManagerError("Utente non trovato", 404);
     }
 
-    const password = generateRandomPassword();
+    const password = generateCompliantPassword();
     const passwordHash = await hashPassword(password);
     await db.update(userTable).set({ passwordHash, mustChangePassword: true }).where(eq(userTable.id, userId));
     // La vecchia password smette di funzionare: chiunque fosse loggato con quell'account

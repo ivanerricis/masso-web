@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AuthManagerError, changeOwnPassword, deleteSession, login } from "../services/authManager";
 import { requireAuth, sessionCookieName, sessionCookieOptions } from "../middleware/requireAuth";
 import { getClientIp } from "../middleware/clientIp";
+import { isPasswordCompliant, passwordRequirementsMessage } from "../services/passwordPolicy";
 import { validate } from "./validation";
 
 const authRouter = Router();
@@ -29,7 +30,10 @@ const loginBodySchema = z
 const passwordBodySchema = z
     .object({
         currentPassword: z.string().min(1).max(512),
-        newPassword: z.string().min(8).max(512),
+        newPassword: z
+            .string()
+            .max(512)
+            .refine(isPasswordCompliant, { message: passwordRequirementsMessage }),
     })
     .strict();
 

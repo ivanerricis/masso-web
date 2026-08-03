@@ -11,6 +11,49 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-03 — Requisiti minimi delle password
+
+- **Il requisito era solo `min(8)`**, senza controlli di complessità. Andava bene finché si
+  entrava dalla LAN; con l'app pubblicata su un dominio quel campo è la porta d'ingresso da
+  internet. Il limitatore dei tentativi (5 ogni 15 minuti) rende lento un attacco a forza
+  bruta, ma le prime cinque prove sono proprio quelle che indovinano `password1`. Ora servono
+  8 caratteri **con almeno un numero e un carattere speciale**.
+  L'insieme dei simboli accettati è volutamente aperto — vale tutto ciò che non è lettera o
+  cifra, lettere accentate comprese — perché un elenco chiuso rifiuterebbe password già in
+  uso altrove, spingendo verso quelle più prevedibili.
+  → [backend/src/services/passwordPolicy.ts](../backend/src/services/passwordPolicy.ts),
+  [backend/src/routes/auth.ts](../backend/src/routes/auth.ts)
+
+- **Le password generate dall'app non avrebbero superato i nuovi requisiti:** l'alfabeto di
+  generazione conteneva solo lettere e cifre, quindi l'app avrebbe consegnato credenziali
+  che avrebbe rifiutato se digitate. Generazione e validazione ora stanno nello stesso
+  modulo, che non tocca il database ed è quindi verificabile senza una connessione attiva.
+  Cifra e simbolo sono garantiti per costruzione e poi mescolati (Fisher-Yates): lasciarli
+  in posizione fissa ridurrebbe a due i caratteri da indovinare. Colta l'occasione per
+  togliere la distorsione del modulo su un byte, che favoriva i primi caratteri
+  dell'alfabeto.
+  → [backend/src/services/passwordPolicy.ts](../backend/src/services/passwordPolicy.ts),
+  [backend/src/services/authManager.ts](../backend/src/services/authManager.ts)
+
+- **`reset-admin-password.js` aveva una terza copia della generazione**, con l'alfabeto
+  vecchio: uno script di emergenza che consegna una password non conforme è il momento
+  peggiore per accorgersene. Ora richiede il modulo compilato invece di duplicare la regola.
+  → [backend/reset-admin-password.js](../backend/reset-admin-password.js)
+
+- **Il frontend controllava `length < 8` in due punti separati**, con il messaggio scritto a
+  mano in entrambi. Regola e testo ora stanno in un solo file, mostrato anche sotto il campo
+  come promemoria: l'utente sa cosa serve prima di inviare, invece di scoprirlo dal
+  messaggio di errore. La duplicazione rispetto al backend resta voluta e annotata — il
+  controllo che vale è quello del server.
+  → [frontend/src/lib/passwordPolicy.ts](../frontend/src/lib/passwordPolicy.ts),
+  [frontend/src/pages/auth/ForcePasswordChangePage.tsx](../frontend/src/pages/auth/ForcePasswordChangePage.tsx),
+  [frontend/src/components/dialogs/settings/changePasswordDialog.tsx](../frontend/src/components/dialogs/settings/changePasswordDialog.tsx)
+
+> Le password già in uso non vengono invalidate: chi ne ha una non conforme continua a
+> entrare finché non la cambia. I nuovi requisiti valgono dal prossimo cambio password.
+
+---
+
 ## 2026-08-03 — Esposizione su dominio pubblico via Cloudflare Tunnel
 
 Fine della modalità "solo LAN": l'app viene pubblicata su un dominio, e le scorciatoie
