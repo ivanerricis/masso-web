@@ -1,0 +1,44 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="copper" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#EFC08D"/>
+      <stop offset="55%" stop-color="#D08B4E"/>
+      <stop offset="100%" stop-color="#A9632F"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E8E6DA"/>
+      <stop offset="100%" stop-color="#A9B3AE"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(256 256) scale(1.46) translate(-256 -256)">
+
+    <!-- open-end wrench -->
+    <g transform="rotate(-40 256 256)" fill="url(#copper)">
+      <!-- head with open jaw notched into the top edge -->
+      <path d="M 228 100
+               L 240 100 L 240 132 Q 240 141 249 141
+               L 263 141 Q 272 141 272 132 L 272 100
+               L 284 100 Q 302 100 302 118
+               L 302 156 Q 302 174 284 174
+               L 228 174 Q 210 174 210 156
+               L 210 118 Q 210 100 228 100 Z"/>
+      <!-- handle -->
+      <rect x="236" y="164" width="40" height="240" rx="20"/>
+      <!-- hanging-hole end -->
+      <path fill-rule="evenodd"
+            d="M 230 404 A 26 26 0 1 0 282 404 A 26 26 0 1 0 230 404 Z
+               M 246 404 A 10 10 0 1 0 266 404 A 10 10 0 1 0 246 404 Z"/>
+    </g>
+
+    <!-- flathead screwdriver -->
+    <g transform="rotate(40 256 256)">
+      <rect x="234" y="84" width="44" height="34" rx="6" fill="url(#steel)"/>
+      <rect x="242" y="112" width="28" height="146" rx="8" fill="url(#steel)"/>
+      <rect x="230" y="248" width="52" height="24" rx="9" fill="#6FB5A1"/>
+      <rect x="224" y="266" width="64" height="154" rx="30" fill="#8FE3CC"/>
+      <rect x="248" y="294" width="8" height="102" rx="4" fill="#57A08C" opacity="0.5"/>
+    </g>
+
+  </g>
+</svg>
