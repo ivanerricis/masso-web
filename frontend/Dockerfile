@@ -14,7 +14,11 @@ ENV VITE_LOGO_URL=$VITE_LOGO_URL
 
 RUN npm run build
 
-FROM nginx:alpine
+# Minore fissata, non `nginx:alpine`: quel tag non indica alcuna versione, quindi una
+# ricostruzione da zero (VM nuova, immagini rimosse) poteva portare un nginx maggiore
+# diverso da quello su cui gli header di sicurezza e le regole di cache sono stati
+# verificati. Dentro 1.31 le patch continuano ad arrivare; a cambiare riga si decide.
+FROM nginx:1.31-alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

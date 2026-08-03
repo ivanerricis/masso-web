@@ -11,6 +11,32 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-03 — Versione di nginx fissata nell'immagine del frontend
+
+- **`FROM nginx:alpine` non indicava alcuna versione.** Un tag Docker non è una versione, è
+  un'etichetta che l'autore a monte può spostare: quel testo oggi risolve a nginx 1.31.3, fra
+  un anno a qualcos'altro, e nel repository non restava traccia di cosa fosse stato
+  effettivamente collaudato. Una ricostruzione da zero — VM nuova, o immagini rimosse —
+  poteva quindi portare un nginx maggiore diverso da quello su cui sono stati verificati gli
+  header di sicurezza e le regole di cache. Ora `nginx:1.31-alpine`, la stessa versione già
+  in uso: dentro quella riga le patch continuano ad arrivare, cambiare riga diventa una
+  decisione invece di un effetto collaterale.
+  → [frontend/Dockerfile](../frontend/Dockerfile)
+
+- **Le altre immagini restano come sono, per motivi diversi fra loro.** `postgres:16` e
+  `node:24-*` hanno già fissato il numero maggiore, che è la cosa che conta (un salto a
+  Postgres 17 con formato dati incompatibile è il caso peggiore, ed è escluso).
+  `cloudflare/cloudflared:latest` fluttua di proposito: Cloudflare deprecia le versioni
+  vecchie del tunnel e può rifiutare i client obsoleti, quindi bloccarlo creerebbe un guasto
+  ad orologeria invece di prevenirne uno.
+  *Non fatto di proposito:* l'ancoraggio al digest (`@sha256:...`), l'unica difesa reale
+  contro un'immagine malevola pubblicata sotto lo stesso tag. Interrompe però l'arrivo
+  automatico delle patch e va mantenuto a mano: su un progetto con un solo manutentore, un
+  Postgres ancorato e dimenticato per due anni è messo peggio di uno che fluttua dentro `16`.
+  → [docker-compose.yml](../docker-compose.yml)
+
+---
+
 ## 2026-08-03 — Requisiti minimi delle password
 
 - **Il requisito era solo `min(8)`**, senza controlli di complessità. Andava bene finché si
