@@ -89,6 +89,13 @@ peggio che non fatte.
   serve solo a stamparlo all'avvio — quindi il cambio resta configurazione, mai una
   ricostruzione. Aggiunto a `edit-env.sh`, che riscrivendo `.env` dalla propria lista di
   chiavi altrimenti lo avrebbe cancellato a ogni esecuzione.
+  *Trappola trovata alla prima esecuzione reale:* `cloudflared tunnel login` **ignora
+  `--origincert`** quando decide dove scrivere il certificato, e usa sempre la propria
+  directory di default (`/home/nonroot/.cloudflared` nell'immagine ufficiale). Montando la
+  cartella dell'host altrove, il `cert.pem` finiva dentro il container `--rm` e spariva con
+  lui, facendo fallire il comando successivo con "cannot find a valid certificate". Ora
+  script e servizio compose montano entrambi su quel percorso: uno solo, quello che
+  cloudflared usa comunque.
   Il record DNS viene creato **senza** `--overwrite-dns` al primo tentativo, chiedendo
   conferma solo se esiste già: il dominio ospita altri sottodomini in uso, e un errore di
   battitura avrebbe altrimenti dirottato in silenzio uno di quelli su EasyLab.

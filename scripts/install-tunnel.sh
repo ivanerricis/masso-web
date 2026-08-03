@@ -20,6 +20,9 @@ TUNNEL_NAME="easylab"
 # L'immagine ufficiale gira come utente `nonroot`: i file di configurazione devono
 # appartenere a quell'uid, altrimenti il container non riesce a leggerli.
 CLOUDFLARED_UID=65532
+# Directory di default di cloudflared dentro l'immagine (la home di `nonroot`). Non è una
+# scelta nostra: `tunnel login` ci scrive il certificato a prescindere da ogni opzione.
+CLOUDFLARED_HOME="/home/nonroot/.cloudflared"
 CLOUDFLARED_IMAGE="cloudflare/cloudflared:latest"
 
 command -v docker >/dev/null 2>&1 || { echo "docker non trovato. Installa Docker Engine e riprova." >&2; exit 1; }
@@ -59,11 +62,16 @@ chown -R "$CLOUDFLARED_UID:$CLOUDFLARED_UID" "$CONFIG_DIR"
 
 # `run --rm` con la directory montata in scrittura: l'installazione è l'unico momento in
 # cui questi file vengono creati, a regime la compose li monta in sola lettura.
+#
+# Il mount deve stare esattamente su $CLOUDFLARED_HOME, non su un percorso a scelta:
+# `tunnel login` ignora --origincert per decidere dove *scrivere* il certificato e usa
+# sempre la propria directory di default. Montando altrove, il cert.pem finisce dentro il
+# container e sparisce con lui, e il comando successivo non lo trova.
 cloudflared_run() {
     docker run --rm -i -t \
-        -v "$CONFIG_DIR:/etc/cloudflared" \
+        -v "$CONFIG_DIR:$CLOUDFLARED_HOME" \
         "$CLOUDFLARED_IMAGE" \
-        --origincert /etc/cloudflared/cert.pem "$@"
+        "$@"
 }
 
 if [ ! -f "$CONFIG_DIR/cert.pem" ]; then
@@ -80,7 +88,7 @@ fi
 if [ ! -f "$CONFIG_DIR/$TUNNEL_NAME.json" ]; then
     echo ""
     echo "Creazione del tunnel \"$TUNNEL_NAME\"..."
-    cloudflared_run tunnel create --credentials-file "/etc/cloudflared/$TUNNEL_NAME.json" "$TUNNEL_NAME"
+    cloudflared_run tunnel create --credentials-file "$CLOUDFLARED_HOME/$TUNNEL_NAME.json" "$TUNNEL_NAME"
 else
     echo ""
     echo "Tunnel \"$TUNNEL_NAME\" già esistente, riuso le credenziali presenti."
@@ -95,7 +103,7 @@ cat > "$CONFIG_DIR/config.yml" <<EOF
 # Generato da scripts/install-tunnel.sh. Per cambiare dominio rilancia lo script:
 # modificarlo a mano non aggiorna il record DNS su Cloudflare.
 tunnel: $TUNNEL_NAME
-credentials-file: /etc/cloudflared/$TUNNEL_NAME.json
+credentials-file: $CLOUDFLARED_HOME/$TUNNEL_NAME.json
 
 ingress:
   - hostname: $PUBLIC_DOMAIN

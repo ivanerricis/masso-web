@@ -107,9 +107,13 @@ services:
     logging: *default-logging
     # --no-autoupdate: l'aggiornamento va col resto dello stack (`up --build` ripesca
     # l'immagine), non a sorpresa dentro un container in esecuzione.
-    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    # Il percorso è la directory di default di cloudflared (la home dell'utente `nonroot`
+    # dell'immagine): è lì che `tunnel login` scrive il certificato durante l'installazione,
+    # a prescindere dalle opzioni, quindi montare altrove significherebbe tenere le
+    # credenziali in un posto e cercarle in un altro.
+    command: tunnel --no-autoupdate --config /home/nonroot/.cloudflared/config.yml run
     volumes:
-      - ./ops/cloudflared:/etc/cloudflared:ro
+      - ./ops/cloudflared:/home/nonroot/.cloudflared:ro
     depends_on:
       frontend:
         condition: service_healthy
