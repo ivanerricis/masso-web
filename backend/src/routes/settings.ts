@@ -468,7 +468,11 @@ settingsRouter.post("/backup/restore/upload", requireAdmin, dumpUpload.single("d
     }
 });
 
-settingsRouter.get("/update", async (_req, res, next) => {
+// Le rotte di aggiornamento sono riservate all'amministratore, a differenza del resto
+// delle impostazioni: non modificano una preferenza, eseguono sull'host il codice presente
+// su origin/main e ricostruiscono lo stack. Con l'app raggiungibile da internet, un
+// singolo account utente compromesso non deve bastare per arrivarci.
+settingsRouter.get("/update", requireAdmin, async (_req, res, next) => {
     try {
         const status = await getUpdateStatus();
         res.json(status);
@@ -480,7 +484,7 @@ settingsRouter.get("/update", async (_req, res, next) => {
     }
 });
 
-settingsRouter.post("/update/run", async (_req, res, next) => {
+settingsRouter.post("/update/run", requireAdmin, async (_req, res, next) => {
     try {
         const status = await requestUpdate();
         res.status(202).json(status);
@@ -492,7 +496,7 @@ settingsRouter.post("/update/run", async (_req, res, next) => {
     }
 });
 
-settingsRouter.post("/update/check", async (_req, res, next) => {
+settingsRouter.post("/update/check", requireAdmin, async (_req, res, next) => {
     try {
         const status = await requestUpdateCheck();
         res.status(202).json(status);

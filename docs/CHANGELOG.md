@@ -40,6 +40,18 @@ peggio che non fatte.
   tabella dedicata costerebbe una migrazione per un guadagno marginale.
   → [backend/src/services/loginRateLimit.ts](../backend/src/services/loginRateLimit.ts)
 
+- **L'aggiornamento dell'app era lanciabile da qualsiasi utente autenticato**, non solo
+  dall'amministratore: `/settings/update/run` non aveva `requireAdmin`, e il pannello era
+  visibile a tutti nella UI (solo la sezione Utenti era filtrata). Non era un'incoerenza
+  del file — nelle impostazioni solo il ripristino backup era riservato all'admin — ma
+  quella rotta non cambia una preferenza: esegue sull'host il codice di `origin/main` e
+  ricostruisce lo stack. Con l'app su internet, un singolo account compromesso non deve
+  bastare per arrivarci. Ora le tre rotte `/settings/update*` richiedono `requireAdmin` e
+  la sezione è nascosta ai non-admin, insieme a "Utenti", tramite un elenco unico di
+  sezioni riservate invece di un controllo ripetuto per chiave.
+  → [backend/src/routes/settings.ts](../backend/src/routes/settings.ts),
+  [frontend/src/pages/settings/SettingsPage.tsx](../frontend/src/pages/settings/SettingsPage.tsx)
+
 - **Il registro delle azioni utente aveva una copia locale della stessa logica**, che
   prendeva la prima entry di `X-Forwarded-For`: un log di controllo in cui l'IP è deciso da
   chi compie l'azione non serve a niente. Ora usa la stessa funzione del limitatore.

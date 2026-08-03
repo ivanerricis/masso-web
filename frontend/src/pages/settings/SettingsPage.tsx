@@ -77,13 +77,19 @@ const settingsSections: Array<{
 const isSettingsSectionKey = (value: string | null): value is SettingsSectionKey =>
     value != null && (settingsSectionKeys as string[]).includes(value);
 
+// "update" è riservata all'amministratore come "users": non cambia una preferenza, esegue
+// sull'host il codice di origin/main e ricostruisce lo stack. Il backend la protegge con
+// requireAdmin; qui la si nasconde perché a un non-admin risponderebbe solo 403.
+const adminOnlySections = new Set<SettingsSectionKey>(["users", "update"]);
+
 const SettingsPage = () => {
     const { user } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const sectionFromUrl = searchParams.get("section");
+    const canOpenSection = (section: SettingsSectionKey) => !adminOnlySections.has(section) || Boolean(user?.isAdmin);
     const activeSection: SettingsSectionKey =
-        isSettingsSectionKey(sectionFromUrl) && (sectionFromUrl !== "users" || user?.isAdmin) ? sectionFromUrl : "theme";
-    const visibleSettingsSections = settingsSections.filter((section) => section.key !== "users" || user?.isAdmin);
+        isSettingsSectionKey(sectionFromUrl) && canOpenSection(sectionFromUrl) ? sectionFromUrl : "theme";
+    const visibleSettingsSections = settingsSections.filter((section) => canOpenSection(section.key));
 
     const setActiveSection = (section: SettingsSectionKey) => {
         setSearchParams((prev) => {
@@ -153,7 +159,7 @@ const SettingsPage = () => {
                     <EmailSettingsPanel />
                 ) : activeSection === "backup" ? (
                     <BackupSettingsPanel />
-                ) : activeSection === "update" ? (
+                ) : activeSection === "update" && user?.isAdmin ? (
                     <UpdateSettingsPanel />
                 ) : (
                     <LogsSettingsPanel />
