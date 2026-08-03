@@ -1,6 +1,6 @@
 # Changelog
 
-Registro dei miglioramenti tecnici di masso-web: cosa è cambiato, **perché**, e quali file
+Registro dei miglioramenti tecnici di easylab-web: cosa è cambiato, **perché**, e quali file
 sono coinvolti. Le voci più recenti stanno in cima.
 
 Il README resta la guida operativa (installazione, backup, aggiornamento); qui si annota
@@ -8,6 +8,32 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 > **Convenzione:** una voce per intervento, con la motivazione. Il "perché" è la parte che
 > non si ricostruisce dal diff — è il motivo per cui questo file esiste.
+
+---
+
+## 2026-08-03 — Rinominato il progetto da Masso a EasyLab
+
+- **Il nome "Masso" viene sostituito da "EasyLab"** ovunque nel codice: testo visibile
+  (titolo pagina, webmanifest, login, placeholder impostazioni, email di test), slug di
+  progetto (`masso-web` → `easylab-web` in `package.json`, chiavi `localStorage` del tema
+  e del calendario), unit systemd (`masso-update.*`/`masso-check-updates.*` →
+  `easylab-update.*`/`easylab-check-updates.*`), valori di esempio in `.env.example` e
+  `scripts/edit-env.sh` (`POSTGRES_USER`/`POSTGRES_DB`/`BACKUP_HOST_DIR`/`LAB_NAME`/
+  `LAB_EMAIL`), e i riferimenti in `README.md` e negli script di deploy
+  (`configure-static-ip.sh`, `install-updater.sh`, `restore-db.sh`).
+  Il repository GitHub e l'eventuale deploy esistente in `/opt/masso-web` restano da
+  rinominare a mano sul server (`gh` non era disponibile in questo ambiente per farlo
+  automaticamente); rinominare le unit systemd installate su una VM già in produzione
+  richiede di rilanciare `scripts/install-updater.sh` dopo il pull.
+  → [.env.example](../.env.example), [README.md](../README.md),
+  [frontend/index.html](../frontend/index.html),
+  [frontend/public/site.webmanifest](../frontend/public/site.webmanifest),
+  [frontend/package.json](../frontend/package.json),
+  [frontend/src/lib/theme.ts](../frontend/src/lib/theme.ts),
+  [frontend/src/lib/calendarView.ts](../frontend/src/lib/calendarView.ts),
+  [backend/src/services/companyManager.ts](../backend/src/services/companyManager.ts),
+  [backend/src/services/emailManager.ts](../backend/src/services/emailManager.ts),
+  [ops/systemd/](../ops/systemd/), [scripts/](../scripts/)
 
 ---
 

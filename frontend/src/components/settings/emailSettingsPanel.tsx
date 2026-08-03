@@ -311,7 +311,7 @@ const EmailSettingsPanel = () => {
                                         <Label htmlFor="emailFromName">Nome mittente</Label>
                                         <Input
                                             id="emailFromName"
-                                            placeholder="es: Masso"
+                                            placeholder="es: EasyLab"
                                             disabled={!formValues.enabled}
                                             value={formValues.fromName}
                                             onChange={(event) =>
@@ -325,7 +325,7 @@ const EmailSettingsPanel = () => {
                                         <Input
                                             id="emailFromAddress"
                                             type="email"
-                                            placeholder="es: info@masso.local"
+                                            placeholder="es: info@easylab.local"
                                             disabled={!formValues.enabled}
                                             value={formValues.fromEmail}
                                             onChange={(event) =>

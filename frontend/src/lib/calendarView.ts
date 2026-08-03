@@ -1,6 +1,6 @@
 import type { View } from "react-big-calendar";
 
-const viewStorageKey = "masso-web-calendar-view";
+const viewStorageKey = "easylab-web-calendar-view";
 const validViews: View[] = ["month", "week", "work_week", "day", "agenda"];
 const mobileBreakpoint = 768;
 

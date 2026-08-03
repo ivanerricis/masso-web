@@ -1,4 +1,4 @@
-# masso-web
+# easylab-web
 
 Applicazione full stack per la gestione di un laboratorio, composta da:
 - frontend React + Vite
@@ -31,11 +31,11 @@ In alternativa, produzione su CT Proxmox: vedi [Installazione su Proxmox CT (LXC
 	curl -fsSL https://get.docker.com | sudo sh
 	```
 
-3. **Clona il repository** sulla VM, ad es. in `/opt/masso-web`:
+3. **Clona il repository** sulla VM, ad es. in `/opt/easylab-web`:
 
 	```bash
-	sudo git clone https://github.com/ivanerricis/masso-web.git /opt/masso-web
-	cd /opt/masso-web
+	sudo git clone https://github.com/ivanerricis/easylab-web.git /opt/easylab-web
+	cd /opt/easylab-web
 	```
 
 	Il repository è **pubblico**, quindi basta l'URL HTTPS: non serve alcuna autenticazione (né deploy key SSH né token), sia per il clone iniziale sia per `git fetch`/`git reset` eseguiti da systemd durante gli aggiornamenti.
@@ -290,7 +290,7 @@ Il backend gira in un container senza accesso a `git`/Docker (scelta di sicurezz
 sudo ./scripts/install-updater.sh
 ```
 
-Lo script installa ed abilita le unit systemd in `ops/systemd/` (`masso-update.path`, `masso-check-updates.path`, `masso-check-updates.timer`), installa `jq` se mancante e imposta i permessi sulla cartella `ops/update/`.
+Lo script installa ed abilita le unit systemd in `ops/systemd/` (`easylab-update.path`, `easylab-check-updates.path`, `easylab-check-updates.timer`), installa `jq` se mancante e imposta i permessi sulla cartella `ops/update/`.
 
 Da quel momento, in Impostazioni > Aggiornamenti sono disponibili:
 - **Verifica aggiornamenti**: esegue un `git fetch` e mostra se è disponibile un nuovo commit, senza modificare nulla.
@@ -305,7 +305,7 @@ git reset --hard <sha>
 docker compose up --build -d
 ```
 
-Log dettagliati dell'ultima esecuzione: `journalctl -u masso-update.service` (aggiornamento) o `journalctl -u masso-check-updates.service` (verifica).
+Log dettagliati dell'ultima esecuzione: `journalctl -u easylab-update.service` (aggiornamento) o `journalctl -u easylab-check-updates.service` (verifica).
 
 Ogni aggiornamento esegue anche `docker builder prune -f --filter until=24h`, per evitare che la cache di build si accumuli indefinitamente sulla VM ad ogni rebuild.
 

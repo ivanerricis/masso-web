@@ -38,13 +38,13 @@ command -v docker >/dev/null 2>&1 || { echo "docker non trovato. Installa Docker
 
 chmod +x "$REPO_ROOT/scripts/update-server.sh" "$REPO_ROOT/scripts/check-updates.sh"
 
-for unit in masso-update.path masso-update.service masso-check-updates.path masso-check-updates.service masso-check-updates.timer; do
+for unit in easylab-update.path easylab-update.service easylab-check-updates.path easylab-check-updates.service easylab-check-updates.timer; do
     sed "s#__REPO_ROOT__#$REPO_ROOT#g" "$UNIT_SRC_DIR/$unit" > "$UNIT_DEST_DIR/$unit"
 done
 
 systemctl daemon-reload
-systemctl enable --now masso-update.path masso-check-updates.path masso-check-updates.timer
+systemctl enable --now easylab-update.path easylab-check-updates.path easylab-check-updates.timer
 
 echo ""
 echo "Updater installato."
-systemctl status masso-update.path masso-check-updates.path masso-check-updates.timer --no-pager || true
+systemctl status easylab-update.path easylab-check-updates.path easylab-check-updates.timer --no-pager || true

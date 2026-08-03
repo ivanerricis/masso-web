@@ -15,15 +15,15 @@ ENV_PATH="$REPO_ROOT/.env"
 
 declare -a KEYS=(POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB BACKUP_HOST_DIR LAB_NAME LAB_EMAIL LAB_ADDRESS LAB_PHONE LAB_LOGO_TEXT LAB_LOGO_URL)
 declare -A DEFAULTS=(
-    [POSTGRES_USER]="masso"
-    [POSTGRES_PASSWORD]="masso_password"
-    [POSTGRES_DB]="masso_db"
-    [BACKUP_HOST_DIR]="/opt/masso-web/backups"
-    [LAB_NAME]="Masso"
-    [LAB_EMAIL]="info@masso.local"
+    [POSTGRES_USER]="easylab"
+    [POSTGRES_PASSWORD]="easylab_password"
+    [POSTGRES_DB]="easylab_db"
+    [BACKUP_HOST_DIR]="/opt/easylab-web/backups"
+    [LAB_NAME]="EasyLab"
+    [LAB_EMAIL]="info@easylab.local"
     [LAB_ADDRESS]="Indirizzo laboratorio"
     [LAB_PHONE]="+39 000 000 0000"
-    [LAB_LOGO_TEXT]="Masso"
+    [LAB_LOGO_TEXT]="EasyLab"
     [LAB_LOGO_URL]="/assets/logo.jpg"
 )
 declare -A CURRENT=()

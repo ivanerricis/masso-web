@@ -28,7 +28,7 @@ describe("preferenze di tema salvate", () => {
    * successiva) non deve propagarsi come chiave sconosciuta al resto dell'app.
    */
   it("ignora un valore salvato che non corrisponde a nessun preset", () => {
-    localStorage.setItem("masso-web-theme-accent", "preset-inesistente")
+    localStorage.setItem("easylab-web-theme-accent", "preset-inesistente")
 
     expect(getStoredThemeAccentPreset()).toBeNull()
   })
@@ -47,7 +47,7 @@ describe("preferenze di tema salvate", () => {
     setStoredThemeAccentPreset("ocean")
     setStoredThemeAccentPreset("default")
 
-    expect(localStorage.getItem("masso-web-theme-accent")).toBeNull()
+    expect(localStorage.getItem("easylab-web-theme-accent")).toBeNull()
     expect(getStoredThemeAccentPreset()).toBeNull()
   })
 
@@ -61,26 +61,26 @@ describe("preferenze di tema salvate", () => {
   it("righe per pagina: default a 10 e valori non validi scartati", () => {
     expect(getStoredTableRowsPerPage()).toBe(10)
 
-    localStorage.setItem("masso-web-table-rows-per-page", "999")
+    localStorage.setItem("easylab-web-table-rows-per-page", "999")
     expect(getStoredTableRowsPerPage()).toBe(10)
 
     setStoredTableRowsPerPage(50)
     expect(getStoredTableRowsPerPage()).toBe(50)
 
     setStoredTableRowsPerPage(10)
-    expect(localStorage.getItem("masso-web-table-rows-per-page")).toBeNull()
+    expect(localStorage.getItem("easylab-web-table-rows-per-page")).toBeNull()
   })
 
   it("densità e dimensione carattere non valide non vengono restituite", () => {
-    localStorage.setItem("masso-web-table-density", "gigante")
-    localStorage.setItem("masso-web-font-size", "enorme")
+    localStorage.setItem("easylab-web-table-density", "gigante")
+    localStorage.setItem("easylab-web-font-size", "enorme")
 
     expect(getStoredTableDensity()).toBeNull()
     expect(getStoredFontSize()).toBeNull()
   })
 
   it("raggio degli angoli non valido non viene restituito", () => {
-    localStorage.setItem("masso-web-corner-radius", "ovale")
+    localStorage.setItem("easylab-web-corner-radius", "ovale")
 
     expect(getStoredCornerRadius()).toBeNull()
   })

@@ -1,5 +1,5 @@
 [Unit]
-Description=Run masso-web update (git pull + docker compose rebuild)
+Description=Run easylab-web update (git pull + docker compose rebuild)
 
 [Service]
 Type=oneshot

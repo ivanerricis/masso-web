@@ -121,7 +121,7 @@ apply_now_prompt() {
 
 if command -v netplan >/dev/null 2>&1 && ls /etc/netplan/*.yaml >/dev/null 2>&1; then
     echo "Rilevato netplan."
-    NETPLAN_FILE="/etc/netplan/99-masso-static.yaml"
+    NETPLAN_FILE="/etc/netplan/99-easylab-static.yaml"
 
     IFS=',' read -ra DNS_ARRAY <<< "$DNS_INPUT"
     DNS_YAML_LIST="$(printf '"%s", ' "${DNS_ARRAY[@]}")"
@@ -200,7 +200,7 @@ elif [ -f /etc/network/interfaces ] && systemctl is-active --quiet networking 2>
 
 elif systemctl is-active --quiet systemd-networkd 2>/dev/null; then
     echo "Rilevato systemd-networkd."
-    NETWORKD_FILE="/etc/systemd/network/99-masso-static.network"
+    NETWORKD_FILE="/etc/systemd/network/99-easylab-static.network"
 
     IFS=',' read -ra DNS_ARRAY <<< "$DNS_INPUT"
     DNS_LINES=""

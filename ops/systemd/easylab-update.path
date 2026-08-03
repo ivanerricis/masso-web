@@ -1,9 +1,9 @@
 [Unit]
-Description=Watch for masso-web update trigger
+Description=Watch for easylab-web update trigger
 
 [Path]
 PathExists=__REPO_ROOT__/ops/update/apply.trigger
-Unit=masso-update.service
+Unit=easylab-update.service
 
 [Install]
 WantedBy=multi-user.target

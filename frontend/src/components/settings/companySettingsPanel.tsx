@@ -175,7 +175,7 @@ const CompanySettingsPanel = () => {
                                     <Label htmlFor="companyName">Nome</Label>
                                     <Input
                                         id="companyName"
-                                        placeholder="es: Masso"
+                                        placeholder="es: EasyLab"
                                         value={formValues.name}
                                         onChange={(event) =>
                                             setFormValues((prev) => ({ ...prev, name: event.target.value }))
@@ -188,7 +188,7 @@ const CompanySettingsPanel = () => {
                                     <Input
                                         id="companyEmail"
                                         type="email"
-                                        placeholder="es: info@masso.local"
+                                        placeholder="es: info@easylab.local"
                                         value={formValues.email}
                                         onChange={(event) =>
                                             setFormValues((prev) => ({ ...prev, email: event.target.value }))

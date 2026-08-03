@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for easylab-web update-check trigger (on-demand from the UI)
+
+[Path]
+PathExists=__REPO_ROOT__/ops/update/check.trigger
+Unit=easylab-check-updates.service
+
+[Install]
+WantedBy=multi-user.target

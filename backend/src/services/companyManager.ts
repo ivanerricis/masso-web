@@ -23,8 +23,8 @@ export class CompanyManagerError extends Error {
 // Valori identici ai default storici di LAB_NAME/LAB_EMAIL/LAB_ADDRESS/LAB_PHONE in config/lab.ts,
 // così il primo avvio senza company-settings.json non cambia nulla per chi già usa il .env.
 const defaultState: CompanySettingsState = {
-    name: process.env.LAB_NAME ?? "Masso",
-    email: process.env.LAB_EMAIL ?? "info@masso.local",
+    name: process.env.LAB_NAME ?? "EasyLab",
+    email: process.env.LAB_EMAIL ?? "info@easylab.local",
     address: process.env.LAB_ADDRESS ?? "Indirizzo laboratorio",
     phone: process.env.LAB_PHONE ?? "+39 000 000 0000",
 };

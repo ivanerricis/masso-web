@@ -1,5 +1,5 @@
 [Unit]
-Description=Check for masso-web updates (git fetch only, no changes applied)
+Description=Check for easylab-web updates (git fetch only, no changes applied)
 
 [Service]
 Type=oneshot

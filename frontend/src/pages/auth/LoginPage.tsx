@@ -47,7 +47,7 @@ const LoginPage = () => {
             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle className="text-2xl">Accedi</CardTitle>
-                    <CardDescription>Inserisci le tue credenziali per accedere a Masso.</CardDescription>
+                    <CardDescription>Inserisci le tue credenziali per accedere a EasyLab.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form

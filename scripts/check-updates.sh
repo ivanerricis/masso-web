@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Checks whether an update is available: git fetch + compare local vs origin/main HEAD.
-# Never touches the working tree. Triggered by masso-check-updates.path (on-demand from
-# the UI) and masso-check-updates.timer (every 30 min) — see ops/systemd/.
+# Never touches the working tree. Triggered by easylab-check-updates.path (on-demand from
+# the UI) and easylab-check-updates.timer (every 30 min) — see ops/systemd/.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"

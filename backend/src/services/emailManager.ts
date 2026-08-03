@@ -193,8 +193,8 @@ export const testEmailConnection = async (config: EmailConnectionTestConfig) => 
         await transporter.sendMail({
             from: config.fromName ? `"${config.fromName}" <${config.fromEmail}>` : config.fromEmail,
             to: config.fromEmail,
-            subject: "Email di test - Masso",
-            text: "Questa è una email di test per verificare le impostazioni SMTP configurate in Masso. Se la ricevi, la configurazione funziona correttamente.",
+            subject: "Email di test - EasyLab",
+            text: "Questa è una email di test per verificare le impostazioni SMTP configurate in EasyLab. Se la ricevi, la configurazione funziona correttamente.",
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : "Invio email di test non riuscito";

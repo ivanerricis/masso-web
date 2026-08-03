@@ -70,7 +70,7 @@ const BackupSmbFields = ({ panel }: { panel: BackupPanel }) => {
           <Label htmlFor="smbPath">Sottocartella (opzionale)</Label>
           <Input
             id="smbPath"
-            placeholder="es: masso-web"
+            placeholder="es: easylab-web"
             disabled={!formValues.smbEnabled}
             value={formValues.smbPath}
             onChange={(event) =>

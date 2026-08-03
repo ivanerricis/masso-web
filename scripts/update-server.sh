@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Applies an update: git reset --hard origin/main + docker compose rebuild.
-# Triggered by masso-update.path (see ops/systemd/) when ops/update/apply.trigger appears.
+# Triggered by easylab-update.path (see ops/systemd/) when ops/update/apply.trigger appears.
 # Never add `git clean` here: untracked paths (.env, backend/data, backend/backups,
 # ops/update) must survive an update.
 
@@ -54,7 +54,7 @@ write_status() {
 on_exit() {
     local exit_code=$?
     if [ "$exit_code" -ne 0 ]; then
-        write_status "failed" "failed" "Aggiornamento fallito (exit $exit_code). Dettagli: journalctl -u masso-update.service"
+        write_status "failed" "failed" "Aggiornamento fallito (exit $exit_code). Dettagli: journalctl -u easylab-update.service"
     fi
     rm -f "$LOG_FILE"
 }

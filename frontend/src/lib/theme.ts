@@ -57,16 +57,16 @@ export type TableRowsPerPage = {
     description: string;
 };
 
-const accentStorageKey = "masso-web-theme-accent";
-const tableRowIntensityStorageKey = "masso-web-table-row-intensity";
+const accentStorageKey = "easylab-web-theme-accent";
+const tableRowIntensityStorageKey = "easylab-web-table-row-intensity";
 const tableRowIntensityAttribute = "data-table-row-intensity";
-const cornerRadiusStorageKey = "masso-web-corner-radius";
+const cornerRadiusStorageKey = "easylab-web-corner-radius";
 const defaultRadius = "0.3375rem";
-const tableDensityStorageKey = "masso-web-table-density";
+const tableDensityStorageKey = "easylab-web-table-density";
 const tableDensityAttribute = "data-table-density";
-const fontSizeStorageKey = "masso-web-font-size";
+const fontSizeStorageKey = "easylab-web-font-size";
 const fontSizeAttribute = "data-font-size";
-const tableRowsPerPageStorageKey = "masso-web-table-rows-per-page";
+const tableRowsPerPageStorageKey = "easylab-web-table-rows-per-page";
 
 export const cornerRadiusPresets: CornerRadiusPreset[] = [
     {
