@@ -11,6 +11,23 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-03 — Manifest completato per l'installazione come app (Chrome/Brave)
+
+- **Il `site.webmanifest` aggiunto in precedenza (voce sotto) non bastava a far comparire
+  l'icona di installazione** di Chrome/Brave: mancavano `start_url`, `scope` e `id`, campi
+  che i criteri di installabilità di Chromium richiedono esplicitamente (senza `start_url`
+  il browser non sa quale URL aprire dall'icona sulla home/desktop). Aggiunti insieme a
+  `lang: "it"`. Non è stato aggiunto un service worker: non serve più ai criteri di
+  installabilità attuali di Chromium, ed evita il rischio di cache-obsoleta con la feature
+  di auto-update già presente (vedi il commento su `/index.html` in `nginx.conf`).
+  **Nota:** l'icona di installazione compare solo su un'origine "sicura" (HTTPS o
+  `localhost`) — da un altro dispositivo in LAN via IP su HTTP semplice (situazione attuale,
+  vedi [[project_internet_exposure_plan]]) Chrome/Brave non la mostrano; funziona già oggi
+  aprendo il sito da `localhost` sulla stessa macchina del server.
+  → [frontend/public/site.webmanifest](../frontend/public/site.webmanifest)
+
+---
+
 ## 2026-08-03 — Rinominato il progetto da Masso a EasyLab
 
 - **Il nome "Masso" viene sostituito da "EasyLab"** ovunque nel codice: testo visibile
