@@ -4,15 +4,15 @@ import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
 import LoadingPage from "@/components/loadingPage";
-import { createTechnician, deleteTechnician, getApiErrorMessage, updateTechnician } from "@/lib/api";
+import { createTechnician, deleteTechnician, getApiErrorMessage, listTechnicians, updateTechnician } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { TechnicianDto } from "@/types/dtos";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { technicianColumns } from "./components/technician-columns";
-import TechniciansFilters from "./components/technicians-filters";
+import SearchInput from "@/components/search-input";
 import TechniciansTable from "./components/technicians-table";
-import { useTechniciansRows } from "./hooks/useTechniciansRows";
+import { useSearchableRows } from "@/hooks/useSearchableRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
@@ -27,10 +27,18 @@ const TechniciansPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
-    const { technicianRows, totalItems, totalPages, isLoading, loadTechnicians } = useTechniciansRows({
+    const {
+        rows: technicianRows,
+        totalItems,
+        totalPages,
+        isLoading,
+        reload: loadTechnicians,
+    } = useSearchableRows<TechnicianDto>({
+        fetchRows: listTechnicians,
         searchText,
         currentPage,
         pageSize,
+        errorMessage: "Impossibile caricare i tecnici",
     });
 
     const handleCreateTechnician = async (values: Record<string, string | boolean>) => {
@@ -148,7 +156,7 @@ const TechniciansPage = () => {
                 onConfirm={handleDeleteTechnician}
             />
 
-            <TechniciansFilters searchText={searchText} onSearchTextChange={setSearchText} />
+            <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca tecnico..." />
 
             <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <div className="min-h-0 flex-1 overflow-y-auto">
@@ -169,9 +177,11 @@ const TechniciansPage = () => {
                 />
             </div>
 
-            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+            {isLoading ? (
+                <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+            ) : null}
         </div>
     );
-}
+};
 
 export default TechniciansPage;

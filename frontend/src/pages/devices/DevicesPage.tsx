@@ -4,14 +4,14 @@ import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
-import { createDevice, deleteDevice, getApiErrorMessage, updateDevice } from "@/lib/api";
+import { createDevice, deleteDevice, getApiErrorMessage, listDevices, updateDevice } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { DeviceDto } from "@/types/dtos";
 import { toast } from "sonner";
 import { deviceColumns } from "./components/device-columns";
-import DevicesFilters from "./components/devices-filters";
+import SearchInput from "@/components/search-input";
 import DevicesTable from "./components/devices-table";
-import { useDevicesRows } from "./hooks/useDevicesRows";
+import { useSearchableRows } from "@/hooks/useSearchableRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
@@ -25,10 +25,18 @@ const DevicesPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
-    const { deviceRows, totalItems, totalPages, isLoading, loadDevices } = useDevicesRows({
+    const {
+        rows: deviceRows,
+        totalItems,
+        totalPages,
+        isLoading,
+        reload: loadDevices,
+    } = useSearchableRows<DeviceDto>({
+        fetchRows: listDevices,
         searchText,
         currentPage,
         pageSize,
+        errorMessage: "Impossibile caricare i dispositivi",
     });
 
     const handleCreateDevice = async (values: Record<string, string | boolean>) => {
@@ -96,7 +104,9 @@ const DevicesPage = () => {
             <PageHeader
                 title="Dispositivi"
                 description="Gestisci i dispositivi del laboratorio."
-                action={<CreateEntityButton label="Crea nuovo dispositivo" onClick={() => setIsCreateDialogOpen(true)} />}
+                action={
+                    <CreateEntityButton label="Crea nuovo dispositivo" onClick={() => setIsCreateDialogOpen(true)} />
+                }
             />
 
             <CreateDeviceDialog
@@ -136,7 +146,7 @@ const DevicesPage = () => {
                 onConfirm={handleDeleteDevice}
             />
 
-            <DevicesFilters searchText={searchText} onSearchTextChange={setSearchText} />
+            <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca dispositivo..." />
 
             <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <div className="min-h-0 flex-1 overflow-y-auto">
@@ -156,9 +166,11 @@ const DevicesPage = () => {
                 />
             </div>
 
-            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+            {isLoading ? (
+                <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+            ) : null}
         </div>
     );
-}
+};
 
 export default DevicesPage;

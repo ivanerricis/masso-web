@@ -1,6 +1,5 @@
-﻿import EntityCardList from "@/components/entity-card-list";
+﻿import EntityTable from "@/components/entity-table";
 import TableActionButton from "@/components/table-action-button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { CustomerDto } from "@/types/dtos";
 import { ClipboardList, HardHat, Pencil, Printer, Trash2 } from "lucide-react";
 import type { CustomerColumn } from "./customer-columns";
@@ -85,53 +84,13 @@ const CustomersTable = ({
     );
 
     return (
-        <>
-        <Table className="hidden sm:table bg-background">
-            <TableHeader className="w-full">
-                <TableRow>
-                    {columns.map((column) => (
-                        <TableHead key={column.key} className={column.className}>
-                            {column.header}
-                        </TableHead>
-                    ))}
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {rows.length === 0 ? (
-                    <TableRow>
-                        <TableCell colSpan={columns.length} className="py-6 text-center text-muted-foreground">
-                            Nessun cliente disponibile.
-                        </TableCell>
-                    </TableRow>
-                ) : (
-                    rows.map((row) => (
-                        <TableRow key={row.id}>
-                            {columns.map((column) => (
-                                <TableCell key={`${row.id}-${column.key}`} className={column.className}>
-                                    {column.key === "actions" ? (
-                                        <div className="flex items-center justify-end gap-2">
-                                            {renderRowActions(row)}
-                                        </div>
-                                    ) : (
-                                        column.render(row)
-                                    )}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    ))
-                )}
-            </TableBody>
-        </Table>
-
-        <EntityCardList
-            className="sm:hidden"
-            columns={columns.filter((column) => column.key !== "actions")}
+        <EntityTable
+            columns={columns}
             rows={rows}
             getRowKey={(row) => row.id}
-            renderActions={renderRowActions}
             emptyMessage="Nessun cliente disponibile."
+            renderRowActions={renderRowActions}
         />
-        </>
     );
 };
 

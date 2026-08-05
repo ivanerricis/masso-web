@@ -4,14 +4,14 @@ import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
-import { createIssue, deleteIssue, getApiErrorMessage, updateIssue } from "@/lib/api";
+import { createIssue, deleteIssue, getApiErrorMessage, listIssues, updateIssue } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { IssueDto } from "@/types/dtos";
 import { toast } from "sonner";
 import { issueColumns } from "./components/issue-columns";
-import IssuesFilters from "./components/issues-filters";
+import SearchInput from "@/components/search-input";
 import IssuesTable from "./components/issues-table";
-import { useIssuesRows } from "./hooks/useIssuesRows";
+import { useSearchableRows } from "@/hooks/useSearchableRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
@@ -25,10 +25,18 @@ const IssuesPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
-    const { issueRows, totalItems, totalPages, isLoading, loadIssues } = useIssuesRows({
+    const {
+        rows: issueRows,
+        totalItems,
+        totalPages,
+        isLoading,
+        reload: loadIssues,
+    } = useSearchableRows<IssueDto>({
+        fetchRows: listIssues,
         searchText,
         currentPage,
         pageSize,
+        errorMessage: "Impossibile caricare i difetti",
     });
 
     const handleCreateIssue = async (values: Record<string, string | boolean>) => {
@@ -135,7 +143,7 @@ const IssuesPage = () => {
                 onConfirm={handleDeleteIssue}
             />
 
-            <IssuesFilters searchText={searchText} onSearchTextChange={setSearchText} />
+            <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca difetto..." />
 
             <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <div className="min-h-0 flex-1 overflow-y-auto">
@@ -155,9 +163,11 @@ const IssuesPage = () => {
                 />
             </div>
 
-            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+            {isLoading ? (
+                <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+            ) : null}
         </div>
     );
-}
+};
 
 export default IssuesPage;

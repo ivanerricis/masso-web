@@ -1,5 +1,13 @@
-import path from "node:path";
 import pdfmake from "pdfmake";
+import {
+    buildCustomerSummaryHeader,
+    buildCustomerSummaryInfoSection,
+    dualFieldRow,
+    loadImageDataUrl,
+    pdfStyles,
+    sectionBarRow,
+    tableLayout,
+} from "./pdf/shared";
 
 export type InterventionType = "consegna_materiale" | "intervento_sede" | "intervento_remoto";
 export type InterventionStatus = "programmato" | "in_lavorazione" | "completato";
@@ -47,19 +55,6 @@ export type CustomerInterventionsPrintData = {
     interventionCount: number;
     interventions: CustomerInterventionSummaryItem[];
 };
-
-const pdfmakeRoot = path.dirname(require.resolve("pdfmake/package.json"));
-
-const fontDescriptors = {
-    Roboto: {
-        normal: path.join(pdfmakeRoot, "fonts", "Roboto", "Roboto-Regular.ttf"),
-        bold: path.join(pdfmakeRoot, "fonts", "Roboto", "Roboto-Medium.ttf"),
-        italics: path.join(pdfmakeRoot, "fonts", "Roboto", "Roboto-Italic.ttf"),
-        bolditalics: path.join(pdfmakeRoot, "fonts", "Roboto", "Roboto-MediumItalic.ttf"),
-    },
-};
-
-pdfmake.addFonts(fontDescriptors);
 
 const formatInterventionType = (value: InterventionType) => {
     if (value === "consegna_materiale") {
@@ -114,30 +109,6 @@ const formatHoursWorked = (startTime: string | null, endTime: string | null) => 
 
     return ((end - start) / 60).toFixed(2).replace(".", ",");
 };
-
-const tableLayout = {
-    hLineWidth: () => 1,
-    vLineWidth: () => 1,
-    hLineColor: () => "#111",
-    vLineColor: () => "#111",
-    paddingLeft: () => 5,
-    paddingRight: () => 5,
-    paddingTop: () => 4,
-    paddingBottom: () => 4,
-};
-
-const sectionBarRow = (title: string, colSpan: number) => {
-    const row = new Array(colSpan).fill({});
-    row[0] = { text: title, style: "sectionBar", colSpan, alignment: "center", fillColor: "#E7ECF3" };
-    return row;
-};
-
-const dualFieldRow = (label1: string, value1: string, label2: string, value2: string) => [
-    { text: label1, style: "label" },
-    { text: value1, style: "value" },
-    { text: label2, style: "label" },
-    { text: value2, style: "value" },
-];
 
 const buildHeader = (intervention: InterventionPrintData, logoDataUrl: string | null) => ({
     columns: [
@@ -274,87 +245,6 @@ const buildSignatureSection = () => ({
     margin: [0, 24, 0, 0],
 });
 
-const buildCustomerSummaryMetaBlock = (customer: CustomerInterventionsPrintData) => ({
-    table: {
-        widths: [140],
-        body: [
-            [
-                {
-                    stack: [
-                        { text: `Cliente #${customer.customerId}`, style: "metaTitle", alignment: "right" },
-                        ...(customer.rangeLabel
-                            ? [{ text: customer.rangeLabel, style: "metaDate", alignment: "right" as const }]
-                            : []),
-                        { text: `${customer.interventionCount} interventi`, style: "metaDate", alignment: "right" },
-                    ],
-                },
-            ],
-        ],
-    },
-    layout: {
-        hLineWidth: () => 1,
-        vLineWidth: () => 1,
-        hLineColor: () => "#2A75B9",
-        vLineColor: () => "#2A75B9",
-        paddingLeft: () => 8,
-        paddingRight: () => 8,
-        paddingTop: () => 4,
-        paddingBottom: () => 4,
-    },
-    margin: [0, 0, 0, 0],
-});
-
-const buildCustomerSummaryHeader = (customer: CustomerInterventionsPrintData, logoDataUrl: string | null) => ({
-    columns: [
-        {
-            width: "*",
-            columns: [
-                ...(logoDataUrl
-                    ? [{ width: 56, image: logoDataUrl, fit: [52, 52], margin: [0, 0, 0, 0] }]
-                    : [{ width: 56, text: "" }]),
-                {
-                    width: "*",
-                    stack: [
-                        { text: customer.labName, style: "brandName" },
-                        {
-                            text: `${customer.labAddress}\n${customer.labEmail}\n${customer.labPhone}`,
-                            style: "brandInfo",
-                        },
-                    ],
-                    margin: [0, 0, 0, 0],
-                },
-            ],
-        },
-        {
-            width: "auto",
-            ...buildCustomerSummaryMetaBlock(customer),
-        },
-    ],
-    columnGap: 12,
-    margin: [0, 0, 0, 8],
-});
-
-const buildCustomerSummaryInfoSection = (customer: CustomerInterventionsPrintData) => ({
-    table: {
-        widths: [90, "*", 90, "*"],
-        body: [
-            sectionBarRow("CLIENTE", 4),
-            dualFieldRow("Cliente", customer.customerName, "Telefono", customer.customerPhone),
-            // L'email prende tutta la riga: e' un token che non va a capo e in mezza
-            // colonna costringerebbe la tabella a sforare il margine destro.
-            // Il numero di interventi e' gia' nel riquadro in alto.
-            [
-                { text: "Email", style: "label" },
-                { text: customer.customerEmail || "-", style: "value", colSpan: 3 },
-                {},
-                {},
-            ],
-        ],
-    },
-    layout: tableLayout,
-    margin: [0, 0, 0, 8],
-});
-
 type SummaryTableCell = {
     text?: string;
     style?: string;
@@ -419,22 +309,6 @@ const buildCustomerInterventionsTable = (interventions: CustomerInterventionSumm
     };
 };
 
-const loadImageDataUrl = async (imageUrl: string) => {
-    try {
-        const response = await fetch(imageUrl);
-
-        if (!response.ok) {
-            return null;
-        }
-
-        const contentType = response.headers.get("content-type") ?? "image/png";
-        const buffer = Buffer.from(await response.arrayBuffer());
-        return `data:${contentType};base64,${buffer.toString("base64")}`;
-    } catch {
-        return null;
-    }
-};
-
 export const createInterventionPdfBuffer = async (intervention: InterventionPrintData) => {
     const logoDataUrl = await loadImageDataUrl(intervention.labLogoUrl);
     const hoursSection = buildTechnicianHoursSection(intervention);
@@ -455,40 +329,7 @@ export const createInterventionPdfBuffer = async (intervention: InterventionPrin
             buildLegalNoticeSection(),
             buildSignatureSection(),
         ],
-        styles: {
-            brandName: {
-                fontSize: 15,
-                bold: true,
-                color: "#2A75B9",
-            },
-            brandInfo: {
-                fontSize: 10.5,
-                lineHeight: 1.25,
-            },
-            sectionTitle: {
-                fontSize: 11,
-                bold: true,
-                color: "#2A75B9",
-            },
-            sectionBar: {
-                fontSize: 10.5,
-                bold: true,
-                color: "#2A75B9",
-            },
-            label: {
-                fontSize: 9,
-                color: "#555555",
-            },
-            value: {
-                fontSize: 11.75,
-                bold: true,
-            },
-            fineprint: {
-                fontSize: 7.5,
-                italics: true,
-                color: "#555555",
-            },
-        },
+        styles: pdfStyles,
     };
 
     const pdfDocument = pdfmake.createPdf(documentDefinition);
@@ -508,47 +349,11 @@ export const createCustomerInterventionsPdfBuffer = async (customer: CustomerInt
             color: "#111111",
         },
         content: [
-            buildCustomerSummaryHeader(customer, logoDataUrl),
+            buildCustomerSummaryHeader(customer, logoDataUrl, `${customer.interventionCount} interventi`),
             buildCustomerSummaryInfoSection(customer),
             buildCustomerInterventionsTable(customer.interventions),
         ],
-        styles: {
-            brandName: {
-                fontSize: 15,
-                bold: true,
-                color: "#2A75B9",
-            },
-            brandInfo: {
-                fontSize: 10.5,
-                lineHeight: 1.25,
-            },
-            metaTitle: {
-                fontSize: 13,
-                bold: true,
-                color: "#2A75B9",
-            },
-            metaDate: {
-                fontSize: 10.5,
-            },
-            sectionBar: {
-                fontSize: 10.5,
-                bold: true,
-                color: "#2A75B9",
-            },
-            label: {
-                fontSize: 9,
-                color: "#555555",
-            },
-            value: {
-                fontSize: 11.75,
-                bold: true,
-            },
-            summaryHeader: {
-                fontSize: 9,
-                bold: true,
-                color: "#2A75B9",
-            },
-        },
+        styles: pdfStyles,
     };
 
     const pdfDocument = pdfmake.createPdf(documentDefinition);

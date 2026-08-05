@@ -4,15 +4,21 @@ import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
-import { createCollaborator, deleteCollaborator, getApiErrorMessage, updateCollaborator } from "@/lib/api";
+import {
+    createCollaborator,
+    deleteCollaborator,
+    getApiErrorMessage,
+    listCollaborators,
+    updateCollaborator,
+} from "@/lib/api";
 import { useState } from "react";
 import type { CollaboratorDto } from "@/types/dtos";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { collaboratorColumns } from "./components/collaborator-columns";
-import CollaboratorsFilters from "./components/collaborators-filters";
+import SearchInput from "@/components/search-input";
 import CollaboratorsTable from "./components/collaborators-table";
-import { useCollaboratorsRows } from "./hooks/useCollaboratorsRows";
+import { useSearchableRows } from "@/hooks/useSearchableRows";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 
@@ -27,10 +33,18 @@ const CollaboratorsPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const pageSize = useTableRowsPerPage();
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
-    const { collaboratorRows, totalItems, totalPages, isLoading, loadCollaborators } = useCollaboratorsRows({
+    const {
+        rows: collaboratorRows,
+        totalItems,
+        totalPages,
+        isLoading,
+        reload: loadCollaborators,
+    } = useSearchableRows<CollaboratorDto>({
+        fetchRows: listCollaborators,
         searchText,
         currentPage,
         pageSize,
+        errorMessage: "Impossibile caricare i collaboratori",
     });
 
     const handleCreateCollaborator = async (values: Record<string, string | boolean>) => {
@@ -102,7 +116,9 @@ const CollaboratorsPage = () => {
             <PageHeader
                 title="Collaboratori"
                 description="Gestisci i collaboratori del laboratorio."
-                action={<CreateEntityButton label="Crea nuovo collaboratore" onClick={() => setIsCreateDialogOpen(true)} />}
+                action={
+                    <CreateEntityButton label="Crea nuovo collaboratore" onClick={() => setIsCreateDialogOpen(true)} />
+                }
             />
 
             <CreateCollaboratorDialog
@@ -142,7 +158,7 @@ const CollaboratorsPage = () => {
                 onConfirm={handleDeleteCollaborator}
             />
 
-            <CollaboratorsFilters searchText={searchText} onSearchTextChange={setSearchText} />
+            <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca collaboratore..." />
 
             <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <div className="min-h-0 flex-1 overflow-y-auto">
@@ -163,9 +179,11 @@ const CollaboratorsPage = () => {
                 />
             </div>
 
-            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+            {isLoading ? (
+                <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+            ) : null}
         </div>
     );
-}
+};
 
 export default CollaboratorsPage;

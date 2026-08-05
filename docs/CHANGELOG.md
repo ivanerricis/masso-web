@@ -11,6 +11,161 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-05 — Pulizia del codice morto e delle duplicazioni
+
+Revisione sistematica di manutenibilità su tutto il repository. Sei interventi distinti,
+raccolti qui perché nascono dalla stessa lettura.
+
+### Codice morto rimosso
+
+- **Nove file non raggiungibili da nessuna parte del programma.** `errorDialog.tsx` era
+  vuoto (0 byte); `combobox.tsx` erano 299 righe di componente shadcn che nessuno importa;
+  `tableLoadingSkeleton.tsx` era stato sostituito da `LoadingPage` senza essere cancellato;
+  `assets/react.svg` è un residuo dello scaffold di Vite; `lib/api.ts` conteneva solo
+  `export * from "./api/index"`, un rimbalzo che la risoluzione per directory rende inutile.
+  → [frontend/src/](../frontend/src/)
+
+- **`db/relations.ts` (75 righe) descriveva relazioni che Drizzle non ha mai letto.** Le
+  `relations()` servono solo all'API relazionale (`db.query.*`), che richiede di passare lo
+  schema a `drizzle()`. In [db/index.ts](../backend/src/db/index.ts) la chiamata è
+  `drizzle(pool)`, senza schema, e nel backend non esiste una sola `db.query`: tutte le
+  query sono `db.select()` con join espliciti. Il file dichiarava quindi una mappa del
+  dominio che nessuno consultava — peggio che inutile, perché a leggerla si crede che
+  cambiarla abbia un effetto.
+  → `backend/src/db/relations.ts`, `backend/src/routes/utils.ts`
+
+- **Le pagine di dettaglio di dispositivi e difetti erano segnaposto irraggiungibili.**
+  `DevicePage` e `IssuePage` mostravano "Pagina dettaglio in preparazione" su rotte
+  (`/devices/:id`, `/issues/:id`) che nessun link dell'app apre: le rispettive tabelle
+  hanno solo modifica ed eliminazione, e la sidebar punta agli elenchi. Restavano
+  raggiungibili solo digitando l'URL a mano, dove mostravano un cantiere aperto dentro un
+  prodotto finito. Difetti e dispositivi sono tabelle a due campi (nome, descrizione): una
+  scheda di dettaglio non avrebbe niente da mostrare.
+  → [frontend/src/App.tsx](../frontend/src/App.tsx)
+
+- **La POST dei rapporti validava due volte la stessa regola.** Il vincolo "se il pagamento
+  è in contanti o con carta il prezzo deve essere > 0" era espresso sia in un `.refine()`
+  di `reportCreateBodySchema` sia in un `if` dentro l'handler. Il secondo era irraggiungibile
+  — `validate()` rifiuta prima che l'handler parta — ma conteneva una seconda copia del
+  messaggio d'errore, pronta a divergere dalla prima. Il controllo nella PUT resta: lì il
+  metodo di pagamento e il prezzo possono arrivare uno dal corpo parziale e l'altro dalla
+  riga esistente, combinazione che lo schema non può vedere.
+  → [backend/src/routes/reports.ts](../backend/src/routes/reports.ts)
+
+### Il toaster non seguiva il tema scelto nell'app
+
+- **`ui/sonner.tsx` leggeva il tema da `next-themes`, che in questo progetto non ha nessun
+  provider.** È il file come lo genera shadcn, mai adattato: l'app usa il proprio
+  `ThemeProvider`, quindi `useTheme()` di `next-themes` restituiva un oggetto vuoto e il
+  toaster ripiegava sul default `"system"`. Conseguenza visibile: chi sceglieva Chiaro con
+  il sistema operativo in scuro riceveva notifiche scure. Ora legge da
+  `@/components/use-theme`, e la dipendenza `next-themes` è stata rimossa insieme a
+  `@base-ui/react` (usata solo dal combobox morto) e a `@vitest/coverage-v8` (dichiarata
+  senza nessuno script o passo di CI che raccolga la copertura).
+  → [frontend/src/components/ui/sonner.tsx](../frontend/src/components/ui/sonner.tsx)
+
+### Una sola classe d'errore applicativo al posto di otto
+
+- **Sette servizi avevano ognuno la propria classe d'errore, identica alle altre carattere
+  per carattere**, e otto rotte avevano ognuna la propria copia del codice che la traduce in
+  risposta HTTP (`instanceof`, `res.locals.apiErrorMessage`, `res.status().json()`). Solo
+  `settings.ts` ne conteneva sei, invocate da 22 blocchi `try/catch` tutti uguali. Il costo
+  non era la lunghezza ma la soglia: aggiungere l'ottavo servizio significava scrivere
+  l'ottava classe e la nona copia del traduttore, e nessuno se ne sarebbe accorto.
+
+  Ora esiste `ApiError` (messaggio già destinato al client + `statusCode`), le classi dei
+  servizi la estendono, e la traduzione avviene una volta sola in
+  [errorHandler.ts](../backend/src/middleware/errorHandler.ts). Le rotte non hanno più
+  `try/catch`: Express 5 inoltra da sé il rifiuto di un handler `async` al middleware
+  d'errore, cosa su cui `crudRouter` faceva già affidamento.
+
+  Due dettagli emersi copia per copia, che è esattamente il motivo per cui la duplicazione
+  costa: le classi di `logManager` e `logoManager` avevano `statusCode = 400` di default
+  invece di 500, ma **nessuna delle 40 istanziazioni omette lo status**, quindi quei default
+  divergenti non sono mai stati in gioco; e la copia in `interventions.ts` dimenticava
+  `res.locals.apiErrorMessage`, per cui un invio email fallito finiva nel registro delle
+  azioni utente come `error=HTTP 502`, senza il motivo. Entrambi risolti dal fatto che ora
+  la logica è una sola.
+  → [backend/src/services/apiError.ts](../backend/src/services/apiError.ts),
+  [backend/src/routes/settings.ts](../backend/src/routes/settings.ts)
+
+### La configurazione Prettier del frontend descriveva uno stile che il codice non usava
+
+- **164 file su ~180 non passavano `prettier --check`.** Il frontend aveva un `.prettierrc`
+  (2 spazi, niente punto e virgola, 80 colonne) e uno script `format`, ma nessun
+  `format:check` e nessun passo di CI che lo verificasse: la configurazione era decorativa.
+  Il codice scritto a mano nel frattempo si era assestato su 4 spazi e punto e virgola —
+  123 file su 174 — cioè esattamente la configurazione del backend.
+
+  Allineare il file di configurazione al codice, invece del contrario, è la scelta che
+  riformatta di meno e che rende i due pacchetti coerenti fra loro. Il vero problema non era
+  estetico: senza un controllo automatico, ogni file toccato in futuro sarebbe stato
+  riformattato dall'editor di turno, seppellendo la modifica vera dentro un diff che tocca
+  tutto il file. La riformattazione è in un commit separato che non cambia altro, così
+  `git blame` resta leggibile.
+  → [frontend/.prettierrc](../frontend/.prettierrc),
+  [.github/workflows/ci.yml](../.github/workflows/ci.yml)
+
+### Duplicazioni consolidate
+
+- **I due generatori di PDF condividevano ~130 righe identiche.** `reportPdf.ts` e
+  `interventionPdf.ts` avevano ognuno la propria copia di registrazione dei font,
+  `loadImageDataUrl`, layout di tabella, `sectionBarRow`/`dualFieldRow` e dell'intero
+  frontespizio dei riepiloghi per cliente; i token grafici (il blu `#2A75B9`, i corpi
+  carattere) comparivano in **quattro** blocchi `styles` separati. È la duplicazione più
+  cara fra quelle trovate: cambiare un colore del marchio richiedeva quattro modifiche
+  coordinate, e dimenticarne una non rompe la compilazione — produce un PDF sbagliato in
+  mano al cliente. Inoltre `pdfmake.addFonts()` veniva eseguita due volte all'avvio.
+
+  *Verifica:* i quattro documenti (rapporto singolo, riepilogo rapporti per cliente,
+  intervento singolo, riepilogo interventi per cliente) sono stati rigenerati con lo stesso
+  input prima e dopo, e confrontati byte a byte: differiscono solo per `/CreationDate` e
+  `/ID`, cioè il timestamp di generazione.
+  → [backend/src/services/pdf/shared.ts](../backend/src/services/pdf/shared.ts)
+
+- **Sette tabelle identiche a meno del nome del DTO.** Ogni entità aveva il proprio
+  `*-table.tsx` che ripeteva per intero la struttura "tabella su desktop, schede su mobile":
+  `diff` fra `devices-table` e `issues-table` restituiva solo rinomine — più un
+  `overflow-y-auto` rimasto sul `TableBody` dei difetti e su nessun altro. È il modo tipico
+  in cui questa duplicazione fa danno: una differenza involontaria che non rompe niente e
+  che non nota nessuno. Ora la struttura sta in `EntityTable`; i pulsanti di riga restano
+  invece nei file delle entità, perché sono davvero diversi (i clienti ne hanno sei, i
+  dispositivi due) e ridurli a configurazione costerebbe più di quanto farebbe risparmiare.
+
+  Stessa logica per gli hook di lista: quattro `use*Rows` identici a meno del nome della
+  funzione API sono diventati `useSearchableRows`, mentre quelli di rapporti e interventi
+  restano separati perché usano anche `updateRow`. E quattro `*-filters.tsx` che si
+  limitavano a inoltrare a `SearchInput` cambiando il testo del segnaposto sono stati
+  eliminati: le pagine chiamano `SearchInput` direttamente. Quelli di clienti, rapporti e
+  interventi restano, perché contengono anche i menu di ordinamento e di stato.
+
+  *Verifica:* tutte e sette le liste sono state aperte con Playwright, a 1440px e a 390px,
+  confrontando numero di colonne, di righe e di pulsanti per riga, i colori di stato di
+  rapporti e interventi e il bordo colorato delle schede su mobile. Nessun errore in console.
+  → [frontend/src/components/entity-table.tsx](../frontend/src/components/entity-table.tsx),
+  [frontend/src/hooks/useSearchableRows.ts](../frontend/src/hooks/useSearchableRows.ts)
+
+- **Rapporti e interventi ridichiaravano lo schema di lista invece di estenderlo.**
+  `page`, `pageSize`, `search`, `sortOrder` e lo schema del parametro `:id` erano riscritti
+  identici a quelli già esportati da `crudRouter.ts`. Ora li estendono, aggiungendo solo i
+  filtri propri e restringendo `sortBy` alle colonne che sanno davvero ordinare: i limiti
+  comuni a tutte le liste (per esempio `pageSize` massimo 1000) tornano a essere decisi in
+  un posto solo.
+  → [backend/src/routes/reports.ts](../backend/src/routes/reports.ts),
+  [backend/src/routes/interventions.ts](../backend/src/routes/interventions.ts)
+
+### Non fatto di proposito
+
+- **La sidebar shadcn resta com'è**, con 15 dei suoi 25 export inutilizzati (~250 righe).
+  È codice di terze parti copiato nel repository: potarlo lo farebbe divergere da monte, e
+  un futuro `shadcn add sidebar` entrerebbe in conflitto con le modifiche. Codice inutilizzato
+  dentro un file di libreria costa molto meno di codice inutilizzato scritto da noi, e a
+  runtime non costa niente perché Vite lo elimina dal bundle. Diverso il caso di
+  `combobox.tsx`, cancellato sopra: era inutilizzato **per intero**, e ricrearlo è un comando.
+  → [frontend/src/components/ui/sidebar.tsx](../frontend/src/components/ui/sidebar.tsx)
+
+---
+
 ## 2026-08-03 — Versione di nginx fissata nell'immagine del frontend
 
 - **`FROM nginx:alpine` non indicava alcuna versione.** Un tag Docker non è una versione, è

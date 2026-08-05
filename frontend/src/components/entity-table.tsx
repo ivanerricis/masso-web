@@ -1,0 +1,111 @@
+import EntityCardList from "@/components/entity-card-list";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { ReactNode } from "react";
+
+export type EntityColumn<TRow> = {
+    /** `"actions"` è speciale: quella colonna ospita i pulsanti di riga, non un valore. */
+    key: string;
+    header: string;
+    className?: string;
+    render: (row: TRow) => ReactNode;
+};
+
+type EntityTableProps<TRow> = {
+    columns: EntityColumn<TRow>[];
+    rows: TRow[];
+    getRowKey: (row: TRow) => React.Key;
+    emptyMessage: string;
+    renderRowActions: (row: TRow) => ReactNode;
+    /**
+     * Colora la riga in base allo stato (`data-status-color`, interpretato da index.css
+     * insieme all'intensità scelta in Impostazioni > Tema). Quando è presente, la cella
+     * delle azioni torna ai colori neutri per non tingere le icone dei pulsanti.
+     */
+    getRowStatusColor?: (row: TRow) => string;
+    /** Bordo superiore colorato delle schede su mobile (es. "border-t-green-500"). */
+    getAccentClassName?: (row: TRow) => string;
+};
+
+/**
+ * Tabella su desktop, elenco di schede su mobile: è la forma che hanno tutte le liste
+ * dell'app. Prima ogni entità ne aveva una copia integrale — sette file identici a meno
+ * del nome del DTO, del messaggio di lista vuota e dei pulsanti di riga.
+ *
+ * Le copie avevano già iniziato a divergere per sbaglio (a `issues-table` era rimasto un
+ * `overflow-y-auto` sul `TableBody` che nessun'altra aveva): esattamente il modo in cui
+ * questa duplicazione fa danno, perché una differenza involontaria non rompe la
+ * compilazione e non la nota nessuno.
+ *
+ * I pulsanti di riga restano invece del chiamante: sono davvero diversi da un'entità
+ * all'altra (i clienti ne hanno sei, i dispositivi due) e ridurli a configurazione
+ * costerebbe più di quanto farebbe risparmiare.
+ */
+const EntityTable = <TRow,>({
+    columns,
+    rows,
+    getRowKey,
+    emptyMessage,
+    renderRowActions,
+    getRowStatusColor,
+    getAccentClassName,
+}: EntityTableProps<TRow>) => {
+    return (
+        <>
+            <Table className="hidden bg-background sm:table">
+                <TableHeader className="w-full">
+                    <TableRow>
+                        {columns.map((column) => (
+                            <TableHead key={column.key} className={column.className}>
+                                {column.header}
+                            </TableHead>
+                        ))}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {rows.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="py-6 text-center text-muted-foreground">
+                                {emptyMessage}
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        rows.map((row) => (
+                            <TableRow key={getRowKey(row)} data-status-color={getRowStatusColor?.(row)}>
+                                {columns.map((column) => (
+                                    <TableCell
+                                        key={`${getRowKey(row)}-${column.key}`}
+                                        className={
+                                            column.key === "actions" && getRowStatusColor
+                                                ? "bg-background text-foreground"
+                                                : column.className
+                                        }
+                                    >
+                                        {column.key === "actions" ? (
+                                            <div className="flex items-center justify-end gap-2">
+                                                {renderRowActions(row)}
+                                            </div>
+                                        ) : (
+                                            column.render(row)
+                                        )}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))
+                    )}
+                </TableBody>
+            </Table>
+
+            <EntityCardList
+                className="sm:hidden"
+                columns={columns.filter((column) => column.key !== "actions")}
+                rows={rows}
+                getRowKey={getRowKey}
+                getAccentClassName={getAccentClassName}
+                renderActions={renderRowActions}
+                emptyMessage={emptyMessage}
+            />
+        </>
+    );
+};
+
+export default EntityTable;
