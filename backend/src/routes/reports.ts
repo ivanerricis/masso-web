@@ -202,15 +202,13 @@ reportsRouter.get("/:id", validate({ params: reportIdParamsSchema }), async (req
 });
 
 reportsRouter.post("/", validate({ body: reportCreateBodySchema }), async (req, res) => {
+    // Il vincolo "pagato ⇒ prezzo > 0" è già applicato da `reportCreateBodySchema`, che
+    // rifiuta la richiesta prima di arrivare qui: la POST vede solo corpi validi. La PUT
+    // invece continua a controllarlo a mano, perché lì il metodo di pagamento e il prezzo
+    // possono arrivare da campi diversi (uno dal corpo parziale, l'altro dalla riga
+    // esistente) e lo schema non ha modo di vedere la combinazione risultante.
     const paymentMethod = (req.body.paymentMethod ?? "non_paid") as ReportPaymentMethod;
     const price = req.body.price ?? 0;
-
-    if (paidPaymentMethods.has(paymentMethod) && price <= 0) {
-        res.status(400).json({
-            message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0",
-        });
-        return;
-    }
 
     const createdReport = await createReport({
         ...req.body,

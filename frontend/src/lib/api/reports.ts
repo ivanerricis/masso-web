@@ -97,8 +97,7 @@ export async function listReports(params?: ListReportsParams) {
     };
 }
 
-export const getReport = async (id: number) =>
-    (await api.get<ReportEntityDto>(`/reports/${id}`)).data;
+export const getReport = async (id: number) => (await api.get<ReportEntityDto>(`/reports/${id}`)).data;
 
 export const createReport = async (payload: ReportCreateInput) =>
     (await api.post<ReportEntityDto>("/reports", payload)).data;
@@ -106,14 +105,9 @@ export const createReport = async (payload: ReportCreateInput) =>
 export const updateReport = async (id: number, payload: Partial<ReportCreateInput>) =>
     (await api.put<ReportEntityDto>(`/reports/${id}`, payload)).data;
 
-export const deleteReport = async (id: number) =>
-    (await api.delete<ReportEntityDto>(`/reports/${id}`)).data;
+export const deleteReport = async (id: number) => (await api.delete<ReportEntityDto>(`/reports/${id}`)).data;
 
-export const printReportPdf = async (id: number) =>
-    (await api.get<Blob>(`/reports/${id}/print`, { responseType: "blob" })).data;
-
-export const getReportPrintUrl = (id: number) =>
-    api.getUri({ url: `/reports/${id}/print` });
+export const getReportPrintUrl = (id: number) => api.getUri({ url: `/reports/${id}/print` });
 
 export type ReportStatsDto = {
     openCount: number;
