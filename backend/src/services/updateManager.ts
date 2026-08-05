@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { ApiError } from "./apiError";
 
 // This service only touches files. The actual `git`/`docker compose` work runs
 // on the VM host, triggered by a systemd path unit watching these files (see
@@ -24,14 +25,7 @@ export type UpdateStatus = {
     log: string | null;
 };
 
-export class UpdateManagerError extends Error {
-    statusCode: number;
-
-    constructor(message: string, statusCode = 500) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-}
+export class UpdateManagerError extends ApiError {}
 
 const defaultStatus: UpdateStatus = {
     state: "unknown",

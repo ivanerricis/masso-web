@@ -1,11 +1,10 @@
 import path from "node:path";
-import { type Response, Router } from "express";
+import { Router } from "express";
 import multer from "multer";
 import { z } from "zod";
 import { validate } from "./validation";
 import { requireAdmin } from "../middleware/requireAuth";
 import {
-    BackupManagerError,
     getBackupDumpPath,
     getBackupSettings,
     listBackupDumps,
@@ -15,80 +14,21 @@ import {
     testSmbConnection,
     updateBackupSettings,
 } from "../services/backupManager";
-import { CompanyManagerError, getCompanySettings, updateCompanySettings } from "../services/companyManager";
-import {
-    EmailManagerError,
-    getEmailSettings,
-    testEmailConnection,
-    updateEmailSettings,
-} from "../services/emailManager";
-import { LogoManagerError, getLogoStatus, resetLogo, saveLogo } from "../services/logoManager";
-import { LogManagerError, getLogFilePath, listLogFiles, readLogEntries } from "../services/logManager";
-import { UpdateManagerError, getUpdateStatus, requestUpdate, requestUpdateCheck } from "../services/updateManager";
+import { getCompanySettings, updateCompanySettings } from "../services/companyManager";
+import { getEmailSettings, testEmailConnection, updateEmailSettings } from "../services/emailManager";
+import { getLogoStatus, resetLogo, saveLogo } from "../services/logoManager";
+import { getLogFilePath, listLogFiles, readLogEntries } from "../services/logManager";
+import { getUpdateStatus, requestUpdate, requestUpdateCheck } from "../services/updateManager";
+
+// Le rotte qui sotto non hanno try/catch: i servizi sollevano `ApiError` (messaggio e
+// status già decisi da chi sa cosa è andato storto) ed Express 5 inoltra da solo il
+// rifiuto di un handler async a `middleware/errorHandler.ts`, che lo traduce in risposta.
+// Prima ogni famiglia di impostazioni aveva la propria classe d'errore identica alle
+// altre e la propria copia del codice di traduzione, ripetuta in ogni rotta.
 
 const settingsRouter = Router();
 const logoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 const dumpUpload = multer({ storage: multer.memoryStorage() });
-
-const handleBackupError = (error: unknown, res: Response) => {
-    if (error instanceof BackupManagerError) {
-        res.locals.apiErrorMessage = error.message;
-        res.status(error.statusCode).json({ message: error.message });
-        return true;
-    }
-
-    return false;
-};
-
-const handleCompanyError = (error: unknown, res: Response) => {
-    if (error instanceof CompanyManagerError) {
-        res.locals.apiErrorMessage = error.message;
-        res.status(error.statusCode).json({ message: error.message });
-        return true;
-    }
-
-    return false;
-};
-
-const handleEmailError = (error: unknown, res: Response) => {
-    if (error instanceof EmailManagerError) {
-        res.locals.apiErrorMessage = error.message;
-        res.status(error.statusCode).json({ message: error.message });
-        return true;
-    }
-
-    return false;
-};
-
-const handleLogoError = (error: unknown, res: Response) => {
-    if (error instanceof LogoManagerError) {
-        res.locals.apiErrorMessage = error.message;
-        res.status(error.statusCode).json({ message: error.message });
-        return true;
-    }
-
-    return false;
-};
-
-const handleUpdateError = (error: unknown, res: Response) => {
-    if (error instanceof UpdateManagerError) {
-        res.locals.apiErrorMessage = error.message;
-        res.status(error.statusCode).json({ message: error.message });
-        return true;
-    }
-
-    return false;
-};
-
-const handleLogError = (error: unknown, res: Response) => {
-    if (error instanceof LogManagerError) {
-        res.locals.apiErrorMessage = error.message;
-        res.status(error.statusCode).json({ message: error.message });
-        return true;
-    }
-
-    return false;
-};
 
 const backupSettingsSchema = z
     .object({
@@ -176,336 +116,160 @@ const logEntriesQuerySchema = z
     })
     .strict();
 
-settingsRouter.get("/logs", async (_req, res, next) => {
-    try {
-        const files = await listLogFiles();
-        res.json(files);
-    } catch (error) {
-        if (handleLogError(error, res)) {
-            return;
-        }
-        next(error);
-    }
+settingsRouter.get("/logs", async (_req, res) => {
+    res.json(await listLogFiles());
 });
 
 settingsRouter.get(
     "/logs/:dayKey",
     validate({ params: logDayKeyParamsSchema, query: logEntriesQuerySchema }),
-    async (req, res, next) => {
-        try {
-            const { dayKey } = req.params as { dayKey: string };
-            const {
-                page = 1,
-                pageSize = 50,
-                search,
-            } = req.query as {
-                page?: number;
-                pageSize?: number;
-                search?: string;
-            };
-
-            const allEntries = await readLogEntries(dayKey);
-            const normalizedSearch = search?.toLowerCase();
-            const filteredEntries = normalizedSearch
-                ? allEntries.filter((entry) =>
-                      `${entry.action} ${entry.ip} ${entry.user} ${entry.error ?? ""}`
-                          .toLowerCase()
-                          .includes(normalizedSearch)
-                  )
-                : allEntries;
-
-            const totalItems = filteredEntries.length;
-            const startIndex = (page - 1) * pageSize;
-            const items = filteredEntries.slice(startIndex, startIndex + pageSize);
-
-            res.json({
-                items,
-                totalItems,
-                page,
-                pageSize,
-                totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
-            });
-        } catch (error) {
-            if (handleLogError(error, res)) {
-                return;
-            }
-            next(error);
-        }
-    }
-);
-
-settingsRouter.get("/logs/:dayKey/download", validate({ params: logDayKeyParamsSchema }), async (req, res, next) => {
-    try {
+    async (req, res) => {
         const { dayKey } = req.params as { dayKey: string };
-        const filePath = getLogFilePath(dayKey);
+        const {
+            page = 1,
+            pageSize = 50,
+            search,
+        } = req.query as {
+            page?: number;
+            pageSize?: number;
+            search?: string;
+        };
 
-        res.download(filePath, path.basename(filePath), (error) => {
-            if (error && !res.headersSent) {
-                res.status(404).json({ message: "Log non trovato" });
-            }
+        const allEntries = await readLogEntries(dayKey);
+        const normalizedSearch = search?.toLowerCase();
+        const filteredEntries = normalizedSearch
+            ? allEntries.filter((entry) =>
+                  `${entry.action} ${entry.ip} ${entry.user} ${entry.error ?? ""}`
+                      .toLowerCase()
+                      .includes(normalizedSearch)
+              )
+            : allEntries;
+
+        const totalItems = filteredEntries.length;
+        const startIndex = (page - 1) * pageSize;
+        const items = filteredEntries.slice(startIndex, startIndex + pageSize);
+
+        res.json({
+            items,
+            totalItems,
+            page,
+            pageSize,
+            totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
         });
-    } catch (error) {
-        if (handleLogError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.get("/backup", async (_req, res, next) => {
-    try {
-        const settings = await getBackupSettings();
-        res.json(settings);
-    } catch (error) {
-        if (handleBackupError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.put("/backup", validate({ body: backupSettingsSchema }), async (req, res, next) => {
-    try {
-        const settings = await updateBackupSettings(req.body);
-        res.json(settings);
-    } catch (error) {
-        if (handleBackupError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.post("/backup/run", async (_req, res, next) => {
-    try {
-        const result = await runBackupNow("manual");
-        res.status(201).json(result);
-    } catch (error) {
-        if (handleBackupError(error, res)) {
-            return;
-        }
-
-        next(error);
-    }
-});
-
-settingsRouter.post("/backup/smb/test", validate({ body: smbTestSchema }), async (req, res, next) => {
-    try {
-        await testSmbConnection(req.body);
-        res.json({ message: "Connessione al NAS riuscita" });
-    } catch (error) {
-        if (handleBackupError(error, res)) {
-            return;
-        }
-
-        next(error);
-    }
-});
-
-settingsRouter.get("/company", async (_req, res, next) => {
-    try {
-        const settings = await getCompanySettings();
-        res.json(settings);
-    } catch (error) {
-        if (handleCompanyError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.put("/company", validate({ body: companySettingsSchema }), async (req, res, next) => {
-    try {
-        const settings = await updateCompanySettings(req.body);
-        res.json(settings);
-    } catch (error) {
-        if (handleCompanyError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.get("/email", async (_req, res, next) => {
-    try {
-        const settings = await getEmailSettings();
-        res.json(settings);
-    } catch (error) {
-        if (handleEmailError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.put("/email", validate({ body: emailSettingsSchema }), async (req, res, next) => {
-    try {
-        const settings = await updateEmailSettings(req.body);
-        res.json(settings);
-    } catch (error) {
-        if (handleEmailError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.post("/email/test", validate({ body: emailTestSchema }), async (req, res, next) => {
-    try {
-        await testEmailConnection(req.body);
-        res.json({ message: `Email di prova inviata con successo a ${req.body.fromEmail}` });
-    } catch (error) {
-        if (handleEmailError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.get("/logo", async (_req, res, next) => {
-    try {
-        const status = await getLogoStatus();
-        res.json(status);
-    } catch (error) {
-        if (handleLogoError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.post("/logo", logoUpload.single("logo"), async (req, res, next) => {
-    try {
-        if (!req.file) {
-            res.status(400).json({ message: "Nessun file caricato" });
-            return;
-        }
-
-        const status = await saveLogo(req.file.buffer, req.file.mimetype);
-        res.status(201).json(status);
-    } catch (error) {
-        if (handleLogoError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.delete("/logo", async (_req, res, next) => {
-    try {
-        const status = await resetLogo();
-        res.json(status);
-    } catch (error) {
-        if (handleLogoError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.get("/backup/list", async (_req, res, next) => {
-    try {
-        const dumps = await listBackupDumps();
-        res.json(dumps);
-    } catch (error) {
-        if (handleBackupError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.get("/backup/download/:fileName", async (req, res, next) => {
-    try {
-        const filePath = await getBackupDumpPath(req.params.fileName);
-
-        res.download(filePath, path.basename(filePath), (error) => {
-            if (error && !res.headersSent) {
-                res.status(404).json({ message: "File di dump non trovato" });
-            }
-        });
-    } catch (error) {
-        if (handleBackupError(error, res)) {
-            return;
-        }
-        next(error);
-    }
-});
-
-settingsRouter.post(
-    "/backup/restore",
-    requireAdmin,
-    validate({ body: backupRestoreSchema }),
-    async (req, res, next) => {
-        try {
-            const { fileName, resetSchema } = req.body as { fileName: string; resetSchema: boolean };
-            const result = await restoreBackupFromExisting(fileName, resetSchema);
-            res.json(result);
-        } catch (error) {
-            if (handleBackupError(error, res)) {
-                return;
-            }
-            next(error);
-        }
     }
 );
 
-settingsRouter.post("/backup/restore/upload", requireAdmin, dumpUpload.single("dump"), async (req, res, next) => {
-    try {
-        if (!req.file) {
-            res.status(400).json({ message: "Nessun file caricato" });
-            return;
-        }
+settingsRouter.get("/logs/:dayKey/download", validate({ params: logDayKeyParamsSchema }), async (req, res) => {
+    const { dayKey } = req.params as { dayKey: string };
+    const filePath = getLogFilePath(dayKey);
 
-        const resetSchema = req.body.resetSchema === "true";
-        const result = await restoreBackupFromUpload(req.file.buffer, req.file.originalname, resetSchema);
-        res.json(result);
-    } catch (error) {
-        if (handleBackupError(error, res)) {
-            return;
+    res.download(filePath, path.basename(filePath), (error) => {
+        if (error && !res.headersSent) {
+            res.status(404).json({ message: "Log non trovato" });
         }
-        next(error);
+    });
+});
+
+settingsRouter.get("/backup", async (_req, res) => {
+    res.json(await getBackupSettings());
+});
+
+settingsRouter.put("/backup", validate({ body: backupSettingsSchema }), async (req, res) => {
+    res.json(await updateBackupSettings(req.body));
+});
+
+settingsRouter.post("/backup/run", async (_req, res) => {
+    res.status(201).json(await runBackupNow("manual"));
+});
+
+settingsRouter.post("/backup/smb/test", validate({ body: smbTestSchema }), async (req, res) => {
+    await testSmbConnection(req.body);
+    res.json({ message: "Connessione al NAS riuscita" });
+});
+
+settingsRouter.get("/company", async (_req, res) => {
+    res.json(await getCompanySettings());
+});
+
+settingsRouter.put("/company", validate({ body: companySettingsSchema }), async (req, res) => {
+    res.json(await updateCompanySettings(req.body));
+});
+
+settingsRouter.get("/email", async (_req, res) => {
+    res.json(await getEmailSettings());
+});
+
+settingsRouter.put("/email", validate({ body: emailSettingsSchema }), async (req, res) => {
+    res.json(await updateEmailSettings(req.body));
+});
+
+settingsRouter.post("/email/test", validate({ body: emailTestSchema }), async (req, res) => {
+    await testEmailConnection(req.body);
+    res.json({ message: `Email di prova inviata con successo a ${req.body.fromEmail}` });
+});
+
+settingsRouter.get("/logo", async (_req, res) => {
+    res.json(await getLogoStatus());
+});
+
+settingsRouter.post("/logo", logoUpload.single("logo"), async (req, res) => {
+    if (!req.file) {
+        res.status(400).json({ message: "Nessun file caricato" });
+        return;
     }
+
+    res.status(201).json(await saveLogo(req.file.buffer, req.file.mimetype));
+});
+
+settingsRouter.delete("/logo", async (_req, res) => {
+    res.json(await resetLogo());
+});
+
+settingsRouter.get("/backup/list", async (_req, res) => {
+    res.json(await listBackupDumps());
+});
+
+settingsRouter.get("/backup/download/:fileName", async (req, res) => {
+    const filePath = await getBackupDumpPath(req.params.fileName);
+
+    res.download(filePath, path.basename(filePath), (error) => {
+        if (error && !res.headersSent) {
+            res.status(404).json({ message: "File di dump non trovato" });
+        }
+    });
+});
+
+settingsRouter.post("/backup/restore", requireAdmin, validate({ body: backupRestoreSchema }), async (req, res) => {
+    const { fileName, resetSchema } = req.body as { fileName: string; resetSchema: boolean };
+
+    res.json(await restoreBackupFromExisting(fileName, resetSchema));
+});
+
+settingsRouter.post("/backup/restore/upload", requireAdmin, dumpUpload.single("dump"), async (req, res) => {
+    if (!req.file) {
+        res.status(400).json({ message: "Nessun file caricato" });
+        return;
+    }
+
+    const resetSchema = req.body.resetSchema === "true";
+
+    res.json(await restoreBackupFromUpload(req.file.buffer, req.file.originalname, resetSchema));
 });
 
 // Le rotte di aggiornamento sono riservate all'amministratore, a differenza del resto
 // delle impostazioni: non modificano una preferenza, eseguono sull'host il codice presente
 // su origin/main e ricostruiscono lo stack. Con l'app raggiungibile da internet, un
 // singolo account utente compromesso non deve bastare per arrivarci.
-settingsRouter.get("/update", requireAdmin, async (_req, res, next) => {
-    try {
-        const status = await getUpdateStatus();
-        res.json(status);
-    } catch (error) {
-        if (handleUpdateError(error, res)) {
-            return;
-        }
-        next(error);
-    }
+settingsRouter.get("/update", requireAdmin, async (_req, res) => {
+    res.json(await getUpdateStatus());
 });
 
-settingsRouter.post("/update/run", requireAdmin, async (_req, res, next) => {
-    try {
-        const status = await requestUpdate();
-        res.status(202).json(status);
-    } catch (error) {
-        if (handleUpdateError(error, res)) {
-            return;
-        }
-        next(error);
-    }
+settingsRouter.post("/update/run", requireAdmin, async (_req, res) => {
+    res.status(202).json(await requestUpdate());
 });
 
-settingsRouter.post("/update/check", requireAdmin, async (_req, res, next) => {
-    try {
-        const status = await requestUpdateCheck();
-        res.status(202).json(status);
-    } catch (error) {
-        if (handleUpdateError(error, res)) {
-            return;
-        }
-        next(error);
-    }
+settingsRouter.post("/update/check", requireAdmin, async (_req, res) => {
+    res.status(202).json(await requestUpdateCheck());
 });
 
 export default settingsRouter;

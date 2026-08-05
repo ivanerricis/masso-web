@@ -6,6 +6,7 @@ import { db } from "../db";
 import { sessionTable, userTable } from "../db/schema";
 import { isLoginRateLimited, registerFailedLogin, registerSuccessfulLogin } from "./loginRateLimit";
 import { generateCompliantPassword } from "./passwordPolicy";
+import { ApiError } from "./apiError";
 
 const dataDir = path.join(process.cwd(), "data");
 const initialAdminPasswordFilePath = path.join(dataDir, "initial-admin-password.txt");
@@ -15,14 +16,7 @@ const sessionTokenBytes = 32;
 const sessionDurationMs = 30 * 24 * 60 * 60 * 1000;
 const sessionCleanupIntervalMs = 60 * 60 * 1000;
 
-export class AuthManagerError extends Error {
-    statusCode: number;
-
-    constructor(message: string, statusCode = 500) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-}
+export class AuthManagerError extends ApiError {}
 
 export type PublicUser = {
     id: number;

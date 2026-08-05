@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { ApiError } from "./apiError";
 
 const logDir = path.join(process.cwd(), "logs");
 const logFilePrefix = "user-actions-";
@@ -9,14 +10,7 @@ const dayKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const dailyLogFileNamePattern = /^user-actions-\d{4}-\d{2}-\d{2}\.log$/;
 let lastCleanupDay = "";
 
-export class LogManagerError extends Error {
-    statusCode: number;
-
-    constructor(message: string, statusCode = 400) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-}
+export class LogManagerError extends ApiError {}
 
 export type LogEntry = {
     timestamp: string;

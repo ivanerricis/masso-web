@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { ApiError } from "./apiError";
 
 const settingsDir = path.join(process.cwd(), "data");
 const settingsFilePath = path.join(settingsDir, "company-settings.json");
@@ -11,14 +12,7 @@ export type CompanySettingsState = {
     phone: string;
 };
 
-export class CompanyManagerError extends Error {
-    statusCode: number;
-
-    constructor(message: string, statusCode = 500) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-}
+export class CompanyManagerError extends ApiError {}
 
 // Valori identici ai default storici di LAB_NAME/LAB_EMAIL/LAB_ADDRESS/LAB_PHONE in config/lab.ts,
 // così il primo avvio senza company-settings.json non cambia nulla per chi già usa il .env.

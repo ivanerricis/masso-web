@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import nodemailer from "nodemailer";
 import { decryptSecret, encryptSecret } from "./secretCrypto";
+import { ApiError } from "./apiError";
 
 const settingsDir = path.join(process.cwd(), "data");
 const settingsFilePath = path.join(settingsDir, "email-settings.json");
@@ -31,14 +32,7 @@ export type EmailConnectionTestConfig = EmailConnectionConfig & {
     fromEmail: string;
 };
 
-export class EmailManagerError extends Error {
-    statusCode: number;
-
-    constructor(message: string, statusCode = 500) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-}
+export class EmailManagerError extends ApiError {}
 
 const defaultState: EmailSettingsState = {
     enabled: false,

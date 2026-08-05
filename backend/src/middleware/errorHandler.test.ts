@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { NextFunction, Request, Response } from "express";
 import { errorHandler } from "./errorHandler";
+import { ApiError } from "../services/apiError";
 
 const createResponse = () => {
     const res = {
@@ -33,6 +34,22 @@ describe("errorHandler", () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
+    });
+
+    it("risponde a un ApiError con il suo messaggio e il suo status", () => {
+        const res = run(new ApiError("Il file di dump non esiste più", 404));
+
+        expect(res.statusCode).toBe(404);
+        expect(res.body.message).toBe("Il file di dump non esiste più");
+        expect(res.locals.apiErrorMessage).toBe("Il file di dump non esiste più");
+    });
+
+    it("riconosce anche le sottoclassi di ApiError sollevate dai servizi", () => {
+        class BackupManagerError extends ApiError {}
+        const res = run(new BackupManagerError("È già in corso un'operazione sul database", 409));
+
+        expect(res.statusCode).toBe(409);
+        expect(res.body.message).toBe("È già in corso un'operazione sul database");
     });
 
     it("mappa la violazione di unicità (23505) su 409", () => {

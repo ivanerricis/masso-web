@@ -1,4 +1,5 @@
 import express from "express";
+import { ApiError } from "../services/apiError";
 
 type PgError = {
     code?: string;
@@ -102,6 +103,15 @@ export const errorHandler = (
     res: express.Response,
     _next: express.NextFunction
 ) => {
+    // Errore sollevato di proposito da un servizio: il messaggio è già scritto per chi
+    // usa l'app, e lo status dice cosa è successo. Va gestito prima delle euristiche su
+    // Postgres, che qui non hanno niente da riconoscere.
+    if (error instanceof ApiError) {
+        res.locals.apiErrorMessage = error.message;
+        res.status(error.statusCode).json({ message: error.message });
+        return;
+    }
+
     const pgError = findPgError(error);
     const { code, detail, message } = pgError;
 

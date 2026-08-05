@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { ApiError } from "./apiError";
 
 const dataDir = path.join(process.cwd(), "data");
 const logoDir = path.join(dataDir, "logo");
@@ -15,14 +16,7 @@ const allowedMimeTypes: Record<string, string> = {
     "image/svg+xml": "svg",
 };
 
-export class LogoManagerError extends Error {
-    statusCode: number;
-
-    constructor(message: string, statusCode = 400) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-}
+export class LogoManagerError extends ApiError {}
 
 type LogoMeta = {
     fileName: string;

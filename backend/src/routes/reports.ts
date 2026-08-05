@@ -14,7 +14,7 @@ import { customerTable, deviceTable, reportTechnicianTable, reportTable } from "
 import { createReportPdfBuffer } from "../services/reportPdf";
 import { getLabConfig } from "../config/lab";
 import { formatDateLabel, formatPhoneLabel } from "./formatting";
-import { sendListResponse } from "./crudRouter";
+import { idParamsSchema, listQuerySchema, sendListResponse } from "./crudRouter";
 import { validate } from "./validation";
 
 const reportsRouter = Router();
@@ -22,27 +22,17 @@ const reportPaymentMethods = ["non_paid", "cash", "card"] as const;
 type ReportPaymentMethod = (typeof reportPaymentMethods)[number];
 const paidPaymentMethods = new Set<ReportPaymentMethod>(["cash", "card"]);
 
-const reportIdParamsSchema = z.object({
-    id: z.coerce.number().int().positive(),
-});
-
 const reportSortFields = ["createdAt", "customer", "totalPrice"] as const;
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-const reportListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).optional(),
-    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
-    search: z.string().trim().max(255).optional(),
+// Estende lo schema di lista condiviso invece di ridichiararne i campi: `page`, `pageSize`
+// e `search` hanno gli stessi limiti di tutte le altre liste, e `sortBy` viene ristretto
+// qui alle sole colonne che questa rotta sa davvero ordinare.
+const reportListQuerySchema = listQuerySchema.extend({
     visibility: z.enum(["all", "open", "closed"]).optional(),
-    dateFrom: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
-        .optional(),
-    dateTo: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
-        .optional(),
+    dateFrom: z.string().regex(dateRegex).optional(),
+    dateTo: z.string().regex(dateRegex).optional(),
     sortBy: z.enum(reportSortFields).optional(),
-    sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
 const reportBodySchema = z
@@ -121,7 +111,7 @@ reportsRouter.get("/stats", validate({ query: reportStatsQuerySchema }), async (
     res.json(stats);
 });
 
-reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), async (req, res) => {
+reportsRouter.get("/:id/print", validate({ params: idParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
 
     const [reportRows, technicianPriceRows] = await Promise.all([
@@ -189,7 +179,7 @@ reportsRouter.get("/:id/print", validate({ params: reportIdParamsSchema }), asyn
     res.send(pdfBuffer);
 });
 
-reportsRouter.get("/:id", validate({ params: reportIdParamsSchema }), async (req, res) => {
+reportsRouter.get("/:id", validate({ params: idParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
     const report = await getReportById(id);
 
@@ -219,40 +209,36 @@ reportsRouter.post("/", validate({ body: reportCreateBodySchema }), async (req, 
     res.status(201).json(createdReport[0]);
 });
 
-reportsRouter.put(
-    "/:id",
-    validate({ params: reportIdParamsSchema, body: reportUpdateBodySchema }),
-    async (req, res) => {
-        const { id } = req.params as unknown as { id: number };
-        const existingReport = await getReportById(id);
+reportsRouter.put("/:id", validate({ params: idParamsSchema, body: reportUpdateBodySchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
+    const existingReport = await getReportById(id);
 
-        if (existingReport.length === 0) {
-            res.status(404).json({ message: "Report not found" });
-            return;
-        }
-
-        const nextPaymentMethod = (req.body.paymentMethod ?? existingReport[0].paymentMethod) as ReportPaymentMethod;
-        const nextPrice = req.body.price ?? existingReport[0].price;
-
-        if (paidPaymentMethods.has(nextPaymentMethod) && nextPrice <= 0) {
-            res.status(400).json({
-                message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0",
-            });
-            return;
-        }
-
-        const updatedReport = await updateReportById(id, req.body);
-
-        if (updatedReport.length === 0) {
-            res.status(404).json({ message: "Report not found" });
-            return;
-        }
-
-        res.json(updatedReport[0]);
+    if (existingReport.length === 0) {
+        res.status(404).json({ message: "Report not found" });
+        return;
     }
-);
 
-reportsRouter.delete("/:id", validate({ params: reportIdParamsSchema }), async (req, res) => {
+    const nextPaymentMethod = (req.body.paymentMethod ?? existingReport[0].paymentMethod) as ReportPaymentMethod;
+    const nextPrice = req.body.price ?? existingReport[0].price;
+
+    if (paidPaymentMethods.has(nextPaymentMethod) && nextPrice <= 0) {
+        res.status(400).json({
+            message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0",
+        });
+        return;
+    }
+
+    const updatedReport = await updateReportById(id, req.body);
+
+    if (updatedReport.length === 0) {
+        res.status(404).json({ message: "Report not found" });
+        return;
+    }
+
+    res.json(updatedReport[0]);
+});
+
+reportsRouter.delete("/:id", validate({ params: idParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
     const deletedReport = await deleteReportById(id);
 

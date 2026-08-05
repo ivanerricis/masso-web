@@ -1,4 +1,4 @@
-import { type Response, Router } from "express";
+import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -11,11 +11,11 @@ import {
 } from "../db/queries/intervention";
 import { db } from "../db";
 import { collaboratorTable, customerTable, interventionTable } from "../db/schema";
-import { EmailManagerError, sendEmail } from "../services/emailManager";
+import { sendEmail } from "../services/emailManager";
 import { createInterventionPdfBuffer } from "../services/interventionPdf";
 import { getLabConfig } from "../config/lab";
 import { formatDateLabel, formatDayLabel, formatPhoneLabel } from "./formatting";
-import { sendListResponse } from "./crudRouter";
+import { idParamsSchema, listQuerySchema, sendListResponse } from "./crudRouter";
 import { validate } from "./validation";
 
 const interventionsRouter = Router();
@@ -29,23 +29,17 @@ const interventionStatuses = ["programmato", "in_lavorazione", "completato"] as 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 const timeRegex = /^\d{2}:\d{2}(:\d{2})?$/;
 
-const interventionIdParamsSchema = z.object({
-    id: z.coerce.number().int().positive(),
-});
-
 const interventionSortFields = ["createdAt", "interventionDate", "customer", "status"] as const;
 
-const interventionListQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).optional(),
-    pageSize: z.coerce.number().int().min(1).max(1000).optional(),
-    search: z.string().trim().max(255).optional(),
+// Come in `reports.ts`: i campi comuni a ogni lista arrivano da `listQuerySchema`, qui si
+// aggiungono solo i filtri specifici degli interventi.
+const interventionListQuerySchema = listQuerySchema.extend({
     status: z.enum(["all", ...interventionStatuses]).optional(),
     type: z.enum(["all", ...interventionTypes]).optional(),
     dateFrom: z.string().regex(dateRegex).optional(),
     dateTo: z.string().regex(dateRegex).optional(),
     scheduledDate: z.string().regex(dateRegex).optional(),
     sortBy: z.enum(interventionSortFields).optional(),
-    sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
 const interventionBodySchema = z
@@ -191,16 +185,7 @@ const loadInterventionPrintContext = async (
     };
 };
 
-const handleEmailError = (error: unknown, res: Response) => {
-    if (error instanceof EmailManagerError) {
-        res.status(error.statusCode).json({ message: error.message });
-        return true;
-    }
-
-    return false;
-};
-
-interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSchema }), async (req, res) => {
+interventionsRouter.get("/:id/print", validate({ params: idParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
 
     const context = await loadInterventionPrintContext(id, req);
@@ -217,48 +202,36 @@ interventionsRouter.get("/:id/print", validate({ params: interventionIdParamsSch
     res.send(pdfBuffer);
 });
 
-interventionsRouter.post(
-    "/:id/send-email",
-    validate({ params: interventionIdParamsSchema }),
-    async (req, res, next) => {
-        const { id } = req.params as unknown as { id: number };
+interventionsRouter.post("/:id/send-email", validate({ params: idParamsSchema }), async (req, res) => {
+    const { id } = req.params as unknown as { id: number };
+    const context = await loadInterventionPrintContext(id, req);
 
-        try {
-            const context = await loadInterventionPrintContext(id, req);
-
-            if (!context) {
-                res.status(404).json({ message: "Intervento non trovato" });
-                return;
-            }
-
-            if (!context.customerEmail) {
-                res.status(400).json({ message: "Il cliente non ha un indirizzo email configurato" });
-                return;
-            }
-
-            const pdfBuffer = await createInterventionPdfBuffer(context.pdfData);
-
-            await sendEmail({
-                to: context.customerEmail,
-                subject: `Intervento #${id} - ${context.labName}`,
-                text: `Gentile ${context.customerName},\n\nin allegato trova il riepilogo dell'intervento #${id}.\n\nCordiali saluti,\n${context.labName}`,
-                attachment: {
-                    filename: `intervento-${id}.pdf`,
-                    content: pdfBuffer,
-                },
-            });
-
-            res.json({ message: "Email inviata con successo" });
-        } catch (error) {
-            if (handleEmailError(error, res)) {
-                return;
-            }
-            next(error);
-        }
+    if (!context) {
+        res.status(404).json({ message: "Intervento non trovato" });
+        return;
     }
-);
 
-interventionsRouter.get("/:id", validate({ params: interventionIdParamsSchema }), async (req, res) => {
+    if (!context.customerEmail) {
+        res.status(400).json({ message: "Il cliente non ha un indirizzo email configurato" });
+        return;
+    }
+
+    const pdfBuffer = await createInterventionPdfBuffer(context.pdfData);
+
+    await sendEmail({
+        to: context.customerEmail,
+        subject: `Intervento #${id} - ${context.labName}`,
+        text: `Gentile ${context.customerName},\n\nin allegato trova il riepilogo dell'intervento #${id}.\n\nCordiali saluti,\n${context.labName}`,
+        attachment: {
+            filename: `intervento-${id}.pdf`,
+            content: pdfBuffer,
+        },
+    });
+
+    res.json({ message: "Email inviata con successo" });
+});
+
+interventionsRouter.get("/:id", validate({ params: idParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
     const intervention = await getInterventionById(id);
 
@@ -289,7 +262,7 @@ interventionsRouter.post("/", validate({ body: interventionCreateBodySchema }), 
 
 interventionsRouter.put(
     "/:id",
-    validate({ params: interventionIdParamsSchema, body: interventionUpdateBodySchema }),
+    validate({ params: idParamsSchema, body: interventionUpdateBodySchema }),
     async (req, res) => {
         const { id } = req.params as unknown as { id: number };
         const existingRows = await getInterventionById(id);
@@ -340,7 +313,7 @@ interventionsRouter.put(
     }
 );
 
-interventionsRouter.delete("/:id", validate({ params: interventionIdParamsSchema }), async (req, res) => {
+interventionsRouter.delete("/:id", validate({ params: idParamsSchema }), async (req, res) => {
     const { id } = req.params as unknown as { id: number };
     const deletedIntervention = await deleteInterventionById(id);
 
