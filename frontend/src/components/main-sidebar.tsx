@@ -61,19 +61,15 @@ const MainSidebar = () => {
 
     return (
         <Sidebar collapsible="icon">
-            <SidebarHeader className="border-b border-sidebar-border px-3 group-data-[collapsible=icon]:px-2 py-2">
+            <SidebarHeader className="border-b border-sidebar-border px-3 py-2 group-data-[collapsible=icon]:px-2">
                 <SidebarMenuItem className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
                     <div className="flex size-8 items-center justify-center overflow-hidden rounded-sm border border-sidebar-border bg-background group-data-[collapsible=icon]:size-9">
                         <img src={logoUrl} alt="Logo laboratorio" className="size-full object-cover" />
                     </div>
 
                     <div className="grid leading-tight group-data-[collapsible=icon]:hidden">
-                        <span className="text-sm font-semibold text-sidebar-foreground">
-                            FutureOffice
-                        </span>
-                        <span className="text-xs text-sidebar-foreground/70">
-                            Laboratorio
-                        </span>
+                        <span className="text-sm font-semibold text-sidebar-foreground">FutureOffice</span>
+                        <span className="text-xs text-sidebar-foreground/70">Laboratorio</span>
                     </div>
                 </SidebarMenuItem>
             </SidebarHeader>
@@ -91,19 +87,10 @@ const MainSidebar = () => {
                                     isActive={active}
                                     onClick={() => navigateAndCloseMobile(item.path)}
                                     size="lg"
-                                    className={`
-        ${active ? "bg-primary! text-background! dark:text-foreground!" : ""}
-        flex items-center gap-2 w-full
-        group-data-[collapsible=icon]:justify-center
-        group-data-[collapsible=icon]:w-10
-        group-data-[collapsible=icon]:h-10
-        group-data-[collapsible=icon]:p-0
-    `}
+                                    className={` ${active ? "bg-primary! text-background! dark:text-foreground!" : ""} flex w-full items-center gap-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0`}
                                 >
                                     <Icon className="size-7 shrink-0" />
-                                    <span className="group-data-[collapsible=icon]:hidden">
-                                        {item.label}
-                                    </span>
+                                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         );
@@ -119,7 +106,7 @@ const MainSidebar = () => {
                             size="lg"
                             isActive={isSettingsActive}
                             onClick={() => navigateAndCloseMobile("/settings")}
-                            className={`flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:p-0 ${
+                            className={`flex w-full items-center gap-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 ${
                                 isSettingsActive ? "bg-primary! text-background! dark:text-foreground!" : ""
                             }`}
                         >

@@ -39,14 +39,14 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit, mode = "create",
     }, [open, initialValues]);
 
     const handleConfirm = async () => {
-        if(formValues.firstName === "") {
-            toast.error("Il nome non può essere vuoto")
-            return
+        if (formValues.firstName === "") {
+            toast.error("Il nome non può essere vuoto");
+            return;
         }
 
-        if(formValues.lastName === "") {
-            toast.error("Il cognome non può essere vuoto")
-            return
+        if (formValues.lastName === "") {
+            toast.error("Il cognome non può essere vuoto");
+            return;
         }
 
         if (isSubmitting) {
@@ -89,7 +89,9 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit, mode = "create",
             content={
                 <div className="grid gap-6">
                     <div className="grid">
-                        <Label htmlFor="firstName" className="text-lg">Nome</Label>
+                        <Label htmlFor="firstName" className="text-lg">
+                            Nome
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="firstName"
@@ -99,7 +101,9 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit, mode = "create",
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="lastName" className="text-lg">Cognome</Label>
+                        <Label htmlFor="lastName" className="text-lg">
+                            Cognome
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="lastName"
@@ -109,18 +113,24 @@ const CreateTechnicianDialog = ({ open, onOpenChange, onSubmit, mode = "create",
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="phoneNumber" className="text-lg">Telefono</Label>
+                        <Label htmlFor="phoneNumber" className="text-lg">
+                            Telefono
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="phoneNumber"
                             type="tel"
                             placeholder="333 1234567"
                             value={formValues.phoneNumber}
-                            onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))}
+                            onChange={(event) =>
+                                setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))
+                            }
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="vatNumber" className="text-lg">Partita IVA</Label>
+                        <Label htmlFor="vatNumber" className="text-lg">
+                            Partita IVA
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="vatNumber"

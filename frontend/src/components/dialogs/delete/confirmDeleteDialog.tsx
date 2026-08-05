@@ -14,14 +14,7 @@ type Props = {
     onConfirm: () => Promise<void> | void;
 };
 
-const ConfirmDeleteDialog = ({
-    open,
-    onOpenChange,
-    title,
-    description,
-    isDeleting = false,
-    onConfirm,
-}: Props) => {
+const ConfirmDeleteDialog = ({ open, onOpenChange, title, description, isDeleting = false, onConfirm }: Props) => {
     const confirmInputId = useId();
     const [confirmText, setConfirmText] = useState("");
     const [wasOpen, setWasOpen] = useState(open);

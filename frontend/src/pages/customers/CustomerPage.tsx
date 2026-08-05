@@ -36,10 +36,7 @@ const CustomerPage = () => {
     const [visibilityFilter, setVisibilityFilter] = useState<ReportVisibilityFilter>("all");
     const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
-    const hasValidCustomerId = useMemo(
-        () => Number.isInteger(customerId) && customerId > 0,
-        [customerId]
-    );
+    const hasValidCustomerId = useMemo(() => Number.isInteger(customerId) && customerId > 0, [customerId]);
 
     const handleBack = () => {
         navigate(-1);
@@ -120,7 +117,7 @@ const CustomerPage = () => {
     }
 
     return (
-        <div className="flex flex-col w-full h-full gap-4">
+        <div className="flex h-full w-full flex-col gap-4">
             <PrintRangeDialog
                 open={isPrintDialogOpen}
                 onOpenChange={setIsPrintDialogOpen}
@@ -150,7 +147,7 @@ const CustomerPage = () => {
                             aria-label="Stampa resoconto report"
                         >
                             <Printer className="size-5" />
-                            <Label className="hidden lg:inline text-lg">Stampa</Label>
+                            <Label className="hidden text-lg lg:inline">Stampa</Label>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>Stampa resoconto report</TooltipContent>
@@ -159,7 +156,10 @@ const CustomerPage = () => {
 
             <p className="ml-12">Rapporti del cliente</p>
             <div className="ml-12">
-                <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as ReportVisibilityFilter)}>
+                <Select
+                    value={visibilityFilter}
+                    onValueChange={(value) => setVisibilityFilter(value as ReportVisibilityFilter)}
+                >
                     <SelectTrigger className="w-full sm:w-56">
                         <SelectValue placeholder="Filtra per stato" />
                     </SelectTrigger>
@@ -173,7 +173,7 @@ const CustomerPage = () => {
 
             <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <div className="min-h-0 flex-1 overflow-y-auto">
-                    <Table className="hidden sm:table bg-background">
+                    <Table className="hidden bg-background sm:table">
                         <TableHeader className="w-full">
                             <TableRow>
                                 <TableHead>ID</TableHead>
@@ -195,7 +195,7 @@ const CustomerPage = () => {
                                         <TableCell>Rapporto #{report.id}</TableCell>
                                         <TableCell>{report.deviceName}</TableCell>
                                         <TableCell>{report.closed ? "Chiuso" : "Aperto"}</TableCell>
-                                        <TableCell className="bg-background text-foreground text-right">
+                                        <TableCell className="bg-background text-right text-foreground">
                                             <div className="flex items-center justify-end gap-2">
                                                 <OpenEntityButton
                                                     size="icon-lg"
@@ -214,8 +214,16 @@ const CustomerPage = () => {
                         className="sm:hidden"
                         columns={[
                             { key: "id", header: "ID", render: (row: CustomerReportRow) => `Rapporto #${row.id}` },
-                            { key: "deviceName", header: "Dispositivo", render: (row: CustomerReportRow) => row.deviceName },
-                            { key: "closed", header: "Stato", render: (row: CustomerReportRow) => (row.closed ? "Chiuso" : "Aperto") },
+                            {
+                                key: "deviceName",
+                                header: "Dispositivo",
+                                render: (row: CustomerReportRow) => row.deviceName,
+                            },
+                            {
+                                key: "closed",
+                                header: "Stato",
+                                render: (row: CustomerReportRow) => (row.closed ? "Chiuso" : "Aperto"),
+                            },
                         ]}
                         rows={paginatedReportRows}
                         getRowKey={(row) => row.id}

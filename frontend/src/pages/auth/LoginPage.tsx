@@ -1,46 +1,46 @@
-import { useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
-import { toast } from "sonner"
-import { Eye, EyeOff, LogIn } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getApiErrorMessage } from "@/lib/api"
-import { useAuth } from "@/components/use-auth"
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getApiErrorMessage } from "@/lib/api";
+import { useAuth } from "@/components/use-auth";
 
 const LoginPage = () => {
-    const { login } = useAuth()
-    const navigate = useNavigate()
-    const location = useLocation()
+    const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    const [username, setUsername] = useState("")
-    const [password, setPassword] = useState("")
-    const [isPasswordVisible, setIsPasswordVisible] = useState(false)
-    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async () => {
         if (isSubmitting) {
-            return
+            return;
         }
 
         if (!username.trim() || !password) {
-            toast.error("Inserisci nome utente e password")
-            return
+            toast.error("Inserisci nome utente e password");
+            return;
         }
 
         try {
-            setIsSubmitting(true)
-            await login(username.trim(), password)
+            setIsSubmitting(true);
+            await login(username.trim(), password);
 
-            const state = location.state as { from?: { pathname: string } } | null
-            navigate(state?.from?.pathname ?? "/dashboard", { replace: true })
+            const state = location.state as { from?: { pathname: string } } | null;
+            navigate(state?.from?.pathname ?? "/dashboard", { replace: true });
         } catch (error) {
-            toast.error(getApiErrorMessage(error, "Accesso non riuscito"))
+            toast.error(getApiErrorMessage(error, "Accesso non riuscito"));
         } finally {
-            setIsSubmitting(false)
+            setIsSubmitting(false);
         }
-    }
+    };
 
     return (
         <div className="flex h-svh w-full items-center justify-center px-4">
@@ -53,8 +53,8 @@ const LoginPage = () => {
                     <form
                         className="grid gap-4"
                         onSubmit={(event) => {
-                            event.preventDefault()
-                            void handleSubmit()
+                            event.preventDefault();
+                            void handleSubmit();
                         }}
                     >
                         <div className="grid gap-2">
@@ -101,7 +101,7 @@ const LoginPage = () => {
                 </CardContent>
             </Card>
         </div>
-    )
-}
+    );
+};
 
-export default LoginPage
+export default LoginPage;

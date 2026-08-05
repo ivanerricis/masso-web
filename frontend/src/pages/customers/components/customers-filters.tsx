@@ -13,7 +13,12 @@ type CustomersFiltersProps = {
     onSortOptionChange: (value: CustomerSortOption) => void;
 };
 
-const CustomersFilters = ({ searchText, onSearchTextChange, sortOption, onSortOptionChange }: CustomersFiltersProps) => {
+const CustomersFilters = ({
+    searchText,
+    onSearchTextChange,
+    sortOption,
+    onSortOptionChange,
+}: CustomersFiltersProps) => {
     const isCompact = useIsMobile(COMPACT_BREAKPOINT);
 
     return (

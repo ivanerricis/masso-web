@@ -80,8 +80,7 @@ export const updateIntervention = async (id: number, payload: Partial<Interventi
 export const deleteIntervention = async (id: number) =>
     (await api.delete<InterventionEntityDto>(`/interventions/${id}`)).data;
 
-export const getInterventionPrintUrl = (id: number) =>
-    api.getUri({ url: `/interventions/${id}/print` });
+export const getInterventionPrintUrl = (id: number) => api.getUri({ url: `/interventions/${id}/print` });
 
 export const sendInterventionEmail = async (id: number) =>
     (await api.post<{ message: string }>(`/interventions/${id}/send-email`)).data;
@@ -92,5 +91,4 @@ export type InterventionStatsDto = {
     completatoCount: number;
 };
 
-export const getInterventionStats = async () =>
-    (await api.get<InterventionStatsDto>("/interventions/stats")).data;
+export const getInterventionStats = async () => (await api.get<InterventionStatsDto>("/interventions/stats")).data;

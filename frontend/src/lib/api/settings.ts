@@ -54,8 +54,7 @@ export type BackupSettingsInput = Pick<
     | "smbUsername"
 > & { smbPassword?: string };
 
-export const getBackupSettings = async () =>
-    (await api.get<BackupSettingsDto>("/settings/backup")).data;
+export const getBackupSettings = async () => (await api.get<BackupSettingsDto>("/settings/backup")).data;
 
 export const updateBackupSettings = async (payload: BackupSettingsInput) =>
     (await api.put<BackupSettingsDto>("/settings/backup", payload)).data;
@@ -82,8 +81,7 @@ export type BackupDumpFileDto = {
     createdAt: string;
 };
 
-export const listBackupDumps = async () =>
-    (await api.get<BackupDumpFileDto[]>("/settings/backup/list")).data;
+export const listBackupDumps = async () => (await api.get<BackupDumpFileDto[]>("/settings/backup/list")).data;
 
 export const getBackupDumpDownloadUrl = (fileName: string) =>
     api.getUri({ url: `/settings/backup/download/${encodeURIComponent(fileName)}` });

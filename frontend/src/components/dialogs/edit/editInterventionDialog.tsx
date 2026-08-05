@@ -37,7 +37,13 @@ type EditInterventionDialogProps = {
     onSubmit: (values: EditInterventionSubmitValues) => Promise<void>;
 };
 
-const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChange, onSubmit }: EditInterventionDialogProps) => {
+const EditInterventionDialog = ({
+    open,
+    interventionId,
+    customerName,
+    onOpenChange,
+    onSubmit,
+}: EditInterventionDialogProps) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadedInterventionId, setLoadedInterventionId] = useState<number | null>(null);
@@ -178,11 +184,15 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                     ) : (
                         <div className="grid max-h-[70vh] gap-2 overflow-y-auto pr-1">
                             <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-                                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Anagrafica</h3>
+                                <h3 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                                    Anagrafica
+                                </h3>
 
                                 <div className="grid gap-4 lg:grid-cols-2">
                                     <div className="grid gap-1">
-                                        <Label htmlFor="customerName" className="text-lg">Cliente</Label>
+                                        <Label htmlFor="customerName" className="text-lg">
+                                            Cliente
+                                        </Label>
                                         <Select disabled value={customerName}>
                                             <SelectTrigger id="customerName" className="w-full">
                                                 <SelectValue placeholder={customerName} />
@@ -194,10 +204,14 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                                     </div>
 
                                     <div className="grid gap-1">
-                                        <Label htmlFor="collaboratorId" className="text-lg">Collaboratore</Label>
+                                        <Label htmlFor="collaboratorId" className="text-lg">
+                                            Collaboratore
+                                        </Label>
                                         <Select
                                             value={formValues.collaboratorId}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, collaboratorId: value }))}
+                                            onValueChange={(value) =>
+                                                setFormValues((prev) => ({ ...prev, collaboratorId: value }))
+                                            }
                                         >
                                             <SelectTrigger id="collaboratorId" className="w-full">
                                                 <SelectValue placeholder="Seleziona collaboratore" />
@@ -205,7 +219,10 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                                             <SelectContent>
                                                 {collaborators.map((collaborator) => (
                                                     <SelectItem key={collaborator.id} value={String(collaborator.id)}>
-                                                        {formatPersonName(collaborator.firstName, collaborator.lastName)}
+                                                        {formatPersonName(
+                                                            collaborator.firstName,
+                                                            collaborator.lastName
+                                                        )}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -215,14 +232,20 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                             </section>
 
                             <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-                                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Intervento</h3>
+                                <h3 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                                    Intervento
+                                </h3>
 
                                 <div className="grid gap-4 lg:grid-cols-2">
                                     <div className="grid gap-1">
-                                        <Label htmlFor="type" className="text-lg">Tipo intervento</Label>
+                                        <Label htmlFor="type" className="text-lg">
+                                            Tipo intervento
+                                        </Label>
                                         <Select
                                             value={formValues.type}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, type: value as InterventionType }))}
+                                            onValueChange={(value) =>
+                                                setFormValues((prev) => ({ ...prev, type: value as InterventionType }))
+                                            }
                                         >
                                             <SelectTrigger id="type" className="w-full">
                                                 <SelectValue placeholder="Seleziona tipo" />
@@ -238,10 +261,17 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                                     </div>
 
                                     <div className="grid gap-1">
-                                        <Label htmlFor="status" className="text-lg">Stato</Label>
+                                        <Label htmlFor="status" className="text-lg">
+                                            Stato
+                                        </Label>
                                         <Select
                                             value={formValues.status}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, status: value as InterventionStatus }))}
+                                            onValueChange={(value) =>
+                                                setFormValues((prev) => ({
+                                                    ...prev,
+                                                    status: value as InterventionStatus,
+                                                }))
+                                            }
                                         >
                                             <SelectTrigger id="status" className="w-full">
                                                 <SelectValue placeholder="Seleziona stato" />
@@ -257,46 +287,68 @@ const EditInterventionDialog = ({ open, interventionId, customerName, onOpenChan
                                     </div>
 
                                     <div className="grid gap-1">
-                                        <Label htmlFor="interventionDate" className="text-lg">{interventionDateLabel(formValues.type)}</Label>
+                                        <Label htmlFor="interventionDate" className="text-lg">
+                                            {interventionDateLabel(formValues.type)}
+                                        </Label>
                                         <DatePickerField
                                             id="interventionDate"
                                             value={formValues.interventionDate}
-                                            onValueChange={(value) => setFormValues((prev) => ({ ...prev, interventionDate: value }))}
+                                            onValueChange={(value) =>
+                                                setFormValues((prev) => ({ ...prev, interventionDate: value }))
+                                            }
                                         />
                                     </div>
 
                                     {isOnSite ? (
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-1">
-                                                <Label htmlFor="startTime" className="text-lg">Ora inizio</Label>
+                                                <Label htmlFor="startTime" className="text-lg">
+                                                    Ora inizio
+                                                </Label>
                                                 <Input
                                                     id="startTime"
                                                     type="time"
                                                     value={formValues.startTime}
-                                                    onChange={(event) => setFormValues((prev) => ({ ...prev, startTime: event.target.value }))}
+                                                    onChange={(event) =>
+                                                        setFormValues((prev) => ({
+                                                            ...prev,
+                                                            startTime: event.target.value,
+                                                        }))
+                                                    }
                                                 />
                                             </div>
 
                                             <div className="grid gap-1">
-                                                <Label htmlFor="endTime" className="text-lg">Ora fine</Label>
+                                                <Label htmlFor="endTime" className="text-lg">
+                                                    Ora fine
+                                                </Label>
                                                 <Input
                                                     id="endTime"
                                                     type="time"
                                                     value={formValues.endTime}
-                                                    onChange={(event) => setFormValues((prev) => ({ ...prev, endTime: event.target.value }))}
+                                                    onChange={(event) =>
+                                                        setFormValues((prev) => ({
+                                                            ...prev,
+                                                            endTime: event.target.value,
+                                                        }))
+                                                    }
                                                 />
                                             </div>
                                         </div>
                                     ) : null}
 
                                     <div className="grid gap-1 lg:col-span-2">
-                                        <Label htmlFor="description" className="text-lg">{interventionDescriptionLabel(formValues.type)}</Label>
+                                        <Label htmlFor="description" className="text-lg">
+                                            {interventionDescriptionLabel(formValues.type)}
+                                        </Label>
                                         <Textarea
                                             id="description"
-                                            className="text-lg! resize-none"
+                                            className="resize-none text-lg!"
                                             rows={4}
                                             value={formValues.description}
-                                            onChange={(event) => setFormValues((prev) => ({ ...prev, description: event.target.value }))}
+                                            onChange={(event) =>
+                                                setFormValues((prev) => ({ ...prev, description: event.target.value }))
+                                            }
                                         />
                                     </div>
                                 </div>

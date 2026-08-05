@@ -17,7 +17,17 @@ type Props = Readonly<{
     inputClassName?: string;
 }>;
 
-const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onSearch, onCreate, required, inputClassName }: Props) => {
+const InputWithAdd = ({
+    id,
+    placeholder,
+    value,
+    onChange,
+    options = [],
+    onSearch,
+    onCreate,
+    required,
+    inputClassName,
+}: Props) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [searchResults, setSearchResults] = useState<string[]>([]);
@@ -56,9 +66,7 @@ const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onSearch
             return options.slice(0, 8);
         }
 
-        return options
-            .filter((option) => option.toLowerCase().includes(normalizedValue))
-            .slice(0, 8);
+        return options.filter((option) => option.toLowerCase().includes(normalizedValue)).slice(0, 8);
     }, [onSearch, searchResults, normalizedValue, options]);
 
     const hasExactMatch = useMemo(() => {
@@ -95,7 +103,7 @@ const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onSearch
     return (
         <div className="relative w-full">
             <Input
-                className={cn("group text-lg! h-full", inputClassName)}
+                className={cn("group h-full text-lg!", inputClassName)}
                 id={id}
                 placeholder={placeholder}
                 value={value}
@@ -140,12 +148,12 @@ const InputWithAdd = ({ id, placeholder, value, onChange, options = [], onSearch
                             }}
                             disabled={isCreating}
                         >
-                            <Plus className="size-5"/>
+                            <Plus className="size-5" />
                             {isCreating
                                 ? "Creazione..."
                                 : onCreate
-                                    ? `Crea "${value.trim()}"`
-                                    : `Usa "${value.trim()}"`}
+                                  ? `Crea "${value.trim()}"`
+                                  : `Usa "${value.trim()}"`}
                         </Button>
                     ) : null}
                 </div>

@@ -24,7 +24,11 @@ export async function listDevices(params?: ListDevicesParams) {
     }
 
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<DeviceDto>>>("/devices", {
-        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
+        params: {
+            page: params.page ?? 1,
+            pageSize: params.pageSize ?? 1000,
+            search: params.search?.trim() || undefined,
+        },
     });
 
     const items = response.data.items.map((device) => mapEntityTimestamps(device));

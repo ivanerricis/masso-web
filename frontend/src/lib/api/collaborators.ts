@@ -26,7 +26,11 @@ export async function listCollaborators(params?: ListCollaboratorsParams) {
     }
 
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<CollaboratorDto>>>("/collaborators", {
-        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
+        params: {
+            page: params.page ?? 1,
+            pageSize: params.pageSize ?? 1000,
+            search: params.search?.trim() || undefined,
+        },
     });
 
     const items = response.data.items.map((collaborator) => mapEntityTimestamps(collaborator));
@@ -41,7 +45,9 @@ export const createCollaborator = async (payload: CollaboratorCreateInput) =>
     mapEntityTimestamps((await api.post<EntityWithRawTimestamps<CollaboratorDto>>("/collaborators", payload)).data);
 
 export const updateCollaborator = async (id: number, payload: CollaboratorUpdateInput) =>
-    mapEntityTimestamps((await api.put<EntityWithRawTimestamps<CollaboratorDto>>(`/collaborators/${id}`, payload)).data);
+    mapEntityTimestamps(
+        (await api.put<EntityWithRawTimestamps<CollaboratorDto>>(`/collaborators/${id}`, payload)).data
+    );
 
 export const deleteCollaborator = async (id: number) =>
     mapEntityTimestamps((await api.delete<EntityWithRawTimestamps<CollaboratorDto>>(`/collaborators/${id}`)).data);

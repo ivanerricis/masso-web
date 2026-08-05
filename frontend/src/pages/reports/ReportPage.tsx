@@ -58,13 +58,13 @@ const statusBadgeClass = (value: boolean) =>
 
 const DetailItem = ({ label, value }: { label: string; value: string }) => (
     <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-xs tracking-wide text-muted-foreground uppercase">{label}</p>
         <p className="mt-1 text-sm font-medium wrap-break-word">{value}</p>
     </div>
 );
 
 const TableHeaderCell = ({ children }: { children: string }) => (
-    <th className="border border-border/70 bg-muted/40 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <th className="border border-border/70 bg-muted/40 px-3 py-2 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {children}
     </th>
 );
@@ -83,10 +83,7 @@ const ReportPage = () => {
     const [details, setDetails] = useState<ReportPageDetails | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-    const hasValidReportId = useMemo(
-        () => Number.isInteger(reportId) && reportId > 0,
-        [reportId]
-    );
+    const hasValidReportId = useMemo(() => Number.isInteger(reportId) && reportId > 0, [reportId]);
 
     const handleBack = () => {
         navigate(-1);
@@ -138,9 +135,7 @@ const ReportPage = () => {
             customerPhone: customer?.phoneNumber ?? customer?.phoneNumberSecondary ?? null,
             deviceName: device?.name ?? "Dispositivo sconosciuto",
             issueName: issue?.description ?? "Difetto sconosciuto",
-            collaboratorName: collaborator
-                ? `${collaborator.firstName} ${collaborator.lastName ?? ""}`.trim()
-                : "-",
+            collaboratorName: collaborator ? `${collaborator.firstName} ${collaborator.lastName ?? ""}`.trim() : "-",
             technicians: technicianDetails,
             techniciansTotal,
         });
@@ -215,9 +210,7 @@ const ReportPage = () => {
 
     if (!details) {
         return (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-                Report non disponibile.
-            </div>
+            <div className="flex h-full items-center justify-center text-muted-foreground">Report non disponibile.</div>
         );
     }
 
@@ -245,7 +238,7 @@ const ReportPage = () => {
                             </Tooltip>
 
                             <div className="min-w-0">
-                                <h1 className="text-xl font-bold tracking-tight sm:text-2xl wrap-break-word">
+                                <h1 className="text-xl font-bold tracking-tight wrap-break-word sm:text-2xl">
                                     Rapporto #{details.report.id} - {details.customerName}
                                 </h1>
                             </div>
@@ -254,9 +247,14 @@ const ReportPage = () => {
                         <div className="flex shrink-0 items-center gap-2 self-end lg:self-auto">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="outline" size={"lg"} onClick={() => setIsEditDialogOpen(true)} aria-label="Modifica rapporto">
+                                    <Button
+                                        variant="outline"
+                                        size={"lg"}
+                                        onClick={() => setIsEditDialogOpen(true)}
+                                        aria-label="Modifica rapporto"
+                                    >
                                         <Pencil className="size-5" />
-                                        <Label className="hidden lg:inline text-lg">Modifica</Label>
+                                        <Label className="hidden text-lg lg:inline">Modifica</Label>
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Modifica rapporto</TooltipContent>
@@ -266,7 +264,7 @@ const ReportPage = () => {
                                 <TooltipTrigger asChild>
                                     <Button size={"lg"} onClick={handlePrintReport} aria-label="Stampa rapporto">
                                         <Printer className="size-5" />
-                                        <Label className="hidden lg:inline text-lg">Stampa</Label>
+                                        <Label className="hidden text-lg lg:inline">Stampa</Label>
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Stampa rapporto</TooltipContent>
@@ -281,7 +279,9 @@ const ReportPage = () => {
                         <span className="rounded-full border border-border/70 bg-background px-3 py-2">
                             Aggiornato: {details.report.updated_at ? formatDateTime(details.report.updated_at) : "-"}
                         </span>
-                        <span className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.report.closed)}`}>
+                        <span
+                            className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.report.closed)}`}
+                        >
                             {details.report.closed ? "Chiuso" : "Aperto"}
                         </span>
                     </div>
@@ -289,7 +289,7 @@ const ReportPage = () => {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Card className="border-primary/20 h-fit! gap-2!">
+                <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Prezzo interno</CardTitle>
                     </CardHeader>
@@ -298,7 +298,7 @@ const ReportPage = () => {
                     </CardContent>
                 </Card>
 
-                <Card className="border-primary/20 h-fit! gap-2!">
+                <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Prezzo tecnici</CardTitle>
                     </CardHeader>
@@ -307,7 +307,7 @@ const ReportPage = () => {
                     </CardContent>
                 </Card>
 
-                <Card className="border-primary/20 h-fit! gap-2!">
+                <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Totale</CardTitle>
                     </CardHeader>
@@ -316,7 +316,7 @@ const ReportPage = () => {
                     </CardContent>
                 </Card>
 
-                <Card className="border-primary/20 h-fit! gap-2!">
+                <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Pagamento</CardTitle>
                     </CardHeader>

@@ -58,8 +58,7 @@ const normalizeCustomerText = (value: string) =>
         .toLowerCase()
         .replace(/\s+/g, " ");
 
-const getCustomerFullName = (firstName: string, lastName: string | null) =>
-    `${firstName} ${lastName ?? ""}`.trim();
+const getCustomerFullName = (firstName: string, lastName: string | null) => `${firstName} ${lastName ?? ""}`.trim();
 
 const resolveSelectedCustomer = (customers: CustomerDto[], rawValue: string) => {
     const normalizedRawValue = normalizeCustomerText(rawValue);
@@ -335,7 +334,9 @@ const ReportsPage = () => {
                 <PageHeader
                     title="Rapporti"
                     description="Gestisci i rapporti del laboratorio."
-                    action={<CreateEntityButton label="Crea nuovo rapporto" onClick={() => setIsCreateDialogOpen(true)} />}
+                    action={
+                        <CreateEntityButton label="Crea nuovo rapporto" onClick={() => setIsCreateDialogOpen(true)} />
+                    }
                 />
 
                 <CreateReportDialog
@@ -409,10 +410,12 @@ const ReportsPage = () => {
                     />
                 </div>
 
-                {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+                {isLoading ? (
+                    <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+                ) : null}
             </>
         </div>
     );
-}
+};
 
 export default ReportsPage;

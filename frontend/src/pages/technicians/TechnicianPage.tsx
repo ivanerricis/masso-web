@@ -46,10 +46,7 @@ const TechnicianPage = () => {
     const [reportIdToEdit, setReportIdToEdit] = useState<number | null>(null);
     const [reportCustomerNameToEdit, setReportCustomerNameToEdit] = useState("");
 
-    const hasValidTechnicianId = useMemo(
-        () => Number.isInteger(technicianId) && technicianId > 0,
-        [technicianId]
-    );
+    const hasValidTechnicianId = useMemo(() => Number.isInteger(technicianId) && technicianId > 0, [technicianId]);
 
     const handleBack = () => {
         navigate(-1);
@@ -143,9 +140,7 @@ const TechnicianPage = () => {
             }
 
             const reportIdsForTechnician = new Set(
-                reportTechnicians
-                    .filter((item) => item.technicianId === technicianId)
-                    .map((item) => item.reportId)
+                reportTechnicians.filter((item) => item.technicianId === technicianId).map((item) => item.reportId)
             );
 
             const customerById = new Map(customers.map((customer) => [customer.id, customer]));
@@ -159,8 +154,9 @@ const TechnicianPage = () => {
 
                     return {
                         id: report.id,
-                        customerName:
-                            customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "Cliente sconosciuto",
+                        customerName: customer
+                            ? `${customer.firstName} ${customer.lastName ?? ""}`.trim()
+                            : "Cliente sconosciuto",
                         deviceName: device?.name ?? "Dispositivo sconosciuto",
                         closed: report.closed,
                     };
@@ -188,7 +184,7 @@ const TechnicianPage = () => {
     }
 
     return (
-        <div className="flex flex-col w-full h-full gap-4">
+        <div className="flex h-full w-full flex-col gap-4">
             <div className="flex items-center gap-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -203,7 +199,10 @@ const TechnicianPage = () => {
 
             <p className="ml-12">Rapporti del tecnico</p>
             <div className="ml-12">
-                <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as ReportVisibilityFilter)}>
+                <Select
+                    value={visibilityFilter}
+                    onValueChange={(value) => setVisibilityFilter(value as ReportVisibilityFilter)}
+                >
                     <SelectTrigger className="w-full sm:w-56">
                         <SelectValue placeholder="Filtra per stato" />
                     </SelectTrigger>
@@ -219,7 +218,7 @@ const TechnicianPage = () => {
                     <p className="text-muted-foreground">Nessun report associato a questo tecnico.</p>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        <Table className="hidden sm:table bg-background">
+                        <Table className="hidden bg-background sm:table">
                             <TableHeader className="w-full">
                                 <TableRow>
                                     <TableHead>Report</TableHead>

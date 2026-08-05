@@ -1,6 +1,10 @@
 import CreateEntityButton from "@/components/create-entity-button";
-import CreateInterventionDialog, { type CreateInterventionSubmitValues } from "@/components/dialogs/create/createInterventionDialog";
-import EditInterventionDialog, { type EditInterventionSubmitValues } from "@/components/dialogs/edit/editInterventionDialog";
+import CreateInterventionDialog, {
+    type CreateInterventionSubmitValues,
+} from "@/components/dialogs/create/createInterventionDialog";
+import EditInterventionDialog, {
+    type EditInterventionSubmitValues,
+} from "@/components/dialogs/edit/editInterventionDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
@@ -43,12 +47,7 @@ const formatCustomerOption = (
 };
 
 const normalizeCustomerText = (value: string) =>
-    value
-        .normalize("NFKD")
-        .replace(/[̀-ͯ]/g, "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, " ");
+    value.normalize("NFKD").replace(/[̀-ͯ]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
 
 const getCustomerFullName = (firstName: string, lastName: string | null) => `${firstName} ${lastName ?? ""}`.trim();
 
@@ -59,7 +58,12 @@ const resolveSelectedCustomer = (customers: CustomerDto[], rawValue: string) => 
     const exactMatches = customers.filter(
         (customer) =>
             normalizeCustomerText(
-                formatCustomerOption(customer.firstName, customer.lastName, customer.phoneNumber, customer.phoneNumberSecondary)
+                formatCustomerOption(
+                    customer.firstName,
+                    customer.lastName,
+                    customer.phoneNumber,
+                    customer.phoneNumberSecondary
+                )
             ) === normalizedRawValue
     );
 
@@ -123,16 +127,17 @@ const InterventionsPage = () => {
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [searchText, statusFilter, typeFilter, sortOption, dateFrom, dateTo, pageSize],
     });
-    const { interventionRows, totalItems, totalPages, isLoading, loadInterventions, updateInterventionRow } = useInterventionsRows({
-        searchText,
-        statusFilter,
-        typeFilter,
-        sortOption,
-        dateFrom,
-        dateTo,
-        currentPage,
-        pageSize,
-    });
+    const { interventionRows, totalItems, totalPages, isLoading, loadInterventions, updateInterventionRow } =
+        useInterventionsRows({
+            searchText,
+            statusFilter,
+            typeFilter,
+            sortOption,
+            dateFrom,
+            dateTo,
+            currentPage,
+            pageSize,
+        });
 
     const handleCreateIntervention = async (values: CreateInterventionSubmitValues) => {
         try {
@@ -255,7 +260,9 @@ const InterventionsPage = () => {
                 <PageHeader
                     title="Interventi"
                     description="Gestisci consegne materiale e interventi in sede o da remoto."
-                    action={<CreateEntityButton label="Crea nuovo intervento" onClick={() => setIsCreateDialogOpen(true)} />}
+                    action={
+                        <CreateEntityButton label="Crea nuovo intervento" onClick={() => setIsCreateDialogOpen(true)} />
+                    }
                 />
 
                 <CreateInterventionDialog
@@ -332,7 +339,9 @@ const InterventionsPage = () => {
                     />
                 </div>
 
-                {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+                {isLoading ? (
+                    <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+                ) : null}
             </>
         </div>
     );

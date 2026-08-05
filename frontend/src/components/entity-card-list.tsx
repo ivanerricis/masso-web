@@ -29,7 +29,7 @@ const EntityCardList = <T,>({
 }: EntityCardListProps<T>) => {
     if (rows.length === 0) {
         return (
-            <div className={cn("sm:hidden py-6 text-center text-sm text-muted-foreground", className)}>
+            <div className={cn("py-6 text-center text-sm text-muted-foreground sm:hidden", className)}>
                 {emptyMessage}
             </div>
         );

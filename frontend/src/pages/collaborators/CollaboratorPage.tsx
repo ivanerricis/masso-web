@@ -91,8 +91,9 @@ const CollaboratorPage = () => {
 
                         return {
                             id: report.id,
-                            customerName:
-                                customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "Cliente sconosciuto",
+                            customerName: customer
+                                ? `${customer.firstName} ${customer.lastName ?? ""}`.trim()
+                                : "Cliente sconosciuto",
                             deviceName: device?.name ?? "Dispositivo sconosciuto",
                             closed: report.closed,
                         };
@@ -114,7 +115,7 @@ const CollaboratorPage = () => {
     }
 
     return (
-        <div className="flex flex-col w-full h-full gap-4">
+        <div className="flex h-full w-full flex-col gap-4">
             <div className="flex items-center gap-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -128,7 +129,10 @@ const CollaboratorPage = () => {
             </div>
             <p className="ml-12">Rapporti del collaboratore</p>
             <div className="ml-12">
-                <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as ReportVisibilityFilter)}>
+                <Select
+                    value={visibilityFilter}
+                    onValueChange={(value) => setVisibilityFilter(value as ReportVisibilityFilter)}
+                >
                     <SelectTrigger className="w-full sm:w-56">
                         <SelectValue placeholder="Filtra per stato" />
                     </SelectTrigger>

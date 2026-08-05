@@ -1,7 +1,9 @@
 import { CalendarClock, ChevronLeft, ChevronRight, CircleCheck, CircleDashed, Euro, Loader } from "lucide-react";
 import CardDashboard from "./components/cardDashboard";
 import CreateReportDialog from "@/components/dialogs/create/createReportDialog";
-import CreateInterventionDialog, { type CreateInterventionSubmitValues } from "@/components/dialogs/create/createInterventionDialog";
+import CreateInterventionDialog, {
+    type CreateInterventionSubmitValues,
+} from "@/components/dialogs/create/createInterventionDialog";
 import LoadingPage from "@/components/loadingPage";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -77,7 +79,11 @@ const DashboardPage = () => {
     const navigate = useNavigate();
     const [dialogCreateReportOpen, setDialogCreateReportOpen] = useState(false);
     const [dialogCreateInterventionOpen, setDialogCreateInterventionOpen] = useState(false);
-    const { events: calendarEvents, isLoading: isCalendarLoading, loadEvents: loadCalendarEvents } = useCalendarInterventions();
+    const {
+        events: calendarEvents,
+        isLoading: isCalendarLoading,
+        loadEvents: loadCalendarEvents,
+    } = useCalendarInterventions();
     const [selectedRevenueMonth, setSelectedRevenueMonth] = useState(() => getMonthKey(new Date()));
     const [openReports, setOpenReports] = useState(0);
     const [closedReports, setClosedReports] = useState(0);
@@ -88,10 +94,7 @@ const DashboardPage = () => {
     const [completedInterventions, setCompletedInterventions] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
-    const selectedRevenueLabel = useMemo(
-        () => getMonthLabel(selectedRevenueMonth),
-        [selectedRevenueMonth]
-    );
+    const selectedRevenueLabel = useMemo(() => getMonthLabel(selectedRevenueMonth), [selectedRevenueMonth]);
 
     const isCurrentRevenueMonth = selectedRevenueMonth === getMonthKey(new Date());
 
@@ -111,10 +114,7 @@ const DashboardPage = () => {
     const loadDashboardMetrics = async (month: string) => {
         setIsLoading(true);
         try {
-            const [reportStats, interventionStats] = await Promise.all([
-                getReportStats(month),
-                getInterventionStats(),
-            ]);
+            const [reportStats, interventionStats] = await Promise.all([getReportStats(month), getInterventionStats()]);
 
             setOpenReports(reportStats.openCount);
             setClosedReports(reportStats.closedCount);
@@ -294,14 +294,17 @@ const DashboardPage = () => {
     };
 
     return (
-        <div className="relative flex flex-col gap-4 w-full">
+        <div className="relative flex w-full flex-col gap-4">
             <PageHeader
                 title="Dashboard"
                 description="Panoramica del laboratorio e stato delle riparazioni."
                 action={
                     <div className="flex flex-wrap items-center gap-2">
                         <CreateEntityButton label="Nuovo rapportino" onClick={() => setDialogCreateReportOpen(true)} />
-                        <CreateEntityButton label="Nuovo intervento" onClick={() => setDialogCreateInterventionOpen(true)} />
+                        <CreateEntityButton
+                            label="Nuovo intervento"
+                            onClick={() => setDialogCreateInterventionOpen(true)}
+                        />
                     </div>
                 }
             />
@@ -438,7 +441,7 @@ const DashboardPage = () => {
                                 })}
                             </div>
 
-                            <div className="flex gap-2 text-[10px] uppercase text-muted-foreground">
+                            <div className="flex gap-2 text-[10px] text-muted-foreground uppercase">
                                 {monthlyRevenueSeries.map((point) => (
                                     <span
                                         key={point.monthKey}
@@ -465,7 +468,9 @@ const DashboardPage = () => {
                 />
             </Suspense>
 
-            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+            {isLoading ? (
+                <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+            ) : null}
 
             <CreateReportDialog
                 open={dialogCreateReportOpen}
@@ -480,6 +485,6 @@ const DashboardPage = () => {
             />
         </div>
     );
-}
+};
 
 export default DashboardPage;

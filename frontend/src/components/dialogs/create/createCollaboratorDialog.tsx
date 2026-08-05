@@ -16,13 +16,7 @@ type Props = {
     initialValues?: CollaboratorDto | null;
 };
 
-const CreateCollaboratorDialog = ({
-    open,
-    onOpenChange,
-    onSubmit,
-    mode = "create",
-    initialValues = null,
-}: Props) => {
+const CreateCollaboratorDialog = ({ open, onOpenChange, onSubmit, mode = "create", initialValues = null }: Props) => {
     const [formValues, setFormValues] = useState({
         firstName: "",
         lastName: "",
@@ -43,9 +37,9 @@ const CreateCollaboratorDialog = ({
     }, [open, initialValues]);
 
     const handleConfirm = async () => {
-        if(formValues.firstName === "") {
-            toast.error("Il nome non può essere vuoto")
-            return
+        if (formValues.firstName === "") {
+            toast.error("Il nome non può essere vuoto");
+            return;
         }
 
         if (isSubmitting) {
@@ -61,7 +55,9 @@ const CreateCollaboratorDialog = ({
             setIsSubmitting(true);
             await onSubmit(formValues);
             onOpenChange(false);
-            toast.success(mode === "edit" ? "Collaboratore aggiornato con successo" : "Collaboratore creato con successo");
+            toast.success(
+                mode === "edit" ? "Collaboratore aggiornato con successo" : "Collaboratore creato con successo"
+            );
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -88,7 +84,9 @@ const CreateCollaboratorDialog = ({
             content={
                 <div className="grid gap-6">
                     <div className="grid">
-                        <Label htmlFor="firstName" className="text-lg">Nome</Label>
+                        <Label htmlFor="firstName" className="text-lg">
+                            Nome
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="firstName"
@@ -98,7 +96,9 @@ const CreateCollaboratorDialog = ({
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="lastName" className="text-lg">Cognome</Label>
+                        <Label htmlFor="lastName" className="text-lg">
+                            Cognome
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="lastName"
@@ -108,14 +108,18 @@ const CreateCollaboratorDialog = ({
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="phoneNumber" className="text-lg">Telefono</Label>
+                        <Label htmlFor="phoneNumber" className="text-lg">
+                            Telefono
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="phoneNumber"
                             type="tel"
                             placeholder="333 1234567"
                             value={formValues.phoneNumber}
-                            onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))}
+                            onChange={(event) =>
+                                setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))
+                            }
                         />
                     </div>
                 </div>

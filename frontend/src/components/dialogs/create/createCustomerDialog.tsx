@@ -42,13 +42,13 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
 
     const handleConfirm = async () => {
         if (formValues.firstName === "") {
-            toast.error("Il nome non può essere vuoto")
-            return
+            toast.error("Il nome non può essere vuoto");
+            return;
         }
 
         if (formValues.phoneNumber.trim() === "" && formValues.phoneNumberSecondary.trim() === "") {
-            toast.error("Almeno un numero di telefono e obbligatorio")
-            return
+            toast.error("Almeno un numero di telefono e obbligatorio");
+            return;
         }
 
         if (isSubmitting) {
@@ -91,7 +91,9 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
             content={
                 <div className="grid gap-6">
                     <div className="grid">
-                        <Label htmlFor="firstName" className="text-lg">Nome (Nome azienda)</Label>
+                        <Label htmlFor="firstName" className="text-lg">
+                            Nome (Nome azienda)
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="firstName"
@@ -101,7 +103,9 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="lastName" className="text-lg">Cognome</Label>
+                        <Label htmlFor="lastName" className="text-lg">
+                            Cognome
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="lastName"
@@ -111,29 +115,39 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="phoneNumber" className="text-lg">Telefono 1</Label>
+                        <Label htmlFor="phoneNumber" className="text-lg">
+                            Telefono 1
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="phoneNumber"
                             type="tel"
                             placeholder="333 1234567"
                             value={formValues.phoneNumber}
-                            onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))}
+                            onChange={(event) =>
+                                setFormValues((prev) => ({ ...prev, phoneNumber: event.target.value }))
+                            }
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="phoneNumberSecondary" className="text-lg">Telefono 2 (opzionale)</Label>
+                        <Label htmlFor="phoneNumberSecondary" className="text-lg">
+                            Telefono 2 (opzionale)
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="phoneNumberSecondary"
                             type="tel"
                             placeholder="333 9876543"
                             value={formValues.phoneNumberSecondary}
-                            onChange={(event) => setFormValues((prev) => ({ ...prev, phoneNumberSecondary: event.target.value }))}
+                            onChange={(event) =>
+                                setFormValues((prev) => ({ ...prev, phoneNumberSecondary: event.target.value }))
+                            }
                         />
                     </div>
                     <div className="grid">
-                        <Label htmlFor="email" className="text-lg">Email (opzionale)</Label>
+                        <Label htmlFor="email" className="text-lg">
+                            Email (opzionale)
+                        </Label>
                         <Input
                             className="text-lg!"
                             id="email"

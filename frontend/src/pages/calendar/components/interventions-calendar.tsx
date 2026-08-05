@@ -2,12 +2,21 @@ import LoadingPage from "@/components/loadingPage";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getStoredCalendarView, setStoredCalendarView } from "@/lib/calendarView";
-import CreateInterventionDialog, { type CreateInterventionSubmitValues } from "@/components/dialogs/create/createInterventionDialog";
+import CreateInterventionDialog, {
+    type CreateInterventionSubmitValues,
+} from "@/components/dialogs/create/createInterventionDialog";
 import type { InterventionStatus } from "@/types/dtos";
 import { format, getDay, parse, startOfWeek } from "date-fns";
 import { it } from "date-fns/locale";
 import { useMemo, useState } from "react";
-import { Calendar, dateFnsLocalizer, type EventPropGetter, type Messages, type SlotInfo, type View } from "react-big-calendar";
+import {
+    Calendar,
+    dateFnsLocalizer,
+    type EventPropGetter,
+    type Messages,
+    type SlotInfo,
+    type View,
+} from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../calendar-theme.css";
 import CalendarEventPopover from "./calendar-event-popover";
@@ -117,7 +126,9 @@ const InterventionsCalendar = ({ className, events, isLoading, onCreateIntervent
                 initialDate={initialInterventionDate}
             />
 
-            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+            {isLoading ? (
+                <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+            ) : null}
         </Card>
     );
 };

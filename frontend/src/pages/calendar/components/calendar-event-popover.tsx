@@ -55,7 +55,9 @@ const CalendarEventPopover = ({ event, title }: EventProps<InterventionCalendarE
                             <p className="font-semibold">{intervention.customer}</p>
                             <p className="text-sm text-muted-foreground">{intervention.collaborator}</p>
                         </div>
-                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass[intervention.status]}`}>
+                        <span
+                            className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass[intervention.status]}`}
+                        >
                             {formatInterventionStatus(intervention.status)}
                         </span>
                     </div>

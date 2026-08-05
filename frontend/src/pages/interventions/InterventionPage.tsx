@@ -1,5 +1,7 @@
 import LoadingPage from "@/components/loadingPage";
-import EditInterventionDialog, { type EditInterventionSubmitValues } from "@/components/dialogs/edit/editInterventionDialog";
+import EditInterventionDialog, {
+    type EditInterventionSubmitValues,
+} from "@/components/dialogs/edit/editInterventionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -13,7 +15,12 @@ import {
     updateIntervention,
 } from "@/lib/api";
 import { formatDate, formatDateTime, openPrintWindow } from "@/lib/utils";
-import { formatInterventionStatus, formatInterventionTime, formatInterventionType, isOnSiteInterventionType } from "@/lib/interventions";
+import {
+    formatInterventionStatus,
+    formatInterventionTime,
+    formatInterventionType,
+    isOnSiteInterventionType,
+} from "@/lib/interventions";
 import { ArrowLeft, Pencil, Printer } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -40,7 +47,7 @@ const statusBadgeClass = (status: InterventionEntityDto["status"]) => {
 
 const DetailItem = ({ label, value }: { label: string; value: string }) => (
     <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-xs tracking-wide text-muted-foreground uppercase">{label}</p>
         <p className="mt-1 text-sm font-medium wrap-break-word">{value}</p>
     </div>
 );
@@ -53,7 +60,10 @@ const InterventionPage = () => {
     const [details, setDetails] = useState<InterventionPageDetails | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-    const hasValidInterventionId = useMemo(() => Number.isInteger(interventionId) && interventionId > 0, [interventionId]);
+    const hasValidInterventionId = useMemo(
+        () => Number.isInteger(interventionId) && interventionId > 0,
+        [interventionId]
+    );
 
     const handleBack = () => {
         navigate(-1);
@@ -81,7 +91,9 @@ const InterventionPage = () => {
             intervention,
             customerName: customer ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "Cliente sconosciuto",
             customerPhone: customer?.phoneNumber ?? customer?.phoneNumberSecondary ?? null,
-            collaboratorName: collaborator ? `${collaborator.firstName} ${collaborator.lastName ?? ""}`.trim() : "Collaboratore sconosciuto",
+            collaboratorName: collaborator
+                ? `${collaborator.firstName} ${collaborator.lastName ?? ""}`.trim()
+                : "Collaboratore sconosciuto",
         });
     }, [interventionId]);
 
@@ -157,7 +169,7 @@ const InterventionPage = () => {
                             </Tooltip>
 
                             <div className="min-w-0">
-                                <h1 className="text-xl font-bold tracking-tight sm:text-2xl wrap-break-word">
+                                <h1 className="text-xl font-bold tracking-tight wrap-break-word sm:text-2xl">
                                     Intervento #{details.intervention.id} - {details.customerName}
                                 </h1>
                             </div>
@@ -166,9 +178,14 @@ const InterventionPage = () => {
                         <div className="flex shrink-0 items-center gap-2 self-end lg:self-auto">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="outline" size="lg" onClick={() => setIsEditDialogOpen(true)} aria-label="Modifica intervento">
+                                    <Button
+                                        variant="outline"
+                                        size="lg"
+                                        onClick={() => setIsEditDialogOpen(true)}
+                                        aria-label="Modifica intervento"
+                                    >
                                         <Pencil className="size-5" />
-                                        <span className="hidden lg:inline text-lg">Modifica</span>
+                                        <span className="hidden text-lg lg:inline">Modifica</span>
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Modifica intervento</TooltipContent>
@@ -178,7 +195,7 @@ const InterventionPage = () => {
                                 <TooltipTrigger asChild>
                                     <Button size="lg" onClick={handlePrintIntervention} aria-label="Stampa intervento">
                                         <Printer className="size-5" />
-                                        <span className="hidden lg:inline text-lg">Stampa</span>
+                                        <span className="hidden text-lg lg:inline">Stampa</span>
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Stampa intervento</TooltipContent>
@@ -191,9 +208,12 @@ const InterventionPage = () => {
                             Creato: {formatDateTime(details.intervention.created_at)}
                         </span>
                         <span className="rounded-full border border-border/70 bg-background px-3 py-2">
-                            Aggiornato: {details.intervention.updated_at ? formatDateTime(details.intervention.updated_at) : "-"}
+                            Aggiornato:{" "}
+                            {details.intervention.updated_at ? formatDateTime(details.intervention.updated_at) : "-"}
                         </span>
-                        <span className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.intervention.status)}`}>
+                        <span
+                            className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.intervention.status)}`}
+                        >
                             {formatInterventionStatus(details.intervention.status)}
                         </span>
                     </div>
@@ -201,7 +221,7 @@ const InterventionPage = () => {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Card className="border-primary/20 h-fit! gap-2!">
+                <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Tipo intervento</CardTitle>
                     </CardHeader>
@@ -210,18 +230,16 @@ const InterventionPage = () => {
                     </CardContent>
                 </Card>
 
-                <Card className="border-primary/20 h-fit! gap-2!">
+                <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Data intervento</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-semibold">
-                            {formatDate(details.intervention.interventionDate)}
-                        </p>
+                        <p className="text-2xl font-semibold">{formatDate(details.intervention.interventionDate)}</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-primary/20 h-fit! gap-2!">
+                <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Ora inizio</CardTitle>
                     </CardHeader>
@@ -232,7 +250,7 @@ const InterventionPage = () => {
                     </CardContent>
                 </Card>
 
-                <Card className="border-primary/20 h-fit! gap-2!">
+                <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Ora fine</CardTitle>
                     </CardHeader>
@@ -266,7 +284,9 @@ const InterventionPage = () => {
                         <DetailItem label="Creato il" value={formatDateTime(details.intervention.created_at)} />
                         <DetailItem
                             label="Ultimo aggiornamento"
-                            value={details.intervention.updated_at ? formatDateTime(details.intervention.updated_at) : "-"}
+                            value={
+                                details.intervention.updated_at ? formatDateTime(details.intervention.updated_at) : "-"
+                            }
                         />
                     </CardContent>
                 </Card>

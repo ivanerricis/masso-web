@@ -1,10 +1,10 @@
-import { SettingsSection } from "@/components/settings/settingsUi"
-import BackupConfigurationCard from "./backup/backupConfigurationCard"
-import BackupDumpsCard from "./backup/backupDumpsCard"
-import BackupRestoreCard from "./backup/backupRestoreCard"
-import BackupRestoreDialog from "./backup/backupRestoreDialog"
-import BackupStatusCard from "./backup/backupStatusCard"
-import { useBackupPanel } from "./backup/useBackupPanel"
+import { SettingsSection } from "@/components/settings/settingsUi";
+import BackupConfigurationCard from "./backup/backupConfigurationCard";
+import BackupDumpsCard from "./backup/backupDumpsCard";
+import BackupRestoreCard from "./backup/backupRestoreCard";
+import BackupRestoreDialog from "./backup/backupRestoreDialog";
+import BackupStatusCard from "./backup/backupStatusCard";
+import { useBackupPanel } from "./backup/useBackupPanel";
 
 /**
  * Composizione delle schede del pannello backup. Stato e azioni vivono in
@@ -13,17 +13,17 @@ import { useBackupPanel } from "./backup/useBackupPanel"
  * aggiungerebbe informazione.
  */
 const BackupSettingsPanel = () => {
-  const panel = useBackupPanel()
+    const panel = useBackupPanel();
 
-  return (
-    <SettingsSection>
-      <BackupStatusCard panel={panel} />
-      <BackupConfigurationCard panel={panel} />
-      <BackupDumpsCard panel={panel} />
-      <BackupRestoreCard panel={panel} />
-      <BackupRestoreDialog panel={panel} />
-    </SettingsSection>
-  )
-}
+    return (
+        <SettingsSection>
+            <BackupStatusCard panel={panel} />
+            <BackupConfigurationCard panel={panel} />
+            <BackupDumpsCard panel={panel} />
+            <BackupRestoreCard panel={panel} />
+            <BackupRestoreDialog panel={panel} />
+        </SettingsSection>
+    );
+};
 
-export default BackupSettingsPanel
+export default BackupSettingsPanel;

@@ -11,13 +11,7 @@ import {
 } from "@/components/settings/settingsUi";
 import CustomDialog from "@/components/dialogs/customDialog";
 import { useBusyGuard } from "@/components/use-busy-guard";
-import {
-    checkForUpdates,
-    getApiErrorMessage,
-    getUpdateStatus,
-    runUpdateNow,
-    type UpdateStatusDto,
-} from "@/lib/api";
+import { checkForUpdates, getApiErrorMessage, getUpdateStatus, runUpdateNow, type UpdateStatusDto } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
 const POLL_INTERVAL_MS = 3000;
@@ -118,7 +112,8 @@ const UpdateSettingsPanel = () => {
         setIsUpdating(true);
         setBusy({
             title: "Aggiornamento in corso...",
-            description: "Non chiudere o ricaricare la pagina: l'applicazione si ricaricherà automaticamente al termine.",
+            description:
+                "Non chiudere o ricaricare la pagina: l'applicazione si ricaricherà automaticamente al termine.",
         });
 
         try {

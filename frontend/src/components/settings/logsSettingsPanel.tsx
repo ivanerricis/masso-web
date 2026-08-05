@@ -45,7 +45,7 @@ const LogsSettingsPanel = () => {
             const files = await listLogFiles();
             setLogFiles(files);
             setSelectedDayKey((current) =>
-                current && files.some((file) => file.dayKey === current) ? current : files[0]?.dayKey ?? ""
+                current && files.some((file) => file.dayKey === current) ? current : (files[0]?.dayKey ?? "")
             );
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile caricare l'elenco dei log"));
@@ -111,9 +111,7 @@ const LogsSettingsPanel = () => {
                 title="Log azioni"
                 description="Consulta il registro delle azioni eseguite sull'applicazione, giorno per giorno."
                 className="min-h-0 flex-1"
-                contentClassName={
-                    logFiles.length === 0 ? undefined : "flex min-h-0 flex-1 flex-col gap-3 pt-4"
-                }
+                contentClassName={logFiles.length === 0 ? undefined : "flex min-h-0 flex-1 flex-col gap-3 pt-4"}
                 action={
                     <>
                         <Tooltip>
@@ -127,10 +125,7 @@ const LogsSettingsPanel = () => {
                                     aria-label="Aggiorna elenco log"
                                 >
                                     <RefreshCw
-                                        className={cn(
-                                            "size-4",
-                                            (isLoadingEntries || isLoadingFiles) && "animate-spin"
-                                        )}
+                                        className={cn("size-4", (isLoadingEntries || isLoadingFiles) && "animate-spin")}
                                     />
                                 </Button>
                             </TooltipTrigger>
@@ -163,7 +158,11 @@ const LogsSettingsPanel = () => {
                                 </SelectContent>
                             </Select>
 
-                            <SearchInput value={searchText} onValueChange={setSearchText} placeholder="Cerca nel log..." />
+                            <SearchInput
+                                value={searchText}
+                                onValueChange={setSearchText}
+                                placeholder="Cerca nel log..."
+                            />
                         </div>
 
                         <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-primary/15">
@@ -181,13 +180,19 @@ const LogsSettingsPanel = () => {
                                 <TableBody>
                                     {isLoadingEntries ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="whitespace-normal text-center text-muted-foreground">
+                                            <TableCell
+                                                colSpan={6}
+                                                className="text-center whitespace-normal text-muted-foreground"
+                                            >
                                                 Caricamento log...
                                             </TableCell>
                                         </TableRow>
                                     ) : entries.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="whitespace-normal text-center text-muted-foreground">
+                                            <TableCell
+                                                colSpan={6}
+                                                className="text-center whitespace-normal text-muted-foreground"
+                                            >
                                                 Nessuna voce trovata per i criteri selezionati.
                                             </TableCell>
                                         </TableRow>
@@ -198,7 +203,11 @@ const LogsSettingsPanel = () => {
                                                 <TableCell>{entry.ip}</TableCell>
                                                 <TableCell>{entry.user}</TableCell>
                                                 <TableCell className="whitespace-normal">{entry.action}</TableCell>
-                                                <TableCell className={cn(entry.status >= 400 && "font-semibold text-destructive")}>
+                                                <TableCell
+                                                    className={cn(
+                                                        entry.status >= 400 && "font-semibold text-destructive"
+                                                    )}
+                                                >
                                                     {entry.status}
                                                 </TableCell>
                                                 <TableCell className="whitespace-normal text-destructive">

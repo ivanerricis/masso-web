@@ -32,7 +32,11 @@ const PaymentMethodSelector = ({ value, onValueChange, className, orientation = 
     const layoutClassName = orientation === "vertical" ? "grid-cols-1" : "md:grid-cols-3";
 
     return (
-        <div role="radiogroup" aria-label="Metodo di pagamento" className={cn("flex flex-wrap gap-2", layoutClassName, className)}>
+        <div
+            role="radiogroup"
+            aria-label="Metodo di pagamento"
+            className={cn("flex flex-wrap gap-2", layoutClassName, className)}
+        >
             {paymentMethodOptions.map((option) => {
                 const isSelected = value === option.value;
 

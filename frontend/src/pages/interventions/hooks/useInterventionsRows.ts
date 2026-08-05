@@ -27,34 +27,27 @@ export const useInterventionsRows = ({
     pageSize,
 }: UseInterventionsRowsParams) => {
     const debouncedSearchText = useDebouncedValue(searchText);
-    const [sortBy, sortOrder] = sortOption.split(":") as ["createdAt" | "interventionDate" | "customer", "asc" | "desc"];
-    const { rows, totalItems, totalPages, isLoading, reload, updateRow } =
-        usePaginatedRows<InterventionDto>({
-            fetchRows: () =>
-                listInterventions({
-                    page: currentPage,
-                    pageSize,
-                    search: debouncedSearchText,
-                    status: statusFilter,
-                    type: typeFilter,
-                    sortBy,
-                    sortOrder,
-                    dateFrom,
-                    dateTo,
-                }),
-            queryKey: [
-                currentPage,
+    const [sortBy, sortOrder] = sortOption.split(":") as [
+        "createdAt" | "interventionDate" | "customer",
+        "asc" | "desc",
+    ];
+    const { rows, totalItems, totalPages, isLoading, reload, updateRow } = usePaginatedRows<InterventionDto>({
+        fetchRows: () =>
+            listInterventions({
+                page: currentPage,
                 pageSize,
-                debouncedSearchText,
-                statusFilter,
-                typeFilter,
-                sortOption,
+                search: debouncedSearchText,
+                status: statusFilter,
+                type: typeFilter,
+                sortBy,
+                sortOrder,
                 dateFrom,
                 dateTo,
-            ],
-            errorMessage: "Impossibile caricare gli interventi",
-            initialLoading: false,
-        });
+            }),
+        queryKey: [currentPage, pageSize, debouncedSearchText, statusFilter, typeFilter, sortOption, dateFrom, dateTo],
+        errorMessage: "Impossibile caricare gli interventi",
+        initialLoading: false,
+    });
 
     const updateInterventionRow = useCallback(
         (interventionId: number, updater: (intervention: InterventionDto) => InterventionDto) => {

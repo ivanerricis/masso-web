@@ -105,7 +105,12 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
         const customers = await listCustomers({ pageSize: 8, search: query || undefined });
         const options = customers.items.map((customer) => ({
             id: customer.id,
-            label: formatCustomerOption(customer.firstName, customer.lastName, customer.phoneNumber, customer.phoneNumberSecondary),
+            label: formatCustomerOption(
+                customer.firstName,
+                customer.lastName,
+                customer.phoneNumber,
+                customer.phoneNumberSecondary
+            ),
         }));
 
         setCustomerIdByOption((prev) => ({
@@ -202,11 +207,15 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                 content={
                     <div className="grid max-h-[72vh] gap-4 overflow-y-auto py-1 pr-1">
                         <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Anagrafica</h3>
+                            <h3 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                                Anagrafica
+                            </h3>
 
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <div className="grid">
-                                    <Label htmlFor="customer" className="text-lg">Cliente</Label>
+                                    <Label htmlFor="customer" className="text-lg">
+                                        Cliente
+                                    </Label>
                                     <div className="flex">
                                         <InputWithAdd
                                             id="customer"
@@ -214,7 +223,9 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                             inputClassName="rounded-r-none"
                                             value={formValues.customer}
                                             onSearch={searchCustomers}
-                                            onChange={(value) => setFormValues((prev) => ({ ...prev, customer: value }))}
+                                            onChange={(value) =>
+                                                setFormValues((prev) => ({ ...prev, customer: value }))
+                                            }
                                             required
                                         />
                                         <Tooltip>
@@ -223,7 +234,7 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                                     type="button"
                                                     variant="outline"
                                                     size="icon-lg"
-                                                    className="border-l-0! rounded-l-none"
+                                                    className="rounded-l-none border-l-0!"
                                                     onClick={() => setIsCreateCustomerDialogOpen(true)}
                                                     aria-label="Crea nuovo cliente"
                                                 >
@@ -236,10 +247,14 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                 </div>
 
                                 <div className="grid gap-1">
-                                    <Label htmlFor="collaboratorId" className="text-lg">Collaboratore</Label>
+                                    <Label htmlFor="collaboratorId" className="text-lg">
+                                        Collaboratore
+                                    </Label>
                                     <Select
                                         value={formValues.collaboratorId}
-                                        onValueChange={(value) => setFormValues((prev) => ({ ...prev, collaboratorId: value }))}
+                                        onValueChange={(value) =>
+                                            setFormValues((prev) => ({ ...prev, collaboratorId: value }))
+                                        }
                                     >
                                         <SelectTrigger id="collaboratorId" className="w-full">
                                             <SelectValue placeholder="Seleziona collaboratore" />
@@ -257,14 +272,20 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                         </section>
 
                         <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Intervento</h3>
+                            <h3 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                                Intervento
+                            </h3>
 
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <div className="grid gap-1">
-                                    <Label htmlFor="type" className="text-lg">Tipo intervento</Label>
+                                    <Label htmlFor="type" className="text-lg">
+                                        Tipo intervento
+                                    </Label>
                                     <Select
                                         value={formValues.type}
-                                        onValueChange={(value) => setFormValues((prev) => ({ ...prev, type: value as InterventionType }))}
+                                        onValueChange={(value) =>
+                                            setFormValues((prev) => ({ ...prev, type: value as InterventionType }))
+                                        }
                                     >
                                         <SelectTrigger id="type" className="w-full">
                                             <SelectValue placeholder="Seleziona tipo" />
@@ -280,10 +301,14 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                 </div>
 
                                 <div className="grid gap-1">
-                                    <Label htmlFor="status" className="text-lg">Stato</Label>
+                                    <Label htmlFor="status" className="text-lg">
+                                        Stato
+                                    </Label>
                                     <Select
                                         value={formValues.status}
-                                        onValueChange={(value) => setFormValues((prev) => ({ ...prev, status: value as InterventionStatus }))}
+                                        onValueChange={(value) =>
+                                            setFormValues((prev) => ({ ...prev, status: value as InterventionStatus }))
+                                        }
                                     >
                                         <SelectTrigger id="status" className="w-full">
                                             <SelectValue placeholder="Seleziona stato" />
@@ -299,43 +324,60 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                 </div>
 
                                 <div className="grid gap-1">
-                                    <Label htmlFor="interventionDate" className="text-lg">{interventionDateLabel(formValues.type)}</Label>
+                                    <Label htmlFor="interventionDate" className="text-lg">
+                                        {interventionDateLabel(formValues.type)}
+                                    </Label>
                                     <DatePickerField
                                         id="interventionDate"
                                         value={formValues.interventionDate}
-                                        onValueChange={(value) => setFormValues((prev) => ({ ...prev, interventionDate: value }))}
+                                        onValueChange={(value) =>
+                                            setFormValues((prev) => ({ ...prev, interventionDate: value }))
+                                        }
                                     />
                                 </div>
 
                                 {isOnSite ? (
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-1">
-                                            <Label htmlFor="startTime" className="text-lg">Ora inizio</Label>
+                                            <Label htmlFor="startTime" className="text-lg">
+                                                Ora inizio
+                                            </Label>
                                             <Input
                                                 id="startTime"
                                                 type="time"
                                                 value={formValues.startTime}
-                                                onChange={(event) => setFormValues((prev) => ({ ...prev, startTime: event.target.value }))}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({
+                                                        ...prev,
+                                                        startTime: event.target.value,
+                                                    }))
+                                                }
                                             />
                                         </div>
 
                                         <div className="grid gap-1">
-                                            <Label htmlFor="endTime" className="text-lg">Ora fine</Label>
+                                            <Label htmlFor="endTime" className="text-lg">
+                                                Ora fine
+                                            </Label>
                                             <Input
                                                 id="endTime"
                                                 type="time"
                                                 value={formValues.endTime}
-                                                onChange={(event) => setFormValues((prev) => ({ ...prev, endTime: event.target.value }))}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, endTime: event.target.value }))
+                                                }
                                             />
                                         </div>
                                     </div>
                                 ) : null}
 
                                 <div className="grid gap-1 lg:col-span-2">
-                                    <Label htmlFor="description" className="text-lg">{interventionDescriptionLabel(formValues.type)}</Label>
+                                    <Label htmlFor="description" className="text-lg">
+                                        {interventionDescriptionLabel(formValues.type)}
+                                    </Label>
                                     <Textarea
                                         id="description"
-                                        className="text-lg! resize-none"
+                                        className="resize-none text-lg!"
                                         rows={4}
                                         placeholder={
                                             formValues.type === "consegna_materiale"
@@ -343,7 +385,9 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                                 : "Descrivi l'assistenza effettuata"
                                         }
                                         value={formValues.description}
-                                        onChange={(event) => setFormValues((prev) => ({ ...prev, description: event.target.value }))}
+                                        onChange={(event) =>
+                                            setFormValues((prev) => ({ ...prev, description: event.target.value }))
+                                        }
                                     />
                                 </div>
                             </div>
@@ -359,9 +403,12 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                     const createdCustomer = await createCustomer({
                         firstName: String(values.firstName).trim(),
                         lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
-                        phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+                        phoneNumber:
+                            String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
                         phoneNumberSecondary:
-                            String(values.phoneNumberSecondary).trim() === "" ? null : String(values.phoneNumberSecondary).trim(),
+                            String(values.phoneNumberSecondary).trim() === ""
+                                ? null
+                                : String(values.phoneNumberSecondary).trim(),
                         email: String(values.email).trim() === "" ? null : String(values.email).trim(),
                     });
 

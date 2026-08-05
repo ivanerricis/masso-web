@@ -13,7 +13,7 @@ const OpenEntityButton = ({ size = "lg", className, "aria-label": ariaLabel, ...
                 <Button
                     variant="outline"
                     size={size}
-                    className={cn("text-lg border-0", className)}
+                    className={cn("border-0 text-lg", className)}
                     aria-label={ariaLabel}
                     {...props}
                 >

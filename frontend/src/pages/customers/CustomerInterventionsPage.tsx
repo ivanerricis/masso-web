@@ -11,7 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getApiErrorMessage, getCustomerInterventionsPrintUrl, listCustomers, listInterventions } from "@/lib/api";
 import { openPrintWindow } from "@/lib/utils";
 import { formatDate } from "@/lib/utils";
-import { formatInterventionStatus, formatInterventionTime, formatInterventionType, interventionStatusOptions } from "@/lib/interventions";
+import {
+    formatInterventionStatus,
+    formatInterventionTime,
+    formatInterventionType,
+    interventionStatusOptions,
+} from "@/lib/interventions";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Printer } from "lucide-react";
 import type { InterventionStatus } from "@/types/dtos";
@@ -63,10 +68,7 @@ const CustomerInterventionsPage = () => {
     const [statusFilter, setStatusFilter] = useState<InterventionStatusFilter>("all");
     const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
-    const hasValidCustomerId = useMemo(
-        () => Number.isInteger(customerId) && customerId > 0,
-        [customerId]
-    );
+    const hasValidCustomerId = useMemo(() => Number.isInteger(customerId) && customerId > 0, [customerId]);
 
     const handleBack = () => {
         navigate(-1);
@@ -117,7 +119,11 @@ const CustomerInterventionsPage = () => {
                     .map((intervention) => ({
                         id: intervention.id,
                         type: formatInterventionType(intervention.type),
-                        schedule: formatSchedule(intervention.interventionDate, intervention.startTime, intervention.endTime),
+                        schedule: formatSchedule(
+                            intervention.interventionDate,
+                            intervention.startTime,
+                            intervention.endTime
+                        ),
                         status: intervention.status,
                     }));
 
@@ -137,7 +143,7 @@ const CustomerInterventionsPage = () => {
     }
 
     return (
-        <div className="flex flex-col w-full h-full gap-4">
+        <div className="flex h-full w-full flex-col gap-4">
             <PrintRangeDialog
                 open={isPrintDialogOpen}
                 onOpenChange={setIsPrintDialogOpen}
@@ -167,7 +173,7 @@ const CustomerInterventionsPage = () => {
                             aria-label="Stampa resoconto interventi"
                         >
                             <Printer className="size-5" />
-                            <Label className="hidden lg:inline text-lg">Stampa</Label>
+                            <Label className="hidden text-lg lg:inline">Stampa</Label>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>Stampa resoconto interventi</TooltipContent>
@@ -176,7 +182,10 @@ const CustomerInterventionsPage = () => {
 
             <p className="ml-12">Interventi del cliente</p>
             <div className="ml-12">
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as InterventionStatusFilter)}>
+                <Select
+                    value={statusFilter}
+                    onValueChange={(value) => setStatusFilter(value as InterventionStatusFilter)}
+                >
                     <SelectTrigger className="w-full sm:w-56">
                         <SelectValue placeholder="Filtra per stato" />
                     </SelectTrigger>
@@ -193,7 +202,7 @@ const CustomerInterventionsPage = () => {
 
             <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <div className="min-h-0 flex-1 overflow-y-auto">
-                    <Table className="hidden sm:table bg-background">
+                    <Table className="hidden bg-background sm:table">
                         <TableHeader className="w-full">
                             <TableRow>
                                 <TableHead>ID</TableHead>
@@ -212,12 +221,15 @@ const CustomerInterventionsPage = () => {
                                 </TableRow>
                             ) : (
                                 paginatedInterventionRows.map((intervention) => (
-                                    <TableRow key={intervention.id} data-status-color={statusColorByStatus[intervention.status]}>
+                                    <TableRow
+                                        key={intervention.id}
+                                        data-status-color={statusColorByStatus[intervention.status]}
+                                    >
                                         <TableCell>{intervention.id}</TableCell>
                                         <TableCell>{intervention.type}</TableCell>
                                         <TableCell>{intervention.schedule}</TableCell>
                                         <TableCell>{formatInterventionStatus(intervention.status)}</TableCell>
-                                        <TableCell className="bg-background text-foreground text-right">
+                                        <TableCell className="bg-background text-right text-foreground">
                                             <div className="flex items-center justify-end gap-2">
                                                 <OpenEntityButton
                                                     size="icon-lg"
@@ -237,7 +249,11 @@ const CustomerInterventionsPage = () => {
                         columns={[
                             { key: "id", header: "ID", render: (row: CustomerInterventionRow) => row.id },
                             { key: "type", header: "Tipo", render: (row: CustomerInterventionRow) => row.type },
-                            { key: "schedule", header: "Data/Orario", render: (row: CustomerInterventionRow) => row.schedule },
+                            {
+                                key: "schedule",
+                                header: "Data/Orario",
+                                render: (row: CustomerInterventionRow) => row.schedule,
+                            },
                             {
                                 key: "status",
                                 header: "Stato",

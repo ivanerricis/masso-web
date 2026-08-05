@@ -22,11 +22,7 @@ const SearchInput = ({ value, onValueChange, placeholder = "Cerca..." }: Props) 
                 value={value}
                 onChange={(event) => onValueChange(event.target.value)}
             />
-            <InputGroupButton
-                className="mr-1"
-                size={"icon-sm"}
-                onClick={handleDeleteText}
-            >
+            <InputGroupButton className="mr-1" size={"icon-sm"} onClick={handleDeleteText}>
                 <X className="text-primary" />
             </InputGroupButton>
         </InputGroup>

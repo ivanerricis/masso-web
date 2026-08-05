@@ -24,7 +24,11 @@ export async function listIssues(params?: ListIssuesParams) {
     }
 
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<IssueDto>>>("/issues", {
-        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
+        params: {
+            page: params.page ?? 1,
+            pageSize: params.pageSize ?? 1000,
+            search: params.search?.trim() || undefined,
+        },
     });
 
     const items = response.data.items.map((issue) => mapEntityTimestamps(issue));

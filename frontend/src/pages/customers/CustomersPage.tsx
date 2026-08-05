@@ -39,7 +39,9 @@ const CustomersPage = () => {
     const [printReportsCustomerId, setPrintReportsCustomerId] = useState<number | null>(null);
     const [printInterventionsCustomerId, setPrintInterventionsCustomerId] = useState<number | null>(null);
     const pageSize = useTableRowsPerPage();
-    const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, sortOption, pageSize] });
+    const { currentPage, setCurrentPage } = useTablePagination({
+        resetDependencies: [searchText, sortOption, pageSize],
+    });
     const { customerRows, totalItems, totalPages, isLoading, loadCustomers } = useCustomersRows({
         searchText,
         sortOption,
@@ -247,9 +249,11 @@ const CustomersPage = () => {
                 />
             </div>
 
-            {isLoading ? <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" /> : null}
+            {isLoading ? (
+                <LoadingPage className="absolute inset-0 z-10 rounded-2xl bg-background/70 backdrop-blur-sm" />
+            ) : null}
         </div>
     );
-}
+};
 
 export default CustomersPage;

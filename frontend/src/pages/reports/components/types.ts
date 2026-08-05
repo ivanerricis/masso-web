@@ -1,6 +1,7 @@
 export type ReportVisibilityFilter = "all" | "open" | "closed";
 
-export type ReportSortOption = "createdAt:desc" | "createdAt:asc" | "customer:asc" | "customer:desc" | "totalPrice:desc" | "totalPrice:asc";
+export type ReportSortOption =
+    "createdAt:desc" | "createdAt:asc" | "customer:asc" | "customer:desc" | "totalPrice:desc" | "totalPrice:asc";
 
 export const DEFAULT_REPORT_SORT_OPTION: ReportSortOption = "createdAt:desc";
 

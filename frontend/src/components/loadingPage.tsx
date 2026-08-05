@@ -8,9 +8,9 @@ type LoadingPageProps = {
 const LoadingPage = ({ className }: LoadingPageProps) => {
     return (
         <div className={cn("flex h-full w-full items-center justify-center", className)}>
-            <Loader2 className="size-10 text-primary animate-spin" />
+            <Loader2 className="size-10 animate-spin text-primary" />
         </div>
     );
-}
+};
 
 export default LoadingPage;

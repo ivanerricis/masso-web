@@ -29,9 +29,9 @@ const CreateDeviceDialog = ({ open, onOpenChange, onSubmit, mode = "create", ini
     }, [open, initialValues]);
 
     const handleConfirm = async () => {
-        if(name === "") {
-            toast.error("Il nome del dispositivo non può essere vuoto")
-            return
+        if (name === "") {
+            toast.error("Il nome del dispositivo non può essere vuoto");
+            return;
         }
 
         if (isSubmitting) {
@@ -73,7 +73,9 @@ const CreateDeviceDialog = ({ open, onOpenChange, onSubmit, mode = "create", ini
             confirmDisabled={isSubmitting}
             content={
                 <div className="grid">
-                    <Label htmlFor="name" className="text-lg">Nome dispositivo</Label>
+                    <Label htmlFor="name" className="text-lg">
+                        Nome dispositivo
+                    </Label>
                     <Input
                         className="text-lg!"
                         id="name"

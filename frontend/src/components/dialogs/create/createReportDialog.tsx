@@ -5,7 +5,15 @@ import CreateIssueDialog from "@/components/dialogs/create/createIssueDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { createCustomer, createDevice, createIssue, getApiErrorMessage, listCustomers, listDevices, listIssues } from "@/lib/api";
+import {
+    createCustomer,
+    createDevice,
+    createIssue,
+    getApiErrorMessage,
+    listCustomers,
+    listDevices,
+    listIssues,
+} from "@/lib/api";
 import { startTransition, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import InputWithAdd from "@/components/inputWithAdd";
@@ -80,17 +88,12 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
 
             const loadOptions = async () => {
                 try {
-                    const [devices, issues] = await Promise.all([
-                        listDevices(),
-                        listIssues(),
-                    ]);
+                    const [devices, issues] = await Promise.all([listDevices(), listIssues()]);
 
                     setDeviceOptions(devices.map((device) => device.name));
                     setDeviceIdByOption(Object.fromEntries(devices.map((device) => [device.name, device.id])));
                     setIssueOptions(issues.map((issue) => issue.description));
-                    setIssueIdByOption(
-                        Object.fromEntries(issues.map((issue) => [issue.description, issue.id]))
-                    );
+                    setIssueIdByOption(Object.fromEntries(issues.map((issue) => [issue.description, issue.id])));
                 } catch (error) {
                     toast.error(getApiErrorMessage(error, "Impossibile caricare i suggerimenti"));
                 }
@@ -195,12 +198,15 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 content={
                     <div className="grid max-h-[72vh] gap-4 overflow-y-auto py-1 pr-1">
                         <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Anagrafica</h3>
+                            <h3 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                                Anagrafica
+                            </h3>
 
                             <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-2">
                                 <div className="grid lg:col-span-1">
-                                    <Label htmlFor="client" className="text-lg">Cliente</Label>
+                                    <Label htmlFor="client" className="text-lg">
+                                        Cliente
+                                    </Label>
                                     <div className="flex">
                                         <InputWithAdd
                                             id="client"
@@ -219,7 +225,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                                     type="button"
                                                     variant="outline"
                                                     size={"icon-lg"}
-                                                    className="border-l-0! rounded-l-none"
+                                                    className="rounded-l-none border-l-0!"
                                                     onClick={() => setIsCreateCustomerDialogOpen(true)}
                                                     aria-label="Crea nuovo cliente"
                                                 >
@@ -232,7 +238,9 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                 </div>
 
                                 <div className="grid lg:col-span-2 xl:col-span-1">
-                                    <Label htmlFor="deviceType" className="text-lg">Tipologia dispositivo</Label>
+                                    <Label htmlFor="deviceType" className="text-lg">
+                                        Tipologia dispositivo
+                                    </Label>
                                     <div className="flex">
                                         <InputWithAdd
                                             id="deviceType"
@@ -243,9 +251,14 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             onCreate={async (value: string) => {
                                                 const createdDevice = await createDevice({ name: value });
                                                 setDeviceOptions((prev) => Array.from(new Set([...prev, value])));
-                                                setDeviceIdByOption((prev) => ({ ...prev, [createdDevice.name]: createdDevice.id }));
+                                                setDeviceIdByOption((prev) => ({
+                                                    ...prev,
+                                                    [createdDevice.name]: createdDevice.id,
+                                                }));
                                             }}
-                                            onChange={(value: string) => setFormValues((prev) => ({ ...prev, deviceType: value }))}
+                                            onChange={(value: string) =>
+                                                setFormValues((prev) => ({ ...prev, deviceType: value }))
+                                            }
                                             required
                                         />
                                         <Tooltip>
@@ -254,7 +267,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                                     type="button"
                                                     variant="outline"
                                                     size={"icon-lg"}
-                                                    className="border-l-0! rounded-l-none"
+                                                    className="rounded-l-none border-l-0!"
                                                     onClick={() => setIsCreateDeviceDialogOpen(true)}
                                                     aria-label="Crea nuovo dispositivo"
                                                 >
@@ -269,12 +282,15 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         </section>
 
                         <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Intervento</h3>
+                            <h3 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                                Intervento
+                            </h3>
 
                             <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-2">
                                 <div className="grid lg:col-span-2 xl:col-span-1">
-                                    <Label htmlFor="issueDescription" className="text-lg">Descrizione difetto</Label>
+                                    <Label htmlFor="issueDescription" className="text-lg">
+                                        Descrizione difetto
+                                    </Label>
                                     <div className="flex">
                                         <InputWithAdd
                                             id="issueDescription"
@@ -285,7 +301,10 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                             onCreate={async (value: string) => {
                                                 const createdIssue = await createIssue({ description: value });
                                                 setIssueOptions((prev) => Array.from(new Set([...prev, value])));
-                                                setIssueIdByOption((prev) => ({ ...prev, [createdIssue.description]: createdIssue.id }));
+                                                setIssueIdByOption((prev) => ({
+                                                    ...prev,
+                                                    [createdIssue.description]: createdIssue.id,
+                                                }));
                                             }}
                                             onChange={(value: string) => {
                                                 setFormValues((prev) => ({ ...prev, issueDescription: value }));
@@ -301,7 +320,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                                     type="button"
                                                     variant="outline"
                                                     size={"icon-lg"}
-                                                    className="border-l-0! rounded-l-none"
+                                                    className="rounded-l-none border-l-0!"
                                                     onClick={() => setIsCreateIssueDialogOpen(true)}
                                                     aria-label="Crea nuovo difetto"
                                                 >
@@ -314,7 +333,9 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                 </div>
 
                                 <div className="grid">
-                                    <Label htmlFor="password" className="text-lg">Password sblocco</Label>
+                                    <Label htmlFor="password" className="text-lg">
+                                        Password sblocco
+                                    </Label>
                                     <Input
                                         className="text-lg!"
                                         id="password"
@@ -327,7 +348,9 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                 </div>
 
                                 <div className="grid lg:col-span-2 xl:col-span-3">
-                                    <Label htmlFor="notes" className="text-lg">Note</Label>
+                                    <Label htmlFor="notes" className="text-lg">
+                                        Note
+                                    </Label>
                                     <Textarea
                                         className="text-lg!"
                                         id="notes"
@@ -343,12 +366,13 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                         </section>
 
                         <section className="grid gap-3 rounded-md border border-primary/15 bg-muted/20 p-4">
-
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Stato</h3>
+                            <h3 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                                Stato
+                            </h3>
 
                             <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-2">
                                 <div className="grid gap-2 rounded-md">
-                                    <Label htmlFor="charger" className="text-lg w-full">
+                                    <Label htmlFor="charger" className="w-full text-lg">
                                         Alimentatore presente
                                     </Label>
                                     <Select
@@ -375,7 +399,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                                 </div>
 
                                 <div className="grid gap-2 rounded-md">
-                                    <Label htmlFor="dataBackup" className="text-lg w-full">
+                                    <Label htmlFor="dataBackup" className="w-full text-lg">
                                         Backup dati
                                     </Label>
                                     <Select
@@ -413,9 +437,12 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                     const createdCustomer = await createCustomer({
                         firstName: String(values.firstName).trim(),
                         lastName: String(values.lastName).trim() === "" ? null : String(values.lastName).trim(),
-                        phoneNumber: String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
+                        phoneNumber:
+                            String(values.phoneNumber).trim() === "" ? null : String(values.phoneNumber).trim(),
                         phoneNumberSecondary:
-                            String(values.phoneNumberSecondary).trim() === "" ? null : String(values.phoneNumberSecondary).trim(),
+                            String(values.phoneNumberSecondary).trim() === ""
+                                ? null
+                                : String(values.phoneNumberSecondary).trim(),
                         email: String(values.email).trim() === "" ? null : String(values.email).trim(),
                     });
 

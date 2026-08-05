@@ -5,7 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useIsMobile } from "@/hooks/use-mobile";
 import { interventionTypeOptions, interventionStatusOptions } from "@/lib/interventions";
 import { ArrowUpDown, FilterX, ListFilter, Tag } from "lucide-react";
-import { interventionSortOptions, type InterventionSortOption, type InterventionStatusFilter, type InterventionTypeFilter } from "./types";
+import {
+    interventionSortOptions,
+    type InterventionSortOption,
+    type InterventionStatusFilter,
+    type InterventionTypeFilter,
+} from "./types";
 
 const COMPACT_BREAKPOINT = 640;
 
@@ -49,7 +54,10 @@ const InterventionsFilters = ({
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <SearchInput value={searchText} onValueChange={onSearchTextChange} placeholder="Cerca intervento..." />
 
-            <Select value={statusFilter} onValueChange={(value) => onStatusFilterChange(value as InterventionStatusFilter)}>
+            <Select
+                value={statusFilter}
+                onValueChange={(value) => onStatusFilterChange(value as InterventionStatusFilter)}
+            >
                 <SelectTrigger className={isCompact ? "w-auto px-2" : "w-56"} aria-label="Filtra per stato">
                     {isCompact ? <ListFilter className="size-4" /> : <SelectValue placeholder="Filtra per stato" />}
                 </SelectTrigger>

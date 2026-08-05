@@ -161,10 +161,7 @@ const CompanySettingsPanel = () => {
 
     return (
         <SettingsSection>
-            <SettingsCard
-                title="Azienda"
-                description="Dati usati nell'intestazione dei PDF di report e interventi."
-            >
+            <SettingsCard title="Azienda" description="Dati usati nell'intestazione dei PDF di report e interventi.">
                 {isLoading ? (
                     <SettingsLoadingBox />
                 ) : (
@@ -252,7 +249,9 @@ const CompanySettingsPanel = () => {
                                 </div>
                                 <div className="grid gap-1 text-sm text-muted-foreground">
                                     <p>{hasCustomLogo ? "Logo personalizzato attivo" : "Logo predefinito attivo"}</p>
-                                    {logoUpdatedAt ? <p>Ultimo aggiornamento: {formatDateTime(logoUpdatedAt)}</p> : null}
+                                    {logoUpdatedAt ? (
+                                        <p>Ultimo aggiornamento: {formatDateTime(logoUpdatedAt)}</p>
+                                    ) : null}
                                 </div>
                             </div>
 

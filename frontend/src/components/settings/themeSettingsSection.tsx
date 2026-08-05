@@ -60,7 +60,7 @@ const modeOptions: ModeOption[] = [
 // titolo e descrizione, bordo evidenziato quando la voce è quella attiva.
 const optionButtonClasses = (isActive: boolean) =>
     cn(
-        "h-auto items-start justify-start gap-2 whitespace-normal rounded-xl border p-3 text-left",
+        "h-auto items-start justify-start gap-2 rounded-xl border p-3 text-left whitespace-normal",
         isActive && "border-primary bg-primary/10 dark:border-primary dark:bg-primary/10"
     );
 
@@ -92,10 +92,7 @@ const DensityPreview = ({ densityKey }: { densityKey: TableDensityKey }) => (
 );
 
 const RadiusPreview = ({ radius }: { radius: string }) => (
-    <span
-        className="mt-0.5 size-4 shrink-0 border-2 border-muted-foreground/40"
-        style={{ borderRadius: radius }}
-    />
+    <span className="mt-0.5 size-4 shrink-0 border-2 border-muted-foreground/40" style={{ borderRadius: radius }} />
 );
 
 const fontSizePreviewClasses: Record<FontSizeKey, string> = {
@@ -105,20 +102,22 @@ const fontSizePreviewClasses: Record<FontSizeKey, string> = {
 };
 
 const FontSizePreview = ({ fontSizeKey }: { fontSizeKey: FontSizeKey }) => (
-    <span className={cn("mt-0.5 shrink-0 font-semibold leading-none", fontSizePreviewClasses[fontSizeKey])}>Aa</span>
+    <span className={cn("mt-0.5 shrink-0 leading-none font-semibold", fontSizePreviewClasses[fontSizeKey])}>Aa</span>
 );
 
 const ThemeSettingsSection = () => {
     const { theme, setTheme } = useTheme();
-    const [selectedAccent, setSelectedAccent] = useState<ThemeAccentPresetKey>(() =>
-        getStoredThemeAccentPreset() ?? "default"
+    const [selectedAccent, setSelectedAccent] = useState<ThemeAccentPresetKey>(
+        () => getStoredThemeAccentPreset() ?? "default"
     );
-    const [selectedRowIntensity, setSelectedRowIntensity] = useState<TableRowIntensityKey>(() =>
-        getStoredTableRowIntensity() ?? "default"
+    const [selectedRowIntensity, setSelectedRowIntensity] = useState<TableRowIntensityKey>(
+        () => getStoredTableRowIntensity() ?? "default"
     );
     const [selectedDensity, setSelectedDensity] = useState<TableDensityKey>(() => getStoredTableDensity() ?? "default");
     const [selectedFontSize, setSelectedFontSize] = useState<FontSizeKey>(() => getStoredFontSize() ?? "default");
-    const [selectedRowsPerPage, setSelectedRowsPerPage] = useState<TableRowsPerPageKey>(() => getStoredTableRowsPerPage());
+    const [selectedRowsPerPage, setSelectedRowsPerPage] = useState<TableRowsPerPageKey>(() =>
+        getStoredTableRowsPerPage()
+    );
     const [selectedRadius, setSelectedRadius] = useState<CornerRadiusKey>(() => getStoredCornerRadius() ?? "default");
 
     useEffect(() => {
@@ -162,7 +161,10 @@ const ThemeSettingsSection = () => {
 
     return (
         <SettingsSection>
-            <SettingsCard title="Modalità" description="Scegli se seguire il sistema oppure forzare il tema chiaro o scuro.">
+            <SettingsCard
+                title="Modalità"
+                description="Scegli se seguire il sistema oppure forzare il tema chiaro o scuro."
+            >
                 <div className="grid gap-2 sm:grid-cols-3">
                     {modeOptions.map((option) => {
                         const Icon = option.icon;
@@ -188,7 +190,10 @@ const ThemeSettingsSection = () => {
                 </div>
             </SettingsCard>
 
-            <SettingsCard title="Colore principale" description="Palette usata per pulsanti, sidebar e accenti dell'applicazione.">
+            <SettingsCard
+                title="Colore principale"
+                description="Palette usata per pulsanti, sidebar e accenti dell'applicazione."
+            >
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                     {themeAccentPresets.map((preset) => (
                         <Button
@@ -211,7 +216,10 @@ const ThemeSettingsSection = () => {
                 </div>
             </SettingsCard>
 
-            <SettingsCard title="Raggio degli angoli" description="Quanto sono arrotondati i bordi di card, pulsanti e campi.">
+            <SettingsCard
+                title="Raggio degli angoli"
+                description="Quanto sono arrotondati i bordi di card, pulsanti e campi."
+            >
                 <div className="grid gap-2 sm:grid-cols-3">
                     {cornerRadiusPresets.map((preset) => (
                         <Button
@@ -268,7 +276,10 @@ const ThemeSettingsSection = () => {
                 </SettingsGroup>
             </SettingsCard>
 
-            <SettingsCard title="Densità tabelle" description="Quanto sono ravvicinate le righe nelle tabelle dell'app.">
+            <SettingsCard
+                title="Densità tabelle"
+                description="Quanto sono ravvicinate le righe nelle tabelle dell'app."
+            >
                 <div className="grid gap-2 sm:grid-cols-3">
                     {tableDensities.map((density) => (
                         <Button
@@ -301,7 +312,9 @@ const ThemeSettingsSection = () => {
                             <FontSizePreview fontSizeKey={fontSize.key} />
                             <span className="grid gap-0.5">
                                 <span className="text-sm font-semibold">{fontSize.label}</span>
-                                <span className="text-xs font-normal text-muted-foreground">{fontSize.description}</span>
+                                <span className="text-xs font-normal text-muted-foreground">
+                                    {fontSize.description}
+                                </span>
                             </span>
                         </Button>
                     ))}

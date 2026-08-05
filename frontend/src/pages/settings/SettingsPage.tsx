@@ -14,15 +14,7 @@ import { useAuth } from "@/components/use-auth";
 
 type SettingsSectionKey = "theme" | "users" | "company" | "email" | "backup" | "update" | "logs";
 
-const settingsSectionKeys: SettingsSectionKey[] = [
-    "theme",
-    "users",
-    "company",
-    "email",
-    "backup",
-    "update",
-    "logs",
-];
+const settingsSectionKeys: SettingsSectionKey[] = ["theme", "users", "company", "email", "backup", "update", "logs"];
 
 const settingsSections: Array<{
     key: SettingsSectionKey;
@@ -92,11 +84,14 @@ const SettingsPage = () => {
     const visibleSettingsSections = settingsSections.filter((section) => canOpenSection(section.key));
 
     const setActiveSection = (section: SettingsSectionKey) => {
-        setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            next.set("section", section);
-            return next;
-        }, { replace: true });
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                next.set("section", section);
+                return next;
+            },
+            { replace: true }
+        );
     };
 
     return (
@@ -120,7 +115,6 @@ const SettingsPage = () => {
             </Select>
 
             <aside className="hidden w-full shrink-0 flex-col gap-4 overflow-y-auto rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur-sm sm:flex sm:max-w-xs">
-
                 <div className="grid gap-1.5">
                     {visibleSettingsSections.map((section) => {
                         const Icon = section.icon;
@@ -140,7 +134,9 @@ const SettingsPage = () => {
                                 <Icon className="mt-0.5 size-4 shrink-0" />
                                 <span className="grid gap-0.5">
                                     <span className="text-sm font-semibold">{section.label}</span>
-                                    <span className="text-xs font-normal text-muted-foreground">{section.description}</span>
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        {section.description}
+                                    </span>
                                 </span>
                             </Button>
                         );

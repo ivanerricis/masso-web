@@ -27,7 +27,11 @@ export async function listTechnicians(params?: ListTechniciansParams) {
     }
 
     const response = await api.get<PaginatedResponse<EntityWithRawTimestamps<TechnicianDto>>>("/technicians", {
-        params: { page: params.page ?? 1, pageSize: params.pageSize ?? 1000, search: params.search?.trim() || undefined },
+        params: {
+            page: params.page ?? 1,
+            pageSize: params.pageSize ?? 1000,
+            search: params.search?.trim() || undefined,
+        },
     });
 
     const items = response.data.items.map((technician) => mapEntityTimestamps(technician));

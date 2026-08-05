@@ -106,10 +106,7 @@ const UsersSettingsSection = () => {
             setUserPendingDelete(null);
         } catch (error) {
             toast.error(
-                getApiErrorMessage(
-                    error,
-                    "Impossibile eliminare l'account: disabilitalo se è ancora in uso altrove"
-                )
+                getApiErrorMessage(error, "Impossibile eliminare l'account: disabilitalo se è ancora in uso altrove")
             );
         } finally {
             setIsDeleting(false);
@@ -135,24 +132,14 @@ const UsersSettingsSection = () => {
 
     const renderUserActions = (user: UserDto) => (
         <>
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setUserPendingRegeneration(user)}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => setUserPendingRegeneration(user)}>
                 <KeyRound className="size-4" />
                 Rigenera password
             </Button>
             {user.id !== currentUser?.id ? (
                 <>
                     {user.active ? (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setUserPendingDisable(user)}
-                        >
+                        <Button type="button" variant="outline" size="sm" onClick={() => setUserPendingDisable(user)}>
                             <UserX className="size-4" />
                             Disabilita
                         </Button>
@@ -168,12 +155,7 @@ const UsersSettingsSection = () => {
                             Riabilita
                         </Button>
                     )}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setUserPendingDelete(user)}
-                    >
+                    <Button type="button" variant="outline" size="sm" onClick={() => setUserPendingDelete(user)}>
                         <Trash2 className="size-4" />
                         Elimina
                     </Button>
@@ -198,67 +180,67 @@ const UsersSettingsSection = () => {
                     <SettingsLoadingBox label="Caricamento utenti..." />
                 ) : (
                     <>
-                    <Table className="hidden sm:table">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nome utente</TableHead>
-                                <TableHead>Creato il</TableHead>
-                                <TableHead className="text-right">Azioni</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {users.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell className="font-medium">
-                                        {user.username}
-                                        {user.id === currentUser?.id ? (
-                                            <span className="ml-2 text-xs text-muted-foreground">(tu)</span>
-                                        ) : null}
-                                        {user.isAdmin ? (
-                                            <span className="ml-2 text-xs text-muted-foreground">(admin)</span>
-                                        ) : null}
-                                        {!user.active ? (
-                                            <span className="ml-2 text-xs text-destructive">(disabilitato)</span>
-                                        ) : null}
-                                    </TableCell>
-                                    <TableCell>{formatDateTime(user.createdAt)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            {renderUserActions(user)}
-                                        </div>
-                                    </TableCell>
+                        <Table className="hidden sm:table">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nome utente</TableHead>
+                                    <TableHead>Creato il</TableHead>
+                                    <TableHead className="text-right">Azioni</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {users.map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell className="font-medium">
+                                            {user.username}
+                                            {user.id === currentUser?.id ? (
+                                                <span className="ml-2 text-xs text-muted-foreground">(tu)</span>
+                                            ) : null}
+                                            {user.isAdmin ? (
+                                                <span className="ml-2 text-xs text-muted-foreground">(admin)</span>
+                                            ) : null}
+                                            {!user.active ? (
+                                                <span className="ml-2 text-xs text-destructive">(disabilitato)</span>
+                                            ) : null}
+                                        </TableCell>
+                                        <TableCell>{formatDateTime(user.createdAt)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">{renderUserActions(user)}</div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
 
-                    <div className="flex flex-col gap-3 sm:hidden">
-                        {users.map((user) => (
-                            <div key={user.id} className="rounded-lg border-2 border-t-8 bg-background p-3">
-                                <div className="flex flex-col gap-1.5 text-sm">
-                                    <span className="font-medium">
-                                        {user.username}
-                                        {user.id === currentUser?.id ? (
-                                            <span className="ml-2 text-xs text-muted-foreground">(tu)</span>
-                                        ) : null}
-                                        {user.isAdmin ? (
-                                            <span className="ml-2 text-xs text-muted-foreground">(admin)</span>
-                                        ) : null}
-                                        {!user.active ? (
-                                            <span className="ml-2 text-xs text-destructive">(disabilitato)</span>
-                                        ) : null}
-                                    </span>
-                                    <div className="flex items-baseline justify-between gap-3">
-                                        <span className="text-muted-foreground">Creato il</span>
-                                        <span className="text-right font-medium">{formatDateTime(user.createdAt)}</span>
+                        <div className="flex flex-col gap-3 sm:hidden">
+                            {users.map((user) => (
+                                <div key={user.id} className="rounded-lg border-2 border-t-8 bg-background p-3">
+                                    <div className="flex flex-col gap-1.5 text-sm">
+                                        <span className="font-medium">
+                                            {user.username}
+                                            {user.id === currentUser?.id ? (
+                                                <span className="ml-2 text-xs text-muted-foreground">(tu)</span>
+                                            ) : null}
+                                            {user.isAdmin ? (
+                                                <span className="ml-2 text-xs text-muted-foreground">(admin)</span>
+                                            ) : null}
+                                            {!user.active ? (
+                                                <span className="ml-2 text-xs text-destructive">(disabilitato)</span>
+                                            ) : null}
+                                        </span>
+                                        <div className="flex items-baseline justify-between gap-3">
+                                            <span className="text-muted-foreground">Creato il</span>
+                                            <span className="text-right font-medium">
+                                                {formatDateTime(user.createdAt)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t pt-3">
+                                        {renderUserActions(user)}
                                     </div>
                                 </div>
-                                <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t pt-3">
-                                    {renderUserActions(user)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
                     </>
                 )}
             </SettingsCard>

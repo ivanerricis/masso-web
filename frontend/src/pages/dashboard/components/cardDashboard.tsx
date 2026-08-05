@@ -3,13 +3,13 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 type Props = Readonly<{
-    text: string
-    mobileText?: string
-    icon: LucideIcon
-    number: string
-    iconColor?: string
-    onClick?: () => void
-}>
+    text: string;
+    mobileText?: string;
+    icon: LucideIcon;
+    number: string;
+    iconColor?: string;
+    onClick?: () => void;
+}>;
 
 const CardDashboard = ({ text, mobileText, icon: Icon, number, iconColor, onClick }: Props) => {
     const isInteractive = onClick != null;
@@ -17,8 +17,8 @@ const CardDashboard = ({ text, mobileText, icon: Icon, number, iconColor, onClic
     return (
         <div
             className={cn(
-                "flex flex-1 flex-col w-full gap-0.5 rounded-lg border bg-card p-2 shadow sm:min-w-56 sm:gap-1 sm:p-4",
-                isInteractive && "cursor-pointer *:cursor-pointer *:*:cursor-pointer hover:bg-accent/35"
+                "flex w-full flex-1 flex-col gap-0.5 rounded-lg border bg-card p-2 shadow sm:min-w-56 sm:gap-1 sm:p-4",
+                isInteractive && "cursor-pointer *:*:cursor-pointer *:cursor-pointer hover:bg-accent/35"
             )}
             onClick={onClick}
             role={isInteractive ? "button" : undefined}
@@ -26,11 +26,11 @@ const CardDashboard = ({ text, mobileText, icon: Icon, number, iconColor, onClic
             onKeyDown={
                 isInteractive
                     ? (event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            onClick();
-                        }
-                    }
+                          if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              onClick();
+                          }
+                      }
                     : undefined
             }
         >
@@ -50,6 +50,6 @@ const CardDashboard = ({ text, mobileText, icon: Icon, number, iconColor, onClic
             <Label className="text-lg font-bold sm:text-2xl">{number}</Label>
         </div>
     );
-}
+};
 
 export default CardDashboard;

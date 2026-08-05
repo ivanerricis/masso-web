@@ -1,8 +1,8 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
-import { KeyRound, LogOut, Users } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { KeyRound, LogOut, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,30 +10,30 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { useAuth } from "@/components/use-auth"
-import { getApiErrorMessage } from "@/lib/api"
-import ChangePasswordDialog from "@/components/dialogs/settings/changePasswordDialog"
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/components/use-auth";
+import { getApiErrorMessage } from "@/lib/api";
+import ChangePasswordDialog from "@/components/dialogs/settings/changePasswordDialog";
 
-const getInitials = (username: string) => username.trim().slice(0, 2).toUpperCase()
+const getInitials = (username: string) => username.trim().slice(0, 2).toUpperCase();
 
 export function UserBadge() {
-    const { user, logout } = useAuth()
-    const navigate = useNavigate()
-    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
     if (!user) {
-        return null
+        return null;
     }
 
     const handleLogout = async () => {
         try {
-            await logout()
+            await logout();
         } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile disconnettersi"))
+            toast.error(getApiErrorMessage(error, "Impossibile disconnettersi"));
         }
-    }
+    };
 
     return (
         <>
@@ -73,5 +73,5 @@ export function UserBadge() {
 
             <ChangePasswordDialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen} />
         </>
-    )
+    );
 }

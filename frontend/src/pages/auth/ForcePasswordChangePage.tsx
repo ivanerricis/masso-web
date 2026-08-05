@@ -1,54 +1,54 @@
-import { useState } from "react"
-import { toast } from "sonner"
-import { Eye, EyeOff, ShieldAlert } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { changeOwnPassword, getApiErrorMessage } from "@/lib/api"
-import { isPasswordCompliant, passwordRequirementsHint } from "@/lib/passwordPolicy"
-import { useAuth } from "@/components/use-auth"
+import { useState } from "react";
+import { toast } from "sonner";
+import { Eye, EyeOff, ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { changeOwnPassword, getApiErrorMessage } from "@/lib/api";
+import { isPasswordCompliant, passwordRequirementsHint } from "@/lib/passwordPolicy";
+import { useAuth } from "@/components/use-auth";
 
 const ForcePasswordChangePage = () => {
-    const { user, refresh, logout } = useAuth()
+    const { user, refresh, logout } = useAuth();
 
-    const [currentPassword, setCurrentPassword] = useState("")
-    const [newPassword, setNewPassword] = useState("")
-    const [confirmPassword, setConfirmPassword] = useState("")
-    const [isPasswordVisible, setIsPasswordVisible] = useState(false)
-    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async () => {
         if (isSubmitting) {
-            return
+            return;
         }
 
         if (!currentPassword) {
-            toast.error("Inserisci la password attuale")
-            return
+            toast.error("Inserisci la password attuale");
+            return;
         }
 
         if (!isPasswordCompliant(newPassword)) {
-            toast.error(passwordRequirementsHint)
-            return
+            toast.error(passwordRequirementsHint);
+            return;
         }
 
         if (newPassword !== confirmPassword) {
-            toast.error("Le due password inserite non coincidono")
-            return
+            toast.error("Le due password inserite non coincidono");
+            return;
         }
 
         try {
-            setIsSubmitting(true)
-            await changeOwnPassword({ currentPassword, newPassword })
-            toast.success("Password aggiornata con successo")
-            await refresh()
+            setIsSubmitting(true);
+            await changeOwnPassword({ currentPassword, newPassword });
+            toast.success("Password aggiornata con successo");
+            await refresh();
         } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile aggiornare la password"))
+            toast.error(getApiErrorMessage(error, "Impossibile aggiornare la password"));
         } finally {
-            setIsSubmitting(false)
+            setIsSubmitting(false);
         }
-    }
+    };
 
     return (
         <div className="flex h-svh w-full items-center justify-center px-4">
@@ -67,8 +67,8 @@ const ForcePasswordChangePage = () => {
                     <form
                         className="grid gap-4"
                         onSubmit={(event) => {
-                            event.preventDefault()
-                            void handleSubmit()
+                            event.preventDefault();
+                            void handleSubmit();
                         }}
                     >
                         <div className="grid gap-2">
@@ -136,7 +136,7 @@ const ForcePasswordChangePage = () => {
                 </CardContent>
             </Card>
         </div>
-    )
-}
+    );
+};
 
-export default ForcePasswordChangePage
+export default ForcePasswordChangePage;

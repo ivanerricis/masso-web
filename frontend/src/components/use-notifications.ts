@@ -103,9 +103,7 @@ export const useNotifications = (sources: NotificationSource[] = notificationSou
                 // lista. Se la chiamata fallisce, la voce ricompare al refresh successivo.
                 setNotificationsBySource((prev) => ({
                     ...prev,
-                    [sourceKey]: (prev[sourceKey] ?? []).filter(
-                        (notification) => notification.id !== notificationId
-                    ),
+                    [sourceKey]: (prev[sourceKey] ?? []).filter((notification) => notification.id !== notificationId),
                 }));
 
                 void source.dismiss(notificationId).catch(() => {});

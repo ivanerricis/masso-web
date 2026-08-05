@@ -16,7 +16,7 @@ const CreateEntityButton = ({ label, size = "lg", className, ...props }: CreateE
             <TooltipTrigger asChild>
                 <Button size={size} className={cn("text-lg", className)} aria-label={label} {...props}>
                     <PlusCircle className="size-5" />
-                    <Label className="hidden md:inline text-lg cursor-pointer">{label}</Label>
+                    <Label className="hidden cursor-pointer text-lg md:inline">{label}</Label>
                 </Button>
             </TooltipTrigger>
             <TooltipContent>{label}</TooltipContent>

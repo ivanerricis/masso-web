@@ -5,7 +5,14 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
-    return <nav role="navigation" aria-label="pagination" className={cn("mx-auto flex w-full justify-center", className)} {...props} />;
+    return (
+        <nav
+            role="navigation"
+            aria-label="pagination"
+            className={cn("mx-auto flex w-full justify-center", className)}
+            {...props}
+        />
+    );
 }
 
 function PaginationContent({ className, ...props }: React.ComponentProps<"ul">) {
@@ -57,4 +64,12 @@ function PaginationEllipsis({ className, ...props }: React.ComponentProps<"span"
     );
 }
 
-export { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious };
+export {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+};

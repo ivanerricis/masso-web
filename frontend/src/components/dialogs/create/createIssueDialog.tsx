@@ -30,8 +30,8 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit, mode = "create", init
 
     const handleConfirm = async () => {
         if (description === "") {
-            toast.error("Inserire una descrizione per il problema")
-            return
+            toast.error("Inserire una descrizione per il problema");
+            return;
         }
 
         if (isSubmitting) {
@@ -73,7 +73,9 @@ const CreateIssueDialog = ({ open, onOpenChange, onSubmit, mode = "create", init
             confirmDisabled={isSubmitting}
             content={
                 <div className="grid">
-                    <Label htmlFor="description" className="text-lg">Descrizione</Label>
+                    <Label htmlFor="description" className="text-lg">
+                        Descrizione
+                    </Label>
                     <Textarea
                         className="text-lg!"
                         id="description"
