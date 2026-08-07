@@ -365,7 +365,9 @@ const DashboardPage = () => {
                                 </span>
                                 <Euro className="size-4 shrink-0 text-yellow-400 sm:size-5" />
                             </div>
-                            <span className="text-lg font-bold sm:text-2xl">{formatEuro(monthlyRevenue)}</span>
+                            <span className="text-lg font-bold tracking-widest sm:text-2xl" aria-label="Importo nascosto, apri la card per visualizzarlo">
+                                ••••••
+                            </span>
                         </Button>
                     </DialogTrigger>
 

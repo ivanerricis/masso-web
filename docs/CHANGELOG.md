@@ -11,6 +11,20 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-07 — L'importo degli incassi mensili non è più visibile a colpo d'occhio in dashboard
+
+La card "Incassi mese" mostrava l'incasso del mese corrente in chiaro nella dashboard,
+visibile a chiunque guardi lo schermo senza dover aprire nulla. L'importo dettagliato
+(mese selezionato e andamento degli ultimi 6 mesi) resta comunque a un click di distanza
+nella dialog della stessa card.
+
+- **`DashboardPage.tsx`**: la card chiusa mostra un placeholder mascherato (`••••••`) al
+  posto di `formatEuro(monthlyRevenue)`; l'importo reale compare solo nella `DialogContent`
+  aperta cliccando la card.
+- File: `frontend/src/pages/dashboard/DashboardPage.tsx`.
+
+---
+
 ## 2026-08-07 — Fix allineamento e stato del selettore file nel ripristino backup
 
 Nella card "Ripristino da file esterno" il pulsante "Ripristina da questo file" si
