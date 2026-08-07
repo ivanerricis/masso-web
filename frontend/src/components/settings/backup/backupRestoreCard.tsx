@@ -21,37 +21,39 @@ const BackupRestoreCard = ({ panel }: { panel: BackupPanel }) => (
             <SettingsLoadingBox destructive />
         ) : (
             <>
-                <SettingsGroup destructive className="sm:grid-cols-[1fr_auto] sm:items-end">
-                    <div className="grid gap-2">
-                        <Label htmlFor="restoreUpload">File .tar.gz o .sql</Label>
-                        <Input
-                            id="restoreUpload"
-                            type="file"
-                            accept=".sql,.gz,.tar.gz,text/plain,application/sql,application/gzip"
-                            disabled={panel.isRestoring}
-                            onChange={panel.handleRestoreFileSelected}
-                        />
-                        {panel.restoreUploadFile ? (
-                            <p className="text-xs text-muted-foreground">
-                                File selezionato: {panel.restoreUploadFile.name} (
-                                {formatFileSize(panel.restoreUploadFile.size)})
-                            </p>
-                        ) : null}
+                <SettingsGroup destructive>
+                    <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                        <div className="grid gap-2">
+                            <Label htmlFor="restoreUpload">File .tar.gz o .sql</Label>
+                            <Input
+                                id="restoreUpload"
+                                type="file"
+                                accept=".sql,.gz,.tar.gz,text/plain,application/sql,application/gzip"
+                                disabled={panel.isRestoring}
+                                onChange={panel.handleRestoreFileSelected}
+                            />
+                        </div>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={!panel.restoreUploadFile || panel.isRestoring}
+                            onClick={() =>
+                                panel.restoreUploadFile &&
+                                panel.openRestoreConfirm({
+                                    type: "upload",
+                                    file: panel.restoreUploadFile,
+                                })
+                            }
+                        >
+                            Ripristina da questo file
+                        </Button>
                     </div>
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={!panel.restoreUploadFile || panel.isRestoring}
-                        onClick={() =>
-                            panel.restoreUploadFile &&
-                            panel.openRestoreConfirm({
-                                type: "upload",
-                                file: panel.restoreUploadFile,
-                            })
-                        }
-                    >
-                        Ripristina da questo file
-                    </Button>
+                    {panel.restoreUploadFile ? (
+                        <p className="text-xs text-muted-foreground">
+                            File selezionato: {panel.restoreUploadFile.name} (
+                            {formatFileSize(panel.restoreUploadFile.size)})
+                        </p>
+                    ) : null}
                 </SettingsGroup>
 
                 {panel.secretsToReconfigure.length > 0 ? (

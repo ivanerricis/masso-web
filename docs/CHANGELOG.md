@@ -11,6 +11,28 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-07 — Fix allineamento e stato del selettore file nel ripristino backup
+
+Nella card "Ripristino da file esterno" il pulsante "Ripristina da questo file" si
+spostava verso il basso non appena veniva scelto un file: il testo "File selezionato: ..."
+viveva nella stessa cella di griglia di label e input, quindi allungava la riga e
+l'allineamento `items-end` spingeva il bottone più in basso insieme a lei. Inoltre
+l'etichetta nativa del browser mostrava sempre "Nessun file selezionato", perché
+`handleRestoreFileSelected` azzerava `event.target.value` subito dopo la lettura del
+file — utile solo per permettere di riselezionare lo stesso file, ma qui il reset
+sincrono cancellava anche l'indicazione nativa del nome scelto.
+
+- **`backupRestoreCard.tsx`**: il testo "File selezionato" è ora fuori dalla riga a due
+  colonne (label/input + bottone), su una riga propria che non ne influenza più
+  l'altezza — il bottone resta allineato all'input indipendentemente dal file scelto.
+- **`useBackupPanel.ts`**: `handleRestoreFileSelected` non azzera più `event.target.value`,
+  così l'etichetta nativa del file input riflette il file effettivamente selezionato,
+  coerente con il testo custom sotto.
+- File: `frontend/src/components/settings/backup/backupRestoreCard.tsx`,
+  `frontend/src/components/settings/backup/useBackupPanel.ts`.
+
+---
+
 ## 2026-08-07 — La retention dei backup ora si applica anche alla copia sul NAS
 
 `pruneOldBackups` cancellava i dump più vecchi del limite configurato (`maxBackupsToKeep`,
