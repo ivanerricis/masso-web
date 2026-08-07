@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 import { ApiError } from "./apiError";
 
 const dataDir = path.join(process.cwd(), "data");
@@ -7,6 +8,10 @@ const logoDir = path.join(dataDir, "logo");
 const metaFilePath = path.join(logoDir, "meta.json");
 const defaultLogoPath = path.join(process.cwd(), "public", "logo-placeholder.png");
 const maxLogoSizeBytes = 5 * 1024 * 1024;
+// I loghi caricati arrivano in qualsiasi risoluzione/formato/compressione: senza normalizzarli
+// un JPEG lossy di pochi KB finisce mostrato a 32px in sidebar e sembra pixellato. Convertiamo
+// tutto in PNG (lossless) e limitiamo il lato massimo, senza mai ingrandire immagini piu piccole.
+const maxLogoDimension = 512;
 
 const allowedMimeTypes: Record<string, string> = {
     "image/jpeg": "jpg",
@@ -87,12 +92,22 @@ export const saveLogo = async (buffer: Buffer, mimeType: string) => {
     await fs.promises.mkdir(logoDir, { recursive: true });
     await clearLogoDir();
 
-    const fileName = `logo.${extension}`;
-    await fs.promises.writeFile(path.join(logoDir, fileName), buffer);
+    // L'SVG e vettoriale, va servito cosi com'e: passarlo per sharp lo rasterizzerebbe.
+    const isVector = mimeType === "image/svg+xml";
+    const fileName = isVector ? `logo.${extension}` : "logo.png";
+    const outputMimeType = isVector ? mimeType : "image/png";
+    const outputBuffer = isVector
+        ? buffer
+        : await sharp(buffer)
+              .resize(maxLogoDimension, maxLogoDimension, { fit: "inside", withoutEnlargement: true })
+              .png()
+              .toBuffer();
+
+    await fs.promises.writeFile(path.join(logoDir, fileName), outputBuffer);
 
     const meta: LogoMeta = {
         fileName,
-        mimeType,
+        mimeType: outputMimeType,
         updatedAt: new Date().toISOString(),
     };
 
