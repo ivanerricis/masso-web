@@ -11,6 +11,33 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-07 — La retention dei backup ora si applica anche alla copia sul NAS
+
+`pruneOldBackups` cancellava i dump più vecchi del limite configurato (`maxBackupsToKeep`,
+default 14) solo nella cartella locale (`backups/`). La copia caricata via SMB sul NAS
+non veniva mai ripulita: `uploadDumpToSmb` esegue solo `put`, quindi ogni esecuzione
+automatica aggiungeva un file senza mai rimuoverne — accumulo indefinito sul NAS anche
+con la retention locale attiva.
+
+- **`backupSmb.ts`**: `runSmbClient` ora restituisce lo stdout (prima solo `resolve()`),
+  necessario per leggere l'output di `ls`. Nuove funzioni: `listSmbBackupFileNames`
+  (estrae i nomi dei dump dall'output di `ls` via `backupFileNameScanPattern`, non uno
+  split per spazi — i nomi di backup non contengono spazi ma il resto della cartella non
+  è garantito), `deleteSmbFile` (`del` via smbclient), `computeSmbFilesToDelete` (stessa
+  logica di ordinamento cronologico di `sortBackupFileNamesByAge`, isolata e testabile
+  senza I/O) e `pruneOldSmbBackups` che le combina, cancellando in sequenza — al più un
+  file da eliminare per esecuzione, quindi il costo resta trascurabile.
+- **`backupManager.ts`**: `runBackupNow` chiama `pruneOldSmbBackups` subito dopo un
+  upload riuscito, con lo stesso `maxBackupsToKeep` della retention locale. Un fallimento
+  della pulizia non retrocede `smbLastStatus` a `failed` (il backup sul NAS c'è ed è
+  intatto) ma genera una notifica dedicata (`backup:auto-nas-prune-failed`) e viene
+  aggiunto al messaggio restituito, sullo stesso modello del fallimento di upload.
+- File: `backend/src/services/backupFiles.ts` (nuovo `backupFileNameScanPattern`),
+  `backend/src/services/backupSmb.ts`, `backend/src/services/backupManager.ts`,
+  `backend/src/services/backupManager.test.ts`.
+
+---
+
 ## 2026-08-07 — Il logo caricato viene normalizzato in PNG invece di essere servito grezzo
 
 Il logo dell'azienda (sidebar, impostazioni, header dei PDF) viene caricato dall'utente

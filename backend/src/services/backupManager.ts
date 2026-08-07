@@ -12,7 +12,7 @@ import { BackupManagerError } from "./backupError";
 import { buildArchiveFilePath, getConfiguredOutputDir, pruneOldBackups } from "./backupFiles";
 import { assertNoOperationInProgress, beginDump, endDump, isDumpInProgress } from "./backupLock";
 import { createBackupArchive } from "./backupProcess";
-import { uploadDumpToSmb, type SmbConnectionConfig } from "./backupSmb";
+import { pruneOldSmbBackups, uploadDumpToSmb, type SmbConnectionConfig } from "./backupSmb";
 import { loadState, persistState, setNextRunIfNeeded, toPublicState, type BackupSettingsState } from "./backupState";
 import { decryptSecret, encryptSecret } from "./secretCrypto";
 import { getCompanySettings } from "./companyManager";
@@ -31,6 +31,7 @@ export {
 } from "./backupFiles";
 export {
     composeSmbErrorMessage,
+    computeSmbFilesToDelete,
     isAlreadyExistsSmbError,
     testSmbConnection,
     type SmbConnectionConfig,
@@ -198,6 +199,22 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
                 state.smbLastRunAt = now.toISOString();
                 state.smbLastStatus = "success";
                 state.smbLastError = null;
+
+                try {
+                    await pruneOldSmbBackups(smbConfig, state.maxBackupsToKeep);
+                } catch (pruneError) {
+                    const pruneMessage =
+                        pruneError instanceof Error ? pruneError.message : "Errore durante la pulizia dei backup sul NAS";
+                    message = `${message}, ma la pulizia dei vecchi backup sul NAS non e riuscita: ${pruneMessage}`;
+
+                    await notifyAutoBackupFailure(
+                        origin,
+                        "backup:auto-nas-prune-failed",
+                        "Pulizia dei vecchi backup sul NAS non riuscita",
+                        pruneMessage,
+                        state.notifyEmailOnFailure
+                    );
+                }
             } catch (smbError) {
                 const smbMessage = smbError instanceof Error ? smbError.message : "Errore durante la copia su NAS";
                 state.smbLastRunAt = now.toISOString();

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
     BackupManagerError,
     composeSmbErrorMessage,
+    computeSmbFilesToDelete,
     getBackupDumpPath,
     getBackupSortKey,
     isAlreadyExistsSmbError,
@@ -91,6 +92,26 @@ describe("ordinamento dei backup", () => {
     it("estrae il timestamp da entrambi i formati", () => {
         expect(getBackupSortKey("db-backup-20260729-113813.tar.gz")).toBe("20260729-113813");
         expect(getBackupSortKey("db-dump-20260729-113813.sql")).toBe("20260729-113813");
+    });
+});
+
+describe("computeSmbFilesToDelete", () => {
+    // Stessa retention della cartella locale (pruneOldBackups), applicata ai nomi
+    // elencati sul NAS: il piu recente non deve mai finire fra quelli da cancellare.
+    it("tiene solo i piu recenti fino al limite di retention", () => {
+        const files = [
+            "db-backup-20260701-020000.tar.gz",
+            "db-backup-20260702-020000.tar.gz",
+            "db-backup-20260703-020000.tar.gz",
+        ];
+
+        expect(computeSmbFilesToDelete(files, 2)).toEqual(["db-backup-20260701-020000.tar.gz"]);
+    });
+
+    it("non cancella nulla se sotto la soglia", () => {
+        const files = ["db-backup-20260701-020000.tar.gz", "db-backup-20260702-020000.tar.gz"];
+
+        expect(computeSmbFilesToDelete(files, 14)).toEqual([]);
     });
 });
 

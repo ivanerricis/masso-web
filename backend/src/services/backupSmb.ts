@@ -4,6 +4,7 @@
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { BackupManagerError } from "./backupError";
+import { backupFileNameScanPattern, sortBackupFileNamesByAge } from "./backupFiles";
 
 export const defaultSmbPort = 445;
 const smbTestTimeoutMs = 15_000;
@@ -33,7 +34,7 @@ export const composeSmbErrorMessage = (stderr: string, stdout: string, code: num
     return details || `smbclient terminato con codice ${code}`;
 };
 
-const runSmbClient = async (config: SmbConnectionConfig, command: string, timeoutMs: number) => {
+const runSmbClient = async (config: SmbConnectionConfig, command: string, timeoutMs: number): Promise<string> => {
     const args = [smbTarget(config), "-U", config.username, "-p", String(config.port)];
 
     if (config.domain) {
@@ -47,7 +48,7 @@ const runSmbClient = async (config: SmbConnectionConfig, command: string, timeou
         PASSWD: config.password,
     };
 
-    await new Promise<void>((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
         const child = spawn("smbclient", args, { env });
         let stderr = "";
         let stdout = "";
@@ -88,7 +89,7 @@ const runSmbClient = async (config: SmbConnectionConfig, command: string, timeou
             }
 
             if (code === 0) {
-                resolve();
+                resolve(stdout);
                 return;
             }
 
@@ -141,4 +142,44 @@ export const uploadDumpToSmb = async (config: SmbConnectionConfig, localFilePath
     const command = remotePath ? `cd "${quoteSmbPathSegment(remotePath)}"; ${putCommand}` : putCommand;
 
     await runSmbClient(config, command, smbPutTimeoutMs);
+};
+
+// L'output di `ls` elenca anche "." e ".." e le dimensioni/date di ogni voce: il modo
+// affidabile per isolare i nomi dei backup e cercare il pattern nel testo, non
+// spezzare le righe per spazi (i nomi restanti nella cartella non seguono lo schema).
+const extractBackupFileNames = (lsOutput: string): string[] => lsOutput.match(backupFileNameScanPattern) ?? [];
+
+export const listSmbBackupFileNames = async (config: SmbConnectionConfig): Promise<string[]> => {
+    const remotePath = config.path.trim();
+    const command = remotePath ? `cd "${quoteSmbPathSegment(remotePath)}"; ls` : "ls";
+
+    const output = await runSmbClient(config, command, smbTestTimeoutMs);
+    return extractBackupFileNames(output);
+};
+
+export const deleteSmbFile = async (config: SmbConnectionConfig, fileName: string) => {
+    const remotePath = config.path.trim();
+    const delCommand = `del "${fileName}"`;
+    const command = remotePath ? `cd "${quoteSmbPathSegment(remotePath)}"; ${delCommand}` : delCommand;
+
+    await runSmbClient(config, command, smbMkdirTimeoutMs);
+};
+
+// Stessa logica di pruneOldBackups (backupFiles.ts), applicata ai nomi elencati sul
+// NAS invece che alla cartella locale.
+export const computeSmbFilesToDelete = (fileNames: string[], keep: number): string[] => {
+    const sorted = sortBackupFileNamesByAge(fileNames);
+    return sorted.slice(0, Math.max(0, sorted.length - keep));
+};
+
+// Cancellazioni in sequenza, non in parallelo: ogni chiamata apre una propria sessione
+// smbclient e il NAS resta comunque il collo di bottiglia; in pratica c'e al massimo un
+// file da eliminare per esecuzione, quindi il costo e trascurabile.
+export const pruneOldSmbBackups = async (config: SmbConnectionConfig, keep: number) => {
+    const fileNames = await listSmbBackupFileNames(config);
+    const filesToDelete = computeSmbFilesToDelete(fileNames, keep);
+
+    for (const fileName of filesToDelete) {
+        await deleteSmbFile(config, fileName);
+    }
 };

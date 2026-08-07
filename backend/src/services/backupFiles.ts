@@ -20,6 +20,10 @@ const archiveFileNamePattern = /^db-backup-\d{8}-\d{6}\.tar\.gz$/;
 export const isBackupFileName = (fileName: string) =>
     legacyDumpFileNamePattern.test(fileName) || archiveFileNamePattern.test(fileName);
 
+// Stessi due formati di isBackupFileName, ma senza ancoraggio: serve a estrarre i nomi
+// file dall'output testuale di `smbclient ls`, non a validarne uno isolato.
+export const backupFileNameScanPattern = /db-(?:backup-\d{8}-\d{6}\.tar\.gz|dump-\d{8}-\d{6}\.sql)/g;
+
 export const isArchiveFileName = (fileName: string) => /\.tar\.gz$/i.test(fileName);
 
 // I due formati hanno prefissi diversi ma lo stesso timestamp YYYYMMDD-HHMMSS.
