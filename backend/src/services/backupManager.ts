@@ -204,7 +204,9 @@ export const runBackupNow = async (origin: "manual" | "auto") => {
                     await pruneOldSmbBackups(smbConfig, state.maxBackupsToKeep);
                 } catch (pruneError) {
                     const pruneMessage =
-                        pruneError instanceof Error ? pruneError.message : "Errore durante la pulizia dei backup sul NAS";
+                        pruneError instanceof Error
+                            ? pruneError.message
+                            : "Errore durante la pulizia dei backup sul NAS";
                     message = `${message}, ma la pulizia dei vecchi backup sul NAS non e riuscita: ${pruneMessage}`;
 
                     await notifyAutoBackupFailure(
