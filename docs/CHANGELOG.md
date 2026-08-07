@@ -11,6 +11,51 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-05 — Barre dei filtri: estratti il menu a tendina e l'intervallo di date
+
+Seguito della pulizia qui sotto, che aveva lasciato intatti i tre file dei filtri di
+clienti, rapporti e interventi perché — a differenza degli altri quattro — non erano
+semplici inoltri a `SearchInput`. Contengono però tre duplicazioni misurate.
+
+- **Il blocco dell'intervallo di date era in due copie identiche carattere per carattere**
+  (31 righe l'una) fra rapporti e interventi, insieme al proprio `handleClearDates` e al
+  pulsante "Pulisci date". Non è impaginazione: dentro c'è il vincolo `max={dateTo}` /
+  `min={dateFrom}` incrociato fra i due campi, che impedisce di scegliere un inizio
+  successivo alla fine. Una regola di comportamento in due copie sono due occasioni perché
+  una cambi da sola, e nessuno confronta due file di pagine diverse.
+
+- **Il menu a tendina con l'icona in modalità compatta era in sei copie** (una nei clienti,
+  due nei rapporti, tre negli interventi), tutte con lo stesso `SelectTrigger` da 12 righe.
+  Gli elenchi di opzioni erano già tutti nella forma `{ value, label }[]`, quindi un
+  `FilterSelect<T extends string>` li copre senza forzature. La voce "tutti gli stati" è una
+  prop opzionale, perché nei rapporti era scritta a mano e negli interventi mappata: erano
+  già due modi diversi di fare la stessa cosa.
+
+- **`COMPACT_BREAKPOINT = 640` era dichiarato tre volte.** Cambiarne una copia sola avrebbe
+  fatto passare in modalità compatta le barre di elenchi diversi a larghezze diverse — una
+  differenza che si nota solo ridimensionando la finestra, cioè quasi mai. Ora vive accanto
+  al componente che lo usa.
+
+I tre file restano separati: i clienti hanno un solo menu, gli interventi tre più le date, e
+la configurazione capace di coprirli tutti sarebbe più difficile da leggere dei tre file.
+Per lo stesso motivo le prop non sono state compattate in un unico oggetto di stato: dodici
+prop sono verbose, ma dalla firma si vede quali filtri esistono.
+
+*Verifica:* Docker non era in esecuzione, quindi invece del giro con Playwright usato per le
+tabelle sono stati scritti dieci test sui due componenti — più adatti allo scopo, perché
+coprono proprio ciò che uno screenshot non mostra: il vincolo min/max che si aggiorna quando
+cambia una delle due date, il fatto che "Pulisci date" azzeri **entrambi** i campi e non solo
+quello impostato, la presenza o assenza della voce "tutti", e il trigger che sotto i 640px
+perde il testo **mantenendo il nome accessibile**.
+
+Ha richiesto due stub in `src/test/setup.ts`: jsdom non implementa la Pointer Events API né
+`scrollIntoView`, che i componenti Radix usano, e senza di essi un semplice click su un menu
+falliva con `target.hasPointerCapture is not a function` — un errore che non c'entra con ciò
+che il test verifica. Servono a qualunque futuro test su Select, DropdownMenu o Popover.
+→ [frontend/src/components/filters/](../frontend/src/components/filters/)
+
+---
+
 ## 2026-08-05 — Pulizia del codice morto e delle duplicazioni
 
 Revisione sistematica di manutenibilità su tutto il repository. Sei interventi distinti,

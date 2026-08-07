@@ -25,3 +25,18 @@ if (!window.matchMedia) {
         dispatchEvent: vi.fn(),
     }));
 }
+
+// jsdom non implementa la Pointer Events API né lo scorrimento programmatico. I componenti
+// Radix (Select, DropdownMenu, Popover) li usano per gestire il trascinamento sul trigger e
+// per portare in vista la voce selezionata: senza questi stub un semplice click sul menu
+// solleva "target.hasPointerCapture is not a function" e il test fallisce per un motivo che
+// non c'entra con quello che sta verificando.
+if (!Element.prototype.hasPointerCapture) {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+}
+
+if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+}

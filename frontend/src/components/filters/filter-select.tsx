@@ -1,0 +1,64 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
+import type { LucideIcon } from "lucide-react";
+
+/**
+ * Sotto questa larghezza le barre dei filtri non hanno spazio per tre o quattro menu a
+ * tendina larghi: i trigger si riducono alla sola icona.
+ *
+ * Sta qui, e non nei singoli file dei filtri, perché prima era dichiarato tre volte con lo
+ * stesso valore. Cambiarne una copia sola avrebbe fatto passare in modalità compatta le
+ * barre di elenchi diversi a larghezze diverse — una differenza che si nota solo
+ * ridimensionando la finestra, cioè quasi mai.
+ */
+export const FILTERS_COMPACT_BREAKPOINT = 640;
+
+type FilterSelectOption<TValue extends string> = {
+    value: TValue;
+    label: string;
+};
+
+type FilterSelectProps<TValue extends string> = {
+    value: TValue;
+    onValueChange: (value: TValue) => void;
+    options: FilterSelectOption<TValue>[];
+    /** Testo del segnaposto e `aria-label` del trigger. */
+    label: string;
+    /** Mostrata al posto del testo quando la barra è in modalità compatta. */
+    icon: LucideIcon;
+    /**
+     * Voce "nessun filtro" in cima all'elenco, con la sua etichetta ("Tutti gli stati",
+     * "Tutti i rapportini"): il valore corrispondente non sta negli `options`, che
+     * elencano solo gli stati reali dell'entità.
+     */
+    allOption?: { value: TValue; label: string };
+};
+
+const FilterSelect = <TValue extends string>({
+    value,
+    onValueChange,
+    options,
+    label,
+    icon: Icon,
+    allOption,
+}: FilterSelectProps<TValue>) => {
+    const isCompact = useIsMobile(FILTERS_COMPACT_BREAKPOINT);
+
+    return (
+        <Select value={value} onValueChange={(next) => onValueChange(next as TValue)}>
+            <SelectTrigger className={isCompact ? "w-auto px-2" : "w-56"} aria-label={label}>
+                {isCompact ? <Icon className="size-4" /> : <SelectValue placeholder={label} />}
+            </SelectTrigger>
+            <SelectContent position="popper">
+                {allOption ? <SelectItem value={allOption.value}>{allOption.label}</SelectItem> : null}
+                {options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+};
+
+export default FilterSelect;
