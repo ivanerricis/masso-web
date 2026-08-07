@@ -11,6 +11,29 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-07 — Il logo caricato viene normalizzato in PNG invece di essere servito grezzo
+
+Il logo dell'azienda (sidebar, impostazioni, header dei PDF) viene caricato dall'utente
+e salvato su disco così com'è, senza alcuna elaborazione — nessuna libreria di image
+processing era presente nel backend. Un logo caricato come JPEG lossy con forme piatte
+e bordi netti (tipico di un'icona) produce artefatti a blocchi 8×8 dovuti alla
+compressione, invisibili a piena risoluzione ma evidenti quando l'immagine viene
+rimpicciolita nel box di 32px della sidebar (`object-cover`, nessun hint di
+`image-rendering`): il logo appare pixellato.
+
+- **`saveLogo` ora passa i file raster per `sharp`**, li ridimensiona dentro un
+  riquadro massimo di 512×512 (`fit: "inside", withoutEnlargement: true` — mai
+  ingrandire un'immagine piccola, che peggiorerebbe la nitidezza) e li ri-codifica come
+  PNG, formato lossless che non introduce blocking artifacts. Gli SVG restano intoccati:
+  sono già vettoriali, passarli per sharp li rasterizzerebbe inutilmente.
+- Il logo già presente su disco (JPEG 232×242, caricato il 2026-07-30) è stato
+  riprocessato una tantum con la stessa pipeline, così l'effetto è visibile subito senza
+  richiedere un nuovo upload dall'utente.
+- File: `backend/src/services/logoManager.ts`; nuova dipendenza `sharp` in
+  `backend/package.json`.
+
+---
+
 ## 2026-08-05 — Barre dei filtri: estratti il menu a tendina e l'intervallo di date
 
 Seguito della pulizia qui sotto, che aveva lasciato intatti i tre file dei filtri di
