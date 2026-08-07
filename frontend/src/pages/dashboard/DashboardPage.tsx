@@ -357,10 +357,15 @@ const DashboardPage = () => {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-auto w-full flex-1 flex-col items-start gap-0.5 rounded-lg border-primary/20 p-2 sm:min-w-56 sm:flex-row sm:items-center sm:gap-2 sm:px-4 sm:py-3"
+                            className="h-auto w-full flex-1 flex-col items-start gap-0.5 rounded-lg border-primary/20 p-2 shadow sm:min-w-56 sm:gap-1 sm:p-4"
                         >
-                            <Euro className="size-4 text-yellow-400 sm:size-5" />
-                            <span className="truncate text-xs font-medium text-primary sm:text-base">Incassi mese</span>
+                            <div className="flex w-full items-start justify-between gap-1">
+                                <span className="truncate text-xs font-medium text-primary sm:text-base">
+                                    Incassi mese
+                                </span>
+                                <Euro className="size-4 shrink-0 text-yellow-400 sm:size-5" />
+                            </div>
+                            <span className="text-lg font-bold sm:text-2xl">{formatEuro(monthlyRevenue)}</span>
                         </Button>
                     </DialogTrigger>
 
