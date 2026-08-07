@@ -1,9 +1,11 @@
 import type { PaymentMethod } from "@/types/dtos";
 import { cn } from "@/lib/utils";
+import { Ban, Banknote, CreditCard, type LucideIcon } from "lucide-react";
 
 type PaymentMethodOption = {
     value: PaymentMethod;
     label: string;
+    icon: LucideIcon;
 };
 
 type Props = {
@@ -17,14 +19,17 @@ const paymentMethodOptions: PaymentMethodOption[] = [
     {
         value: "non_paid",
         label: "Non pagato",
+        icon: Ban,
     },
     {
         value: "cash",
         label: "Contanti",
+        icon: Banknote,
     },
     {
         value: "card",
         label: "Carta",
+        icon: CreditCard,
     },
 ];
 
@@ -39,6 +44,7 @@ const PaymentMethodSelector = ({ value, onValueChange, className, orientation = 
         >
             {paymentMethodOptions.map((option) => {
                 const isSelected = value === option.value;
+                const Icon = option.icon;
 
                 return (
                     <button
@@ -49,15 +55,23 @@ const PaymentMethodSelector = ({ value, onValueChange, className, orientation = 
                         data-state={isSelected ? "checked" : "unchecked"}
                         onClick={() => onValueChange(option.value)}
                         className={cn(
-                            "flex items-center justify-start gap-3 rounded-xl border-2 px-4 py-3 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                            "flex cursor-pointer items-center justify-start gap-3 rounded-xl border-2 px-4 py-3 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                             isSelected
                                 ? "border-primary bg-primary/10 shadow-sm"
                                 : "border-border bg-background hover:border-primary/40 hover:bg-muted/60"
                         )}
                     >
+                        <Icon
+                            className={cn("size-5 shrink-0", isSelected ? "text-primary" : "text-muted-foreground")}
+                        />
+
+                        <span className="flex flex-col gap-0.5">
+                            <span className="font-medium text-foreground">{option.label}</span>
+                        </span>
+
                         <span
                             className={cn(
-                                "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border",
+                                "ml-auto flex size-5 shrink-0 items-center justify-center rounded-full border",
                                 isSelected ? "border-primary" : "border-input"
                             )}
                         >
@@ -67,10 +81,6 @@ const PaymentMethodSelector = ({ value, onValueChange, className, orientation = 
                                     isSelected ? "opacity-100" : "opacity-0"
                                 )}
                             />
-                        </span>
-
-                        <span className="flex flex-col gap-0.5">
-                            <span className="font-medium text-foreground">{option.label}</span>
                         </span>
                     </button>
                 );

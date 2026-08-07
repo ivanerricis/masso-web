@@ -11,6 +11,34 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-08-07 — Selezione automatica sui campi numerici, cursore a mano su checkbox/radio, textarea con altezza limitata
+
+Nella dialog "Modifica rapporto" (e in generale ovunque si usino gli stessi componenti UI)
+tre piccoli difetti di interazione: cliccare su un campo prezzo lasciava lo "0" già presente
+senza selezionarlo, costringendo a cancellarlo a mano prima di digitare; checkbox e il
+selettore del metodo di pagamento (un gruppo di bottoni con `role="radio"`, non input nativi)
+mostravano il cursore normale invece della manina, perché solo il componente `Button`
+condiviso imposta `cursor-pointer` esplicitamente — i bottoni HTML non lo ereditano di
+default; la `Textarea` usa `field-sizing-content` per adattarsi al contenuto ma senza un
+limite massimo, quindi un campo Note molto lungo faceva crescere la textarea senza fine,
+trascinando in altezza anche la cella affiancata nella stessa riga della griglia (es.
+"Descrizione intervento" si allungava con spazio vuoto per pareggiare "Note").
+
+- **`ui/input.tsx`**: `onFocus` ora chiama `event.target.select()` quando `type="number"`,
+  così il valore esistente è pronto per essere sovrascritto appena si clicca o si passa
+  al campo con Tab.
+- **`ui/checkbox.tsx`**: aggiunto `cursor-pointer` alla root del checkbox.
+- **`payment-method-selector.tsx`**: aggiunto `cursor-pointer` ai bottoni radio e un'icona
+  per opzione (`Ban`, `Banknote`, `CreditCard` da lucide-react) per riconoscerle a colpo
+  d'occhio oltre che dal testo.
+- **`ui/textarea.tsx`**: aggiunto `max-h-64 overflow-y-auto`, così la crescita automatica
+  si ferma a un'altezza ragionevole e il testo in eccesso scorre internamente invece di
+  spingere in basso il resto del form.
+- File: `frontend/src/components/ui/input.tsx`, `frontend/src/components/ui/checkbox.tsx`,
+  `frontend/src/components/payment-method-selector.tsx`, `frontend/src/components/ui/textarea.tsx`.
+
+---
+
 ## 2026-08-07 — L'importo degli incassi mensili non è più visibile a colpo d'occhio in dashboard
 
 La card "Incassi mese" mostrava l'incasso del mese corrente in chiaro nella dashboard,
