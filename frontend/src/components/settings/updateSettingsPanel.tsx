@@ -6,12 +6,21 @@ import {
     SettingsErrorNote,
     SettingsLoadingBox,
     SettingsSection,
+    SettingsStatusBadge,
     SettingsTile,
     SettingsTileGrid,
+    type SettingsRunStatus,
 } from "@/components/settings/settingsUi";
 import CustomDialog from "@/components/dialogs/customDialog";
 import { useBusyGuard } from "@/components/use-busy-guard";
-import { checkForUpdates, getApiErrorMessage, getUpdateStatus, runUpdateNow, type UpdateStatusDto } from "@/lib/api";
+import {
+    checkForUpdates,
+    getApiErrorMessage,
+    getBackupSettings,
+    getUpdateStatus,
+    runUpdateNow,
+    type UpdateStatusDto,
+} from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
 const POLL_INTERVAL_MS = 3000;
@@ -27,6 +36,8 @@ const UpdateSettingsPanel = () => {
     const [isChecking, setIsChecking] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [lastBackup, setLastBackup] = useState<{ at: string | null; status: SettingsRunStatus } | null>(null);
+    const [isLoadingLastBackup, setIsLoadingLastBackup] = useState(false);
     const cancelledRef = useRef(false);
 
     useEffect(() => {
@@ -102,6 +113,29 @@ const UpdateSettingsPanel = () => {
         }
     };
 
+    // La data dell'ultimo backup si legge all'apertura della conferma, non al caricamento
+    // del pannello: e' li' che serve, ed e' li' che deve essere fresca.
+    const handleOpenConfirm = async () => {
+        setIsConfirmOpen(true);
+        setLastBackup(null);
+        setIsLoadingLastBackup(true);
+
+        try {
+            const backup = await getBackupSettings();
+
+            if (!cancelledRef.current) {
+                setLastBackup({ at: backup.lastRunAt, status: backup.lastRunStatus });
+            }
+        } catch {
+            // Nessun toast: l'avviso di fare il backup resta valido comunque, e la sezione
+            // Backup mostra l'errore vero. Qui manca solo la data.
+        } finally {
+            if (!cancelledRef.current) {
+                setIsLoadingLastBackup(false);
+            }
+        }
+    };
+
     const handleUpdate = async () => {
         if (isChecking || isUpdating) {
             return;
@@ -172,7 +206,7 @@ const UpdateSettingsPanel = () => {
                         <Button
                             type="button"
                             disabled={isBusy || !status?.updateAvailable}
-                            onClick={() => setIsConfirmOpen(true)}
+                            onClick={() => void handleOpenConfirm()}
                         >
                             {isUpdating ? "Aggiornamento in corso..." : "Aggiorna adesso"}
                         </Button>
@@ -219,6 +253,29 @@ const UpdateSettingsPanel = () => {
                 onOpenChange={setIsConfirmOpen}
                 title="Aggiorna applicazione"
                 description="I servizi verranno ricostruiti e riavviati: l'applicazione sarà brevemente non raggiungibile. Continuare?"
+                content={
+                    <div className="grid gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                        <p className="font-medium">Esegui un backup prima di aggiornare</p>
+                        <p className="text-muted-foreground">
+                            L&apos;aggiornamento può applicare modifiche al database che non si annullano da sole. Se
+                            qualcosa va storto, il backup è l&apos;unico modo per tornare indietro: lo esegui da
+                            Impostazioni &gt; Backup.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-muted-foreground">Ultimo backup:</span>
+                            {isLoadingLastBackup ? (
+                                <span className="text-muted-foreground">verifica in corso...</span>
+                            ) : lastBackup ? (
+                                <>
+                                    <span className="font-medium">{formatDateTime(lastBackup.at)}</span>
+                                    <SettingsStatusBadge status={lastBackup.status} />
+                                </>
+                            ) : (
+                                <span className="font-medium">non disponibile</span>
+                            )}
+                        </div>
+                    </div>
+                }
                 confirmLabel="Aggiorna adesso"
                 cancelLabel="Annulla"
                 onCancel={() => setIsConfirmOpen(false)}

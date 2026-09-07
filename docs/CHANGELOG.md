@@ -11,6 +11,28 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — Avviso di backup prima di aggiornare
+
+**La conferma di "Aggiorna adesso" ricorda di fare un backup e dice quando è stato fatto
+l'ultimo.** L'aggiornamento fa `git reset --hard` e ricostruisce i container, e al riavvio il
+backend applica le migrazioni pendenti: sono modifiche al database che non si annullano da
+sole. Il dialog avvertiva solo che l'app sarebbe stata brevemente irraggiungibile, cioè del
+disagio momentaneo e non del rischio vero.
+- L'avviso è un riquadro ambra dentro il dialog, la stessa forma già usata in
+  `backupRestoreCard` per le password da reinserire dopo un ripristino.
+- Sotto l'avviso c'è **data ed esito dell'ultimo backup** (`SettingsStatusBadge`, come nella
+  sezione Backup): "fai un backup" senza dire se ne esiste già uno recente è un consiglio su
+  cui non si può decidere. La data si legge all'apertura della conferma, non al caricamento
+  del pannello, così è fresca nel momento in cui serve.
+- Se la lettura fallisce non compare nessun toast: l'avviso resta valido comunque, l'errore
+  vero lo mostra la sezione Backup, e qui manca solo la data.
+- Il pulsante di conferma **non** è bloccato in assenza di backup: la richiesta era di
+  avvisare, e l'amministratore resta libero di procedere.
+- Non toccato lo script sull'host (`scripts/update-server.sh`): lo lancia un path unit
+  systemd quando compare `apply.trigger`, non c'è nessuno da avvisare lì. Il dialog è l'unico
+  punto in cui una persona decide di aggiornare.
+- File: `frontend/src/components/settings/updateSettingsPanel.tsx`.
+
 ## 2026-09-07 — PDF del report: il riquadro "avvisato" si divide in due
 
 **"Completato" accanto ad "avvisato", nella striscia in fondo alla copia interna.** Il
