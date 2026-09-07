@@ -11,6 +11,34 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — Barra di paginazione: conteggio a sinistra, selettore righe a destra
+
+**Cosa.** Sotto ogni tabella il conteggio "Visualizzati 1-10 di 15" resta a sinistra, mentre
+il selettore "Righe per pagina" si è spostato a destra, in linea con le frecce e i numeri di
+pagina. Prima stava a sinistra, appiccicato al conteggio.
+
+**Il perché della trappola, che è la parte da ricordare.** Spostare il selettore ha voluto
+dire raggrupparlo in un contenitore comune con i controlli di pagina, e lì il layout si è
+rotto: il selettore finiva su una riga e le frecce sulla riga sotto, disallineati rispetto al
+conteggio. La causa è che `Pagination` di shadcn nasce con `mx-auto flex w-full
+justify-center` ([ui/pagination.tsx](../frontend/src/components/ui/pagination.tsx)). Come
+figlio diretto della riga esterna in `justify-between` quel `w-full` si limitava a
+restringersi, quindi il difetto non si vedeva; dentro un contenitore `flex-wrap` invece
+rivendica tutta la larghezza e si porta su una riga propria. Rimediato con `mx-0 w-auto` sul
+solo punto d'uso, così il `nav` si dimensiona sul contenuto — senza toccare il componente
+`ui/` condiviso, che va lasciato aderente all'originale shadcn.
+
+**Verificato con Playwright, con test di controllo.** La dev DB ha 2 righe per tabella, cioè
+una pagina sola: i controlli di pagina non venivano proprio renderizzati e la verifica sulla
+pagina reale non provava nulla. Misurata quindi la struttura iniettata nel DOM dell'app
+(stesse classi, stessi CSS globali): scarto verticale fra i centri dei tre elementi **0px con
+il fix, 42px rimettendo `w-full` a runtime**. Il controllo serviva a escludere un test inerte,
+trappola già incontrata in questo progetto.
+
+**File:** [frontend/src/components/table-pagination.tsx](../frontend/src/components/table-pagination.tsx).
+
+---
+
 ## 2026-09-07 — Rassegna di sicurezza: iniezione in smbclient, SVG del logo, permessi delle impostazioni
 
 **Tre difetti sfruttabili da un utente autenticato qualsiasi, più tre irrobustimenti.** La
