@@ -113,7 +113,9 @@ const TablePagination = ({
                                 <PaginationNext
                                     href="#"
                                     aria-disabled={currentPage === totalPages}
-                                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
+                                    className={
+                                        currentPage === totalPages ? "pointer-events-none opacity-50" : undefined
+                                    }
                                     onClick={(event) => {
                                         event.preventDefault();
                                         if (currentPage < totalPages) {
