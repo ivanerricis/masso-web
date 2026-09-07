@@ -10,6 +10,7 @@ import {
 } from "../schema";
 import type { NewReport, UpdateReport } from "../types";
 import { takeUnpaginated } from "./pagination";
+import { parseIdSearch } from "./search";
 
 type ReportSortBy = "createdAt" | "customer" | "totalPrice";
 
@@ -47,36 +48,28 @@ export const listReports = async ({
 
     const trimmedSearch = search?.trim();
     const searchPattern = `%${trimmedSearch ?? ""}%`;
+    const idSearch = trimmedSearch ? parseIdSearch(trimmedSearch) : null;
+    // Solo colonne di testo, più il numero del report come confronto esatto: vedi `search.ts`
+    // per il perché le colonne non testuali sono state tolte. Data, stato e metodo di
+    // pagamento restano cercabili dai filtri dedicati sopra la tabella, dove peraltro
+    // funzionano davvero (la casella confrontava `cash`, non "contanti").
     const searchConditions = trimmedSearch
         ? [
-              sql`${reportTable.id}::text ILIKE ${searchPattern}`,
+              ...(idSearch != null ? [eq(reportTable.id, idSearch)] : []),
               sql`${reportTable.note}::text ILIKE ${searchPattern}`,
               sql`${reportTable.password}::text ILIKE ${searchPattern}`,
               sql`${reportTable.issueDescription}::text ILIKE ${searchPattern}`,
               sql`${reportTable.serviceDescription}::text ILIKE ${searchPattern}`,
-              sql`${reportTable.dataBackup}::text ILIKE ${searchPattern}`,
-              sql`${reportTable.charger}::text ILIKE ${searchPattern}`,
-              sql`${reportTable.alerted}::text ILIKE ${searchPattern}`,
-              sql`${reportTable.closed}::text ILIKE ${searchPattern}`,
-              sql`${reportTable.paymentMethod}::text ILIKE ${searchPattern}`,
-              sql`${reportTable.price}::text ILIKE ${searchPattern}`,
-              sql`${reportTable.created_at}::text ILIKE ${searchPattern}`,
-              sql`${reportTable.updated_at}::text ILIKE ${searchPattern}`,
-              sql`${customerTable.id}::text ILIKE ${searchPattern}`,
               sql`${customerTable.firstName}::text ILIKE ${searchPattern}`,
               sql`${customerTable.lastName}::text ILIKE ${searchPattern}`,
               sql`${customerTable.phoneNumber}::text ILIKE ${searchPattern}`,
               sql`${customerTable.phoneNumberSecondary}::text ILIKE ${searchPattern}`,
               sql`${customerTable.email}::text ILIKE ${searchPattern}`,
-              sql`${deviceTable.id}::text ILIKE ${searchPattern}`,
               sql`${deviceTable.name}::text ILIKE ${searchPattern}`,
-              sql`${IssueTable.id}::text ILIKE ${searchPattern}`,
               sql`${IssueTable.description}::text ILIKE ${searchPattern}`,
-              sql`${collaboratorTable.id}::text ILIKE ${searchPattern}`,
               sql`${collaboratorTable.firstName}::text ILIKE ${searchPattern}`,
               sql`${collaboratorTable.lastName}::text ILIKE ${searchPattern}`,
               sql`${collaboratorTable.phoneNumber}::text ILIKE ${searchPattern}`,
-              sql`${technicianPriceSubquery.technicianPrice}::text ILIKE ${searchPattern}`,
           ]
         : [];
     const visibilityCondition =

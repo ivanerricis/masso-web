@@ -3,6 +3,7 @@ import { db } from "../index";
 import { deviceTable } from "../schema";
 import type { NewDevice, UpdateDevice } from "../types";
 import { takeUnpaginated } from "./pagination";
+import { parseIdSearch } from "./search";
 
 type ListDevicesParams = {
     page?: number;
@@ -13,12 +14,11 @@ type ListDevicesParams = {
 export const listDevices = async ({ page, pageSize, search }: ListDevicesParams) => {
     const trimmedSearch = search?.trim();
     const searchPattern = `%${trimmedSearch ?? ""}%`;
+    const idSearch = trimmedSearch ? parseIdSearch(trimmedSearch) : null;
     const searchConditions = trimmedSearch
         ? [
-              sql`${deviceTable.id}::text ILIKE ${searchPattern}`,
+              ...(idSearch != null ? [eq(deviceTable.id, idSearch)] : []),
               sql`${deviceTable.name}::text ILIKE ${searchPattern}`,
-              sql`${deviceTable.created_at}::text ILIKE ${searchPattern}`,
-              sql`${deviceTable.updated_at}::text ILIKE ${searchPattern}`,
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;

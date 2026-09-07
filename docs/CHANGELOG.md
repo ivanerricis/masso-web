@@ -11,6 +11,146 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — La casella di ricerca smette di confrontare colonne che testo non sono
+
+**Cosa.** Le sette liste con ricerca libera non convertono più in testo id, date, booleani,
+prezzi e metodo di pagamento per confrontarli con `ILIKE '%…%'`. Restano le colonne di testo,
+più il numero del record come **confronto esatto sulla chiave primaria** quando quello che si
+digita è tutto cifre. Nuovo helper condiviso [parseIdSearch](../backend/src/db/queries/search.ts).
+
+**Il perché, misurato e non ipotizzato** (dati di prova generati da
+[seed-fake-data.sql](../scripts/dev/seed-fake-data.sql), tempi da
+[bench-api.mjs](../scripts/dev/bench-api.mjs), 20.000 report / 8.000 interventi / 5.000 clienti):
+
+| | prima | dopo |
+| --- | ---: | ---: |
+| Report, ricerca "rossi" | 770 ms | **323 ms** |
+| Report, ricerca senza risultati | 714 ms | **410 ms** |
+| Clienti, typeahead della combobox | 51 ms | **16 ms** |
+| Interventi, ricerca | 118 ms | **74 ms** |
+
+Nient'altro si è mosso più del rumore di misura (±5 ms su 46 scenari).
+
+**Il difetto era doppio, ed è la parte che vale la pena ricordare.**
+
+*Costavano.* Un `ILIKE` su un'espressione calcolata non è coperto da nessun indice, e basta
+**un solo** ramo del genere in un `OR` perché Postgres rinunci a combinare i bitmap degli
+indici trigram di tutti gli altri rami. In più `created_at::text` converte un timestamp in
+stringa per ogni riga esaminata, che è molto più caro di un confronto fra varchar: sui soli
+clienti quei tre rami valevano 33 ms → 24 ms del conteggio.
+
+*E non servivano.* Confrontavano il valore grezzo nel database, non quello mostrato a schermo.
+Verificato sui dati: cercare **"contanti" dava 0 risultati** (in tabella c'è `cash`), e
+**"07/09/2026" dava 0 risultati** (in tabella c'è `2026-09-07 04:42:00.746771`). Si pagava
+metà del tempo di ogni ricerca per rami che nessuno poteva far scattare, se non digitando
+valori interni che l'interfaccia non mostra da nessuna parte.
+
+**Anche tipo e stato degli interventi sono usciti, ed è il caso meno ovvio.** A differenza del
+metodo di pagamento, quei due rami *funzionavano*: in tabella ci sono le stesse parole italiane
+che si leggono a schermo (`completato`, `consegna_materiale`), quindi digitarle trovava
+qualcosa. Ma nessuno dei due ha un indice che regga un `ILIKE '%…%'` — gli indici btree su
+`type` e `status` servono per l'uguaglianza, non per la sottostringa — e la pagina interventi
+ha già i due menù a tendina dedicati, che arrivano qui come parametri `status`/`type` e
+diventano confronti esatti. La capacità non si perde: si sposta sul controllo che c'era già e
+che filtra meglio, a costo zero. Stesso discorso per data e stato di pagamento dei report, che
+hanno i loro filtri sopra la tabella.
+
+Verificato dopo la modifica: cercare "completato" o "remoto" nella casella dà 0 risultati,
+mentre i filtri `status=completato` (6.118) e `type=intervento_remoto` (2.667), da soli e
+combinati (2.300), rispondono correttamente.
+
+**Una differenza di comportamento da sapere:** cercare `12` ora trova il record 12, non più
+anche 120 e 1234. Il numero fuori dalla scala dell'intero a 32 bit viene ignorato invece di
+far fallire la query con "integer out of range".
+
+**Questo non è il rimedio completo.** Sulle liste che uniscono più tabelle (report,
+interventi) l'`OR` continua ad attraversare cinque tabelle, e un indice può essere usato solo
+se il predicato riguarda una tabella sola: il piano resta una scansione completa con il filtro
+applicato dopo il join, e il costo continua a crescere con l'archivio invece che con i
+risultati trovati. Il rimedio vero è un ramo per tabella con `UNION` degli id — prototipato e
+misurato a **35 ms** contro i 323 attuali — ma è un lavoro a parte. Prova di quanto pesi
+davvero l'indice, sulla stessa macchina e sugli stessi dati: lo stesso `OR` ristretto alla
+sola tabella `report` usa `BitmapOr` su quattro indici trigram ed esegue in **1,1 ms**.
+
+**File:** [search.ts](../backend/src/db/queries/search.ts) (nuovo),
+[report.ts](../backend/src/db/queries/report.ts),
+[customer.ts](../backend/src/db/queries/customer.ts),
+[intervention.ts](../backend/src/db/queries/intervention.ts),
+[collaborator.ts](../backend/src/db/queries/collaborator.ts),
+[technician.ts](../backend/src/db/queries/technician.ts),
+[device.ts](../backend/src/db/queries/device.ts),
+[issue.ts](../backend/src/db/queries/issue.ts).
+
+---
+
+## 2026-09-07 — Dati fittizi e misura della latenza delle API
+
+**Cosa.** Due script di sviluppo: [scripts/dev/seed-fake-data.sql](../scripts/dev/seed-fake-data.sql)
+riempie il database con dati verosimili (di default 20.000 report, 8.000 interventi, 5.000
+clienti, più anagrafiche e notifiche) e [scripts/dev/bench-api.mjs](../scripts/dev/bench-api.mjs)
+misura la latenza di 46 scenari di chiamata — liste, ricerche, ordinamenti, dettagli, PDF,
+scritture e i "pacchetti" di chiamate che una pagina lancia al mount.
+
+**Il perché.** Finora la dev DB conteneva due righe per tabella: qualunque verifica di
+prestazioni era priva di significato, e anche le verifiche funzionali (paginazione,
+troncamenti, ordinamenti) non toccavano i casi che contano. Il seme di `setseed` è fisso e i
+volumi sono parametri (`-v n_reports=100000`), quindi due esecuzioni producono lo stesso
+database e i confronti prima/dopo una modifica restano paragonabili. Lo script di misura si
+autentica creando una riga in `session` con l'hash del token e la cancella in `finally`: non
+serve la password dell'utente e l'ambiente resta come prima.
+
+**Cosa hanno detto le misure** (p50 su host, 12 richieste per scenario, ai volumi di default
+e poi a 5×: 100.000 report / 40.000 interventi / 20.000 clienti):
+
+| Chiamata | 20k report | 100k report |
+| --- | ---: | ---: |
+| Report, pagina 1 × 10 | 49 ms | 110 ms |
+| Report, ricerca testuale | **770 ms** | **3.510 ms** |
+| Report, ordina per cliente / totale | 116 ms | 385 ms |
+| Report, offset profondo (ultima pagina) | 157 ms | 572 ms |
+| Report, PDF di stampa | 472 ms | 477 ms |
+| Clienti, typeahead della combobox | 51 ms | 173 ms |
+| Dettaglio / scritture / cataloghi | 10-20 ms | 12-20 ms |
+
+**1. La ricerca è il collo di bottiglia, e il motivo è quello già annotato ma ora
+quantificato.** `listReports` costruisce un `OR` di 28 condizioni `::text ILIKE '%…%'`, molte
+su colonne senza indice trgm (`created_at`, i booleani, il totale calcolato). Con anche un
+solo ramo non indicizzabile Postgres non può usare `BitmapOr`: il piano reale è un hash join
+di *tutto* il prodotto report × cliente × dispositivo × difetto, con le 28 `ILIKE` valutate
+riga per riga come `Join Filter` (`Rows Removed by Join Filter: 17.997`). Il costo non dipende
+da quanto matcha: una ricerca **senza risultati costa quanto una che ne trova** (714 ms /
+3.574 ms). Prova di controllo sulla stessa macchina e sullo stesso dato: `count(*) FROM
+customer WHERE last_name ILIKE '%rossi%'`, che l'indice trgm copre davvero, esegue in
+**0,8 ms** contro i 668 ms del `count(*)` della ricerca report. Non è quindi "il database è
+lento", è la forma della query.
+
+**2. Il `count(*)` della paginazione fa join che non gli servono.** Ogni pagina lancia due
+query in parallelo, righe e totale; il conteggio ripete gli stessi join su cliente,
+dispositivo e difetto anche quando non c'è nessuna ricerca, cioè quando quei join non possono
+cambiare il totale (sono FK non nulle). Sono 28 ms dei ~49 della pagina.
+
+**3. La sottoquery dei prezzi tecnico aggrega tutta la tabella per restituire 10 righe.**
+`technician_prices` fa `GROUP BY report_id` su tutto `report_technician`, poi il planner la
+unisce con un `Nested Loop` + `Materialize` che scarta 55.422 righe per trovarne 10. Ma
+`report_technician` ha la chiave primaria **sul solo `report_id`**: c'è al massimo una riga per
+report, quindi il `GROUP BY` è ridondante e un left join diretto sulla PK farebbe lo stesso
+lavoro con un index scan.
+
+**4. Il tetto di 5.000 righe delle liste non paginate scatta davvero a questi volumi.**
+`unpaginatedMaxRows` fa il suo mestiere — niente esplosioni di memoria — ma il calendario
+della dashboard e le combobox ricevono un elenco troncato, con il warning previsto nei log
+(`Lista "interventions" … risultato troncato`). A 8.000 interventi il calendario mensile
+mostra già "+119 altri" per giorno: è il segnale che quel chiamante ha bisogno di un filtro
+per intervallo di date, non dell'elenco completo.
+
+**Non toccato in questa voce:** nessuna di queste quattro cose è stata corretta qui. Lo script
+serve proprio a poterle correggere misurando, invece che a intuito.
+
+**File:** [scripts/dev/seed-fake-data.sql](../scripts/dev/seed-fake-data.sql),
+[scripts/dev/bench-api.mjs](../scripts/dev/bench-api.mjs).
+
+---
+
 ## 2026-09-07 — Barra di paginazione: conteggio a sinistra, selettore righe a destra
 
 **Cosa.** Sotto ogni tabella il conteggio "Visualizzati 1-10 di 15" resta a sinistra, mentre

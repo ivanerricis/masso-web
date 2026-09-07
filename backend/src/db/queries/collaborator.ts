@@ -3,6 +3,7 @@ import { db } from "../index";
 import { collaboratorTable } from "../schema";
 import type { NewCollaborator, UpdateCollaborator } from "../types";
 import { takeUnpaginated } from "./pagination";
+import { parseIdSearch } from "./search";
 
 type ListCollaboratorsParams = {
     page?: number;
@@ -13,14 +14,13 @@ type ListCollaboratorsParams = {
 export const listCollaborators = async ({ page, pageSize, search }: ListCollaboratorsParams) => {
     const trimmedSearch = search?.trim();
     const searchPattern = `%${trimmedSearch ?? ""}%`;
+    const idSearch = trimmedSearch ? parseIdSearch(trimmedSearch) : null;
     const searchConditions = trimmedSearch
         ? [
-              sql`${collaboratorTable.id}::text ILIKE ${searchPattern}`,
+              ...(idSearch != null ? [eq(collaboratorTable.id, idSearch)] : []),
               sql`${collaboratorTable.firstName}::text ILIKE ${searchPattern}`,
               sql`${collaboratorTable.lastName}::text ILIKE ${searchPattern}`,
               sql`${collaboratorTable.phoneNumber}::text ILIKE ${searchPattern}`,
-              sql`${collaboratorTable.created_at}::text ILIKE ${searchPattern}`,
-              sql`${collaboratorTable.updated_at}::text ILIKE ${searchPattern}`,
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;

@@ -3,6 +3,7 @@ import { db } from "../index";
 import { collaboratorTable, customerTable, interventionTable } from "../schema";
 import type { NewIntervention, UpdateIntervention } from "../types";
 import { takeUnpaginated } from "./pagination";
+import { parseIdSearch } from "./search";
 
 type InterventionSortBy = "createdAt" | "interventionDate" | "customer" | "status";
 
@@ -35,19 +36,19 @@ export const listInterventions = async ({
 }: ListInterventionsParams) => {
     const trimmedSearch = search?.trim();
     const searchPattern = `%${trimmedSearch ?? ""}%`;
+    const idSearch = trimmedSearch ? parseIdSearch(trimmedSearch) : null;
+    // Tipo e stato non stanno più fra i rami di ricerca: nessuno dei due ha un indice che
+    // regga un `ILIKE '%…%'`, e la pagina interventi ha già i due menù a tendina dedicati
+    // (`status` e `type` arrivano qui come parametri e diventano confronti esatti, poche
+    // righe più sotto), che filtrano meglio e senza costo.
     const searchConditions = trimmedSearch
         ? [
-              sql`${interventionTable.id}::text ILIKE ${searchPattern}`,
+              ...(idSearch != null ? [eq(interventionTable.id, idSearch)] : []),
               sql`${interventionTable.description}::text ILIKE ${searchPattern}`,
-              sql`${interventionTable.type}::text ILIKE ${searchPattern}`,
-              sql`${interventionTable.status}::text ILIKE ${searchPattern}`,
-              sql`${interventionTable.created_at}::text ILIKE ${searchPattern}`,
-              sql`${customerTable.id}::text ILIKE ${searchPattern}`,
               sql`${customerTable.firstName}::text ILIKE ${searchPattern}`,
               sql`${customerTable.lastName}::text ILIKE ${searchPattern}`,
               sql`${customerTable.phoneNumber}::text ILIKE ${searchPattern}`,
               sql`${customerTable.phoneNumberSecondary}::text ILIKE ${searchPattern}`,
-              sql`${collaboratorTable.id}::text ILIKE ${searchPattern}`,
               sql`${collaboratorTable.firstName}::text ILIKE ${searchPattern}`,
               sql`${collaboratorTable.lastName}::text ILIKE ${searchPattern}`,
           ]

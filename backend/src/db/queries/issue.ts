@@ -3,6 +3,7 @@ import { db } from "../index";
 import { IssueTable } from "../schema";
 import type { NewIssue, UpdateIssue } from "../types";
 import { takeUnpaginated } from "./pagination";
+import { parseIdSearch } from "./search";
 
 type ListIssuesParams = {
     page?: number;
@@ -13,12 +14,11 @@ type ListIssuesParams = {
 export const listIssues = async ({ page, pageSize, search }: ListIssuesParams) => {
     const trimmedSearch = search?.trim();
     const searchPattern = `%${trimmedSearch ?? ""}%`;
+    const idSearch = trimmedSearch ? parseIdSearch(trimmedSearch) : null;
     const searchConditions = trimmedSearch
         ? [
-              sql`${IssueTable.id}::text ILIKE ${searchPattern}`,
+              ...(idSearch != null ? [eq(IssueTable.id, idSearch)] : []),
               sql`${IssueTable.description}::text ILIKE ${searchPattern}`,
-              sql`${IssueTable.created_at}::text ILIKE ${searchPattern}`,
-              sql`${IssueTable.updated_at}::text ILIKE ${searchPattern}`,
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
