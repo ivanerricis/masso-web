@@ -68,7 +68,9 @@ const TablePagination = ({
                 ) : null}
 
                 {totalPages <= 1 ? null : (
-                    <Pagination>
+                    // `w-auto` annulla il `w-full` di default di Pagination: qui sta accanto al
+                    // selettore, e a piena larghezza andrebbe a capo su una riga tutta sua.
+                    <Pagination className="mx-0 w-auto">
                         <PaginationContent>
                             <PaginationItem>
                                 <PaginationPrevious
