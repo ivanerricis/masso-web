@@ -17,9 +17,9 @@ type TablePaginationProps = {
     pageSize: number;
     onPageChange: (page: number) => void;
     /**
-     * Quando c'è, accanto al conteggio compare il selettore delle righe per pagina. È il
-     * punto giusto in cui metterlo: questo componente è già sotto ogni tabella dell'app,
-     * mentre la barra dei filtri esiste solo su tre pagine su dodici.
+     * Quando c'è, a destra (accanto ai controlli di pagina) compare il selettore delle righe
+     * per pagina. È il punto giusto in cui metterlo: questo componente è già sotto ogni
+     * tabella dell'app, mentre la barra dei filtri esiste solo su tre pagine su dodici.
      */
     onPageSizeChange?: (pageSize: TableRowsPerPageKey) => void;
 };
@@ -58,74 +58,74 @@ const TablePagination = ({
 
     return (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <p className="text-sm text-muted-foreground">
-                    Visualizzati {startItem}-{endItem} di {totalItems}
-                </p>
+            <p className="text-sm text-muted-foreground">
+                Visualizzati {startItem}-{endItem} di {totalItems}
+            </p>
 
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 {onPageSizeChange ? (
                     <RowsPerPageSelect value={pageSize as TableRowsPerPageKey} onValueChange={onPageSizeChange} />
                 ) : null}
-            </div>
 
-            {totalPages <= 1 ? null : (
-                <Pagination>
-                    <PaginationContent>
-                        <PaginationItem>
-                            <PaginationPrevious
-                                href="#"
-                                aria-disabled={currentPage === 1}
-                                className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    if (currentPage > 1) {
-                                        onPageChange(currentPage - 1);
-                                    }
-                                }}
-                            />
-                        </PaginationItem>
+                {totalPages <= 1 ? null : (
+                    <Pagination>
+                        <PaginationContent>
+                            <PaginationItem>
+                                <PaginationPrevious
+                                    href="#"
+                                    aria-disabled={currentPage === 1}
+                                    className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        if (currentPage > 1) {
+                                            onPageChange(currentPage - 1);
+                                        }
+                                    }}
+                                />
+                            </PaginationItem>
 
-                        {visiblePages.map((page, index) => {
-                            if (typeof page === "string") {
+                            {visiblePages.map((page, index) => {
+                                if (typeof page === "string") {
+                                    return (
+                                        <PaginationItem key={`ellipsis-${index}`}>
+                                            <PaginationEllipsis />
+                                        </PaginationItem>
+                                    );
+                                }
+
                                 return (
-                                    <PaginationItem key={`ellipsis-${index}`}>
-                                        <PaginationEllipsis />
+                                    <PaginationItem key={page}>
+                                        <PaginationLink
+                                            href="#"
+                                            isActive={page === currentPage}
+                                            onClick={(event) => {
+                                                event.preventDefault();
+                                                onPageChange(page);
+                                            }}
+                                        >
+                                            {page}
+                                        </PaginationLink>
                                     </PaginationItem>
                                 );
-                            }
+                            })}
 
-                            return (
-                                <PaginationItem key={page}>
-                                    <PaginationLink
-                                        href="#"
-                                        isActive={page === currentPage}
-                                        onClick={(event) => {
-                                            event.preventDefault();
-                                            onPageChange(page);
-                                        }}
-                                    >
-                                        {page}
-                                    </PaginationLink>
-                                </PaginationItem>
-                            );
-                        })}
-
-                        <PaginationItem>
-                            <PaginationNext
-                                href="#"
-                                aria-disabled={currentPage === totalPages}
-                                className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    if (currentPage < totalPages) {
-                                        onPageChange(currentPage + 1);
-                                    }
-                                }}
-                            />
-                        </PaginationItem>
-                    </PaginationContent>
-                </Pagination>
-            )}
+                            <PaginationItem>
+                                <PaginationNext
+                                    href="#"
+                                    aria-disabled={currentPage === totalPages}
+                                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        if (currentPage < totalPages) {
+                                            onPageChange(currentPage + 1);
+                                        }
+                                    }}
+                                />
+                            </PaginationItem>
+                        </PaginationContent>
+                    </Pagination>
+                )}
+            </div>
         </div>
     );
 };
