@@ -69,6 +69,7 @@ export const customerTable = pgTable(
         ...userFields,
         phoneNumberSecondary: varchar("phone_number_secondary", { length: 20 }),
         email: varchar("email", { length: 255 }),
+        city: varchar("city", { length: 255 }),
         ...timestamps,
     },
     (table) => [
@@ -77,6 +78,7 @@ export const customerTable = pgTable(
         index("customer_phone_number_trgm_idx").using("gin", sql`${table.phoneNumber} gin_trgm_ops`),
         index("customer_phone_number_secondary_trgm_idx").using("gin", sql`${table.phoneNumberSecondary} gin_trgm_ops`),
         index("customer_email_trgm_idx").using("gin", sql`${table.email} gin_trgm_ops`),
+        index("customer_city_trgm_idx").using("gin", sql`${table.city} gin_trgm_ops`),
         index("customer_created_at_idx").on(table.created_at),
     ]
 );

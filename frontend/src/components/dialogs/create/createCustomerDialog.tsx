@@ -23,6 +23,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
         phoneNumber: "",
         phoneNumberSecondary: "",
         email: "",
+        city: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,6 +36,7 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                     phoneNumber: initialValues?.phoneNumber ?? "",
                     phoneNumberSecondary: initialValues?.phoneNumberSecondary ?? "",
                     email: initialValues?.email ?? "",
+                    city: initialValues?.city ?? "",
                 });
             });
         }
@@ -155,6 +157,18 @@ const CreateCustomerDialog = ({ open, onOpenChange, onSubmit, mode = "create", i
                             placeholder="mario.rossi@email.com"
                             value={formValues.email}
                             onChange={(event) => setFormValues((prev) => ({ ...prev, email: event.target.value }))}
+                        />
+                    </div>
+                    <div className="grid">
+                        <Label htmlFor="city" className="text-lg">
+                            Località (opzionale)
+                        </Label>
+                        <Input
+                            className="text-lg!"
+                            id="city"
+                            placeholder="Roma"
+                            value={formValues.city}
+                            onChange={(event) => setFormValues((prev) => ({ ...prev, city: event.target.value }))}
                         />
                     </div>
                 </div>

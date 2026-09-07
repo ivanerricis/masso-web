@@ -29,6 +29,7 @@ export const listCustomers = async ({
               sql`${customerTable.phoneNumber}::text ILIKE ${searchPattern}`,
               sql`${customerTable.phoneNumberSecondary}::text ILIKE ${searchPattern}`,
               sql`${customerTable.email}::text ILIKE ${searchPattern}`,
+              sql`${customerTable.city}::text ILIKE ${searchPattern}`,
               sql`${customerTable.created_at}::text ILIKE ${searchPattern}`,
               sql`${customerTable.updated_at}::text ILIKE ${searchPattern}`,
           ]

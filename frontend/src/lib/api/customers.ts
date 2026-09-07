@@ -9,6 +9,7 @@ export type CustomerCreateInput = {
     phoneNumber?: string | null;
     phoneNumberSecondary?: string | null;
     email?: string | null;
+    city?: string | null;
 };
 
 export type CustomerUpdateInput = Partial<CustomerCreateInput>;

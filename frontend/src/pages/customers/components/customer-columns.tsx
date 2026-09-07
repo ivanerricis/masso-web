@@ -41,6 +41,11 @@ export const customerColumns: CustomerColumn[] = [
         render: (row) => row.email ?? "-",
     },
     {
+        key: "city",
+        header: "Località",
+        render: (row) => row.city ?? "-",
+    },
+    {
         key: "createdAt",
         header: "Creato il",
         render: (row) => formatDate(row.createdAt),

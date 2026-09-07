@@ -11,6 +11,29 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — Località del cliente
+
+**Nuovo campo `city` sul cliente, facoltativo.** La scheda cliente registrava solo nome,
+telefoni ed email: per capire da dove arriva chi porta un dispositivo, o dove va fatto un
+intervento a domicilio, bisognava leggerlo dalla descrizione del report. Il campo è
+facoltativo per non invalidare i clienti già esistenti — la colonna nasce nullable e
+nessuna riga viene toccata dalla migrazione — e resta fuori dai vincoli di validazione
+(l'unico obbligo sul cliente resta almeno un numero di telefono).
+- Database: migrazione `0019_add_customer_city.sql` (`ALTER TABLE ... ADD COLUMN IF NOT
+  EXISTS`) più indice GIN trigram `customer_city_trgm_idx`, allineato agli altri campi
+  testuali del cliente perché la località entra nella ricerca full-text della lista clienti
+  (`listCustomers`): senza indice quella condizione `ILIKE '%...%'` sarebbe l'unica a
+  costringere a una scansione sequenziale.
+- Backend: `db/schema.ts`, `db/queries/customer.ts` (condizione di ricerca),
+  `routes/customers.ts` (`z.string().trim().min(1).max(255).nullable().optional()`, come
+  email: stringa vuota non ammessa, `null` sì).
+- Frontend: `CustomerDto` e `CustomerCreateInput`, campo nel dialog cliente (creazione e
+  modifica), colonna "Località" in tabella, payload di `CustomersPage` e delle creazioni
+  cliente inline dai dialog report e intervento — tutte usano lo stesso dialog, quindi
+  omettere `city` in uno di quei punti avrebbe scartato silenziosamente il valore digitato.
+- Non toccato: i PDF di resoconto cliente, che continuano a mostrare nome, telefono ed
+  email.
+
 ## 2026-09-07 — Terminologia unificata su "report", stato del report come card
 
 **"Rapportino"/"rapporto" → "report" ovunque.** L'interfaccia usava tre parole per la

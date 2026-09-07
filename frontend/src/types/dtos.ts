@@ -35,6 +35,7 @@ export type CustomerDto = {
     phoneNumber: string | null;
     phoneNumberSecondary: string | null;
     email: string | null;
+    city: string | null;
     createdAt: string;
     updatedAt: string | null;
 };

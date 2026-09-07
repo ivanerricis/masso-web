@@ -33,6 +33,7 @@ const customerBodySchemaBase = z.object({
     lastName: z.string().trim().min(1).max(255).nullable().optional(),
     phoneNumber: z.string().trim().min(1).max(20).nullable().optional(),
     phoneNumberSecondary: z.string().trim().min(1).max(20).nullable().optional(),
+    city: z.string().trim().min(1).max(255).nullable().optional(),
 });
 
 const customerCreateBodySchema = customerBodySchemaBase
