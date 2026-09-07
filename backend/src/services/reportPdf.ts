@@ -385,19 +385,19 @@ const buildAmountCell = (report: ReportPrintData) => ({
     margin: [0, 8, 0, 8],
 });
 
-// Il riquadro in basso a sinistra tiene due voci: "lavoro eseguito" resta da spuntare a
+// Il riquadro in basso a sinistra tiene due voci: "completato" resta da spuntare a
 // mano, "avvisato" arriva dal report. Sono una tabella sola a due colonne, non due riquadri
 // affiancati, cosi' barra di sezione e riga sotto condividono altezza e bordi — come fa
 // gia' "PAGAMENTO" con le sue due caselle.
 const buildWorkAndAlertBox = (report: ReportPrintData, rowPadding: number) => ({
     table: {
-        // "AVVISATO" prende solo lo spazio che gli serve: il titolo accanto e' lungo il
-        // doppio e su due colonne uguali andrebbe a capo, alzando la barra di questo
-        // riquadro rispetto a quelle di "IMPORTO" e "PAGAMENTO".
-        widths: ["*", 64],
+        widths: ["*", "*"],
         heights: (row: number) => (row === 0 ? "auto" : 42),
+        // "COMPLETATO" e non "LAVORO ESEGUITO": a 10,5 pt quest'ultimo misura 91,3 pt
+        // contro i ~79 di mezza casella, andrebbe a capo e la barra su due righe alzerebbe
+        // questo riquadro rispetto a quelle di "IMPORTO" e "PAGAMENTO".
         body: [
-            [sectionBarCell("LAVORO ESEGUITO"), sectionBarCell("AVVISATO")],
+            [sectionBarCell("COMPLETATO"), sectionBarCell("AVVISATO")],
             [buildFilledCell(""), buildFilledCell(report.alerted ? yesNo(report.alerted) : "")],
         ],
     },
