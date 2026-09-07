@@ -115,7 +115,7 @@ const TechnicianPage = () => {
 
         return reportCards;
     }, [reportCards, visibilityFilter]);
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("technician-reports");
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [visibilityFilter, pageSize],
     });
@@ -263,6 +263,7 @@ const TechnicianPage = () => {
                             totalItems={totalItems}
                             pageSize={pageSize}
                             onPageChange={setCurrentPage}
+                            onPageSizeChange={setPageSize}
                         />
                     </div>
                 )}

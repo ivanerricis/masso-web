@@ -10,6 +10,7 @@ import SearchInput from "@/components/search-input";
 import TablePagination from "@/components/table-pagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTableRowsPerPage } from "@/hooks/useTableRowsPerPage";
 import {
     getApiErrorMessage,
     getLogDownloadUrl,
@@ -20,11 +21,10 @@ import {
 } from "@/lib/api";
 import { cn, formatDateTime, formatFileSize } from "@/lib/utils";
 
-const pageSize = 25;
-
 const formatDayKey = (dayKey: string) => formatDateTime(`${dayKey}T00:00:00.000Z`).split(",")[0]?.trim() ?? dayKey;
 
 const LogsSettingsPanel = () => {
+    const [pageSize, setPageSize] = useTableRowsPerPage("logs");
     const [logFiles, setLogFiles] = useState<LogFileDto[]>([]);
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
     const [selectedDayKey, setSelectedDayKey] = useState<string>("");
@@ -35,7 +35,7 @@ const LogsSettingsPanel = () => {
     const [searchText, setSearchText] = useState("");
     const debouncedSearchText = useDebouncedValue(searchText);
     const { currentPage, setCurrentPage } = useTablePagination({
-        resetDependencies: [selectedDayKey, debouncedSearchText],
+        resetDependencies: [selectedDayKey, debouncedSearchText, pageSize],
     });
 
     const loadLogFiles = useCallback(async () => {
@@ -78,7 +78,7 @@ const LogsSettingsPanel = () => {
         } finally {
             setIsLoadingEntries(false);
         }
-    }, [selectedDayKey, currentPage, debouncedSearchText]);
+    }, [selectedDayKey, currentPage, pageSize, debouncedSearchText]);
 
     useEffect(() => {
         startTransition(() => {
@@ -226,6 +226,7 @@ const LogsSettingsPanel = () => {
                             totalItems={totalItems}
                             pageSize={pageSize}
                             onPageChange={setCurrentPage}
+                            onPageSizeChange={setPageSize}
                         />
                     </>
                 )}

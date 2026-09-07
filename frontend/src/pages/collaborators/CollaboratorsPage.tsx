@@ -31,7 +31,7 @@ const CollaboratorsPage = () => {
     const [collaboratorToEdit, setCollaboratorToEdit] = useState<CollaboratorDto | null>(null);
     const [collaboratorToDelete, setCollaboratorToDelete] = useState<CollaboratorDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("collaborators");
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const {
         rows: collaboratorRows,
@@ -176,6 +176,7 @@ const CollaboratorsPage = () => {
                     totalItems={totalItems}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
                 />
             </div>
 

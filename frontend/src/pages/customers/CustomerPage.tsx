@@ -58,7 +58,7 @@ const CustomerPage = () => {
         return reportRows;
     }, [reportRows, visibilityFilter]);
 
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("customer-reports");
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [visibilityFilter, pageSize],
     });
@@ -244,6 +244,7 @@ const CustomerPage = () => {
                     totalItems={totalItems}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
                 />
             </div>
         </div>

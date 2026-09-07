@@ -16,23 +16,19 @@ import {
     getStoredFontSize,
     getStoredTableDensity,
     getStoredTableRowIntensity,
-    getStoredTableRowsPerPage,
     getStoredThemeAccentPreset,
     setStoredCornerRadius,
     setStoredFontSize,
     setStoredTableDensity,
     setStoredTableRowIntensity,
-    setStoredTableRowsPerPage,
     setStoredThemeAccentPreset,
     tableDensities,
     tableRowIntensities,
-    tableRowsPerPageOptions,
     themeAccentPresets,
     type CornerRadiusKey,
     type FontSizeKey,
     type TableDensityKey,
     type TableRowIntensityKey,
-    type TableRowsPerPageKey,
     type ThemeAccentPresetKey,
 } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -115,9 +111,6 @@ const ThemeSettingsSection = () => {
     );
     const [selectedDensity, setSelectedDensity] = useState<TableDensityKey>(() => getStoredTableDensity() ?? "default");
     const [selectedFontSize, setSelectedFontSize] = useState<FontSizeKey>(() => getStoredFontSize() ?? "default");
-    const [selectedRowsPerPage, setSelectedRowsPerPage] = useState<TableRowsPerPageKey>(() =>
-        getStoredTableRowsPerPage()
-    );
     const [selectedRadius, setSelectedRadius] = useState<CornerRadiusKey>(() => getStoredCornerRadius() ?? "default");
 
     useEffect(() => {
@@ -146,11 +139,6 @@ const ThemeSettingsSection = () => {
         setSelectedFontSize(fontSizeKey);
         setStoredFontSize(fontSizeKey);
         applyFontSize(fontSizeKey);
-    };
-
-    const handleSelectRowsPerPage = (pageSize: TableRowsPerPageKey) => {
-        setSelectedRowsPerPage(pageSize);
-        setStoredTableRowsPerPage(pageSize);
     };
 
     const handleSelectRadius = (radiusKey: CornerRadiusKey) => {
@@ -315,28 +303,6 @@ const ThemeSettingsSection = () => {
                                 <span className="text-xs font-normal text-muted-foreground">
                                     {fontSize.description}
                                 </span>
-                            </span>
-                        </Button>
-                    ))}
-                </div>
-            </SettingsCard>
-
-            <SettingsCard
-                title="Righe per pagina"
-                description="Quante righe mostrare per pagina nelle tabelle di interventi, rapporti, clienti e altro."
-            >
-                <div className="grid gap-2 sm:grid-cols-3">
-                    {tableRowsPerPageOptions.map((option) => (
-                        <Button
-                            key={option.key}
-                            type="button"
-                            variant="outline"
-                            className={optionButtonClasses(selectedRowsPerPage === option.key)}
-                            onClick={() => handleSelectRowsPerPage(option.key)}
-                        >
-                            <span className="grid gap-0.5">
-                                <span className="text-sm font-semibold">{option.label}</span>
-                                <span className="text-xs font-normal text-muted-foreground">{option.description}</span>
                             </span>
                         </Button>
                     ))}

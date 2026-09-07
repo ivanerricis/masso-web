@@ -46,6 +46,8 @@ const interventionBodySchema = z
     .object({
         type: z.enum(interventionTypes),
         description: z.string().trim().min(1).max(4000),
+        // Solo per gli interventi in sede o da remoto: le consegne materiale lo ignorano.
+        problem: z.string().trim().max(4000).nullable().optional(),
         status: z.enum(interventionStatuses).optional(),
         customerId: z.coerce.number().int().positive(),
         collaboratorId: z.coerce.number().int().positive(),
@@ -62,6 +64,10 @@ const interventionCreateBodySchema = interventionBodySchema.superRefine((value, 
 
     if (!onSiteInterventionTypes.has(value.type)) {
         return;
+    }
+
+    if (!value.problem) {
+        ctx.addIssue({ code: "custom", message: "Il problema riscontrato è obbligatorio", path: ["problem"] });
     }
 
     if (!value.startTime) {
@@ -131,6 +137,7 @@ const loadInterventionPrintContext = async (
             id: interventionTable.id,
             type: interventionTable.type,
             description: interventionTable.description,
+            problem: interventionTable.problem,
             status: interventionTable.status,
             interventionDate: interventionTable.interventionDate,
             startTime: interventionTable.startTime,
@@ -177,6 +184,7 @@ const loadInterventionPrintContext = async (
             type: intervention.type as InterventionType,
             status: intervention.status as (typeof interventionStatuses)[number],
             description: intervention.description,
+            problem: intervention.problem,
             interventionDateLabel: intervention.interventionDate ? formatDayLabel(intervention.interventionDate) : null,
             startTime: intervention.startTime,
             endTime: intervention.endTime,
@@ -249,6 +257,7 @@ interventionsRouter.post("/", validate({ body: interventionCreateBodySchema }), 
     const createdIntervention = await createIntervention({
         type: req.body.type,
         description: req.body.description,
+        problem: isOnSite ? (req.body.problem ?? null) : null,
         status: req.body.status ?? "programmato",
         customerId: req.body.customerId,
         collaboratorId: req.body.collaboratorId,
@@ -279,9 +288,17 @@ interventionsRouter.put(
             "interventionDate" in req.body ? (req.body.interventionDate ?? null) : existing.interventionDate;
         const nextStartTime = "startTime" in req.body ? (req.body.startTime ?? null) : existing.startTime;
         const nextEndTime = "endTime" in req.body ? (req.body.endTime ?? null) : existing.endTime;
+        const nextProblem = "problem" in req.body ? (req.body.problem ?? null) : existing.problem;
 
         if (!nextInterventionDate) {
             res.status(400).json({ message: "La data dell'intervento è obbligatoria" });
+            return;
+        }
+
+        if (isOnSite && !nextProblem) {
+            res.status(400).json({
+                message: "Per interventi in sede o da remoto è richiesto il problema riscontrato",
+            });
             return;
         }
 
@@ -300,6 +317,7 @@ interventionsRouter.put(
         const updatedIntervention = await updateInterventionById(id, {
             ...req.body,
             interventionDate: nextInterventionDate,
+            problem: isOnSite ? nextProblem : null,
             startTime: isOnSite ? nextStartTime : null,
             endTime: isOnSite ? nextEndTime : null,
         });

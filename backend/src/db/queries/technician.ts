@@ -1,4 +1,4 @@
-import { desc, eq, or, sql } from "drizzle-orm";
+import { asc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { technicianTable } from "../schema";
 import type { NewTechnician, UpdateTechnician } from "../types";
@@ -25,7 +25,11 @@ export const listTechnicians = async ({ page, pageSize, search }: ListTechnician
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const baseQuery = db.select().from(technicianTable).where(whereClause).orderBy(desc(technicianTable.created_at));
+    const baseQuery = db
+        .select()
+        .from(technicianTable)
+        .where(whereClause)
+        .orderBy(asc(technicianTable.firstName), asc(technicianTable.lastName));
 
     if (page == null || pageSize == null) {
         return takeUnpaginated(baseQuery, "technicians");

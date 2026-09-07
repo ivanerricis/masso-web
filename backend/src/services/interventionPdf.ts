@@ -26,6 +26,8 @@ export type InterventionPrintData = {
     type: InterventionType;
     status: InterventionStatus;
     description: string;
+    /** Valorizzato solo per gli interventi in sede o da remoto. */
+    problem: string | null;
     interventionDateLabel: string | null;
     startTime: string | null;
     endTime: string | null;
@@ -160,6 +162,13 @@ const buildActivitySection = (intervention: InterventionPrintData) => ({
                 "Stato",
                 formatInterventionStatus(intervention.status)
             ),
+            // Il problema riscontrato esiste solo per gli interventi in sede o da remoto.
+            ...(intervention.problem
+                ? [
+                      [{ text: "Problema riscontrato", style: "label", colSpan: 4, margin: [0, 4, 0, 2] }, {}, {}, {}],
+                      [{ text: intervention.problem, style: "value", colSpan: 4, margin: [0, 0, 0, 4] }, {}, {}, {}],
+                  ]
+                : []),
             [
                 { text: descriptionLabel(intervention.type), style: "label", colSpan: 4, margin: [0, 4, 0, 2] },
                 {},

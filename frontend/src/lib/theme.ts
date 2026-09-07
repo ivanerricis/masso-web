@@ -403,18 +403,33 @@ export const applyFontSize = (fontSizeKey: FontSizeKey | null) => {
     root.setAttribute(fontSizeAttribute, fontSizeKey);
 };
 
-export const getStoredTableRowsPerPage = (): TableRowsPerPageKey => {
-    const storedValue = Number(localStorage.getItem(tableRowsPerPageStorageKey));
-    const match = tableRowsPerPageOptions.find((option) => option.key === storedValue);
+const parseTableRowsPerPage = (rawValue: string | null): TableRowsPerPageKey | null => {
+    const storedValue = Number(rawValue);
 
-    return match ? match.key : 10;
+    return tableRowsPerPageOptions.find((option) => option.key === storedValue)?.key ?? null;
 };
 
-export const setStoredTableRowsPerPage = (pageSize: TableRowsPerPageKey) => {
-    if (pageSize === 10) {
-        localStorage.removeItem(tableRowsPerPageStorageKey);
-        return;
+/**
+ * Ogni tabella ha la sua chiave: il numero di righe è una scelta che dipende dalla pagina
+ * (cento interventi hanno senso, cento dispositivi no), e prima era un'unica impostazione
+ * globale sepolta in Impostazioni > Tema.
+ *
+ * Quando per quella tabella non c'è ancora un valore si ricade sulla vecchia chiave globale,
+ * così chi l'aveva già configurata non se la vede resettare al primo aggiornamento. Per lo
+ * stesso motivo qui il valore si scrive sempre, anche quando è 10: con il fallback attivo,
+ * cancellare la chiave (come faceva la versione globale) significherebbe tornare al valore
+ * legacy invece che al default.
+ */
+export const getStoredTableRowsPerPage = (tableKey: string): TableRowsPerPageKey => {
+    const perTableValue = parseTableRowsPerPage(localStorage.getItem(`${tableRowsPerPageStorageKey}:${tableKey}`));
+
+    if (perTableValue) {
+        return perTableValue;
     }
 
-    localStorage.setItem(tableRowsPerPageStorageKey, String(pageSize));
+    return parseTableRowsPerPage(localStorage.getItem(tableRowsPerPageStorageKey)) ?? 10;
+};
+
+export const setStoredTableRowsPerPage = (tableKey: string, pageSize: TableRowsPerPageKey) => {
+    localStorage.setItem(`${tableRowsPerPageStorageKey}:${tableKey}`, String(pageSize));
 };

@@ -15,6 +15,7 @@ import {
     interventionStatusOptions,
     interventionTypeOptions,
     isOnSiteInterventionType,
+    getTodayDateString,
 } from "@/lib/interventions";
 import type { CollaboratorDto, InterventionStatus, InterventionType } from "@/types/dtos";
 import { Plus } from "lucide-react";
@@ -37,6 +38,7 @@ export type CreateInterventionSubmitValues = {
     type: InterventionType;
     status: InterventionStatus;
     description: string;
+    problem: string | null;
     customer: string;
     customerId: number | null;
     collaboratorId: number;
@@ -57,9 +59,10 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
         type: "consegna_materiale" as InterventionType,
         status: "programmato" as InterventionStatus,
         description: "",
+        problem: "",
         customer: "",
         collaboratorId: "",
-        interventionDate: "",
+        interventionDate: getTodayDateString(),
         startTime: "",
         endTime: "",
     });
@@ -80,9 +83,12 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                 type: "consegna_materiale",
                 status: "programmato",
                 description: "",
+                problem: "",
                 customer: "",
                 collaboratorId: "",
-                interventionDate: initialDate ?? "",
+                // Nella quasi totalità dei casi l'intervento è di oggi; resta comunque
+                // modificabile, e `initialDate` (slot cliccato nel calendario) ha la precedenza.
+                interventionDate: initialDate ?? getTodayDateString(),
                 startTime: "",
                 endTime: "",
             });
@@ -151,6 +157,11 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
         }
 
         if (isOnSite) {
+            if (formValues.problem.trim() === "") {
+                toast.error("Indica il problema riscontrato");
+                return;
+            }
+
             if (formValues.startTime.trim() === "" || formValues.endTime.trim() === "") {
                 toast.error("Indica l'ora di inizio e di fine assistenza");
                 return;
@@ -173,6 +184,7 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                 type: formValues.type,
                 status: formValues.status,
                 description: formValues.description.trim(),
+                problem: isOnSite ? formValues.problem.trim() : null,
                 customer: formValues.customer,
                 customerId: customerIdByOption[formValues.customer] ?? null,
                 collaboratorId: Number(formValues.collaboratorId),
@@ -368,6 +380,24 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                                 }
                                             />
                                         </div>
+                                    </div>
+                                ) : null}
+
+                                {isOnSite ? (
+                                    <div className="grid gap-1 lg:col-span-2">
+                                        <Label htmlFor="problem" className="text-lg">
+                                            Problema
+                                        </Label>
+                                        <Textarea
+                                            id="problem"
+                                            className="resize-none text-lg!"
+                                            rows={4}
+                                            placeholder="Descrivi il problema riscontrato"
+                                            value={formValues.problem}
+                                            onChange={(event) =>
+                                                setFormValues((prev) => ({ ...prev, problem: event.target.value }))
+                                            }
+                                        />
                                     </div>
                                 ) : null}
 

@@ -1,4 +1,4 @@
-import { desc, eq, or, sql } from "drizzle-orm";
+import { asc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { deviceTable } from "../schema";
 import type { NewDevice, UpdateDevice } from "../types";
@@ -22,7 +22,7 @@ export const listDevices = async ({ page, pageSize, search }: ListDevicesParams)
           ]
         : [];
     const whereClause = searchConditions.length > 0 ? or(...searchConditions) : undefined;
-    const baseQuery = db.select().from(deviceTable).where(whereClause).orderBy(desc(deviceTable.created_at));
+    const baseQuery = db.select().from(deviceTable).where(whereClause).orderBy(asc(deviceTable.name));
 
     if (page == null || pageSize == null) {
         return takeUnpaginated(baseQuery, "devices");

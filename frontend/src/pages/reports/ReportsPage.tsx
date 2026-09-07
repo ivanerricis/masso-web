@@ -123,7 +123,7 @@ const ReportsPage = () => {
     const [sortOption, setSortOption] = useState<ReportSortOption>(DEFAULT_REPORT_SORT_OPTION);
     const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
     const [dateTo, setDateTo] = useState<string | undefined>(undefined);
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("reports");
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [searchText, visibilityFilter, sortOption, dateFrom, dateTo, pageSize],
     });
@@ -407,6 +407,7 @@ const ReportsPage = () => {
                         totalItems={totalItems}
                         pageSize={pageSize}
                         onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
                     />
                 </div>
 

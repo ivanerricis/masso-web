@@ -50,7 +50,7 @@ const CollaboratorPage = () => {
         return reportCards;
     }, [reportCards, visibilityFilter]);
 
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("collaborator-reports");
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [visibilityFilter, pageSize],
     });
@@ -165,6 +165,7 @@ const CollaboratorPage = () => {
                             totalItems={totalItems}
                             pageSize={pageSize}
                             onPageChange={setCurrentPage}
+                            onPageSizeChange={setPageSize}
                         />
                     </>
                 )}

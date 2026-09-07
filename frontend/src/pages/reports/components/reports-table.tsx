@@ -74,6 +74,7 @@ const ReportsTable = ({
             renderRowActions={renderRowActions}
             getRowStatusColor={getStatusColor}
             getAccentClassName={getAccentClassName}
+            onRowOpen={(row) => onOpenReport(row.id)}
         />
     );
 };

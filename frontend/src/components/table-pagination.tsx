@@ -7,6 +7,8 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination";
+import RowsPerPageSelect from "@/components/rows-per-page-select";
+import type { TableRowsPerPageKey } from "@/lib/theme";
 
 type TablePaginationProps = {
     currentPage: number;
@@ -14,6 +16,12 @@ type TablePaginationProps = {
     totalItems: number;
     pageSize: number;
     onPageChange: (page: number) => void;
+    /**
+     * Quando c'è, accanto al conteggio compare il selettore delle righe per pagina. È il
+     * punto giusto in cui metterlo: questo componente è già sotto ogni tabella dell'app,
+     * mentre la barra dei filtri esiste solo su tre pagine su dodici.
+     */
+    onPageSizeChange?: (pageSize: TableRowsPerPageKey) => void;
 };
 
 const getVisiblePages = (currentPage: number, totalPages: number) => {
@@ -32,7 +40,14 @@ const getVisiblePages = (currentPage: number, totalPages: number) => {
     return [1, "ellipsis", currentPage - 1, currentPage, currentPage + 1, "ellipsis", totalPages];
 };
 
-const TablePagination = ({ currentPage, totalPages, totalItems, pageSize, onPageChange }: TablePaginationProps) => {
+const TablePagination = ({
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    onPageChange,
+    onPageSizeChange,
+}: TablePaginationProps) => {
     if (totalItems <= 0) {
         return null;
     }
@@ -43,9 +58,15 @@ const TablePagination = ({ currentPage, totalPages, totalItems, pageSize, onPage
 
     return (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-                Visualizzati {startItem}-{endItem} di {totalItems}
-            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <p className="text-sm text-muted-foreground">
+                    Visualizzati {startItem}-{endItem} di {totalItems}
+                </p>
+
+                {onPageSizeChange ? (
+                    <RowsPerPageSelect value={pageSize as TableRowsPerPageKey} onValueChange={onPageSizeChange} />
+                ) : null}
+            </div>
 
             {totalPages <= 1 ? null : (
                 <Pagination>

@@ -24,6 +24,12 @@ type EntityTableProps<TRow> = {
     getRowStatusColor?: (row: TRow) => string;
     /** Bordo superiore colorato delle schede su mobile (es. "border-t-green-500"). */
     getAccentClassName?: (row: TRow) => string;
+    /**
+     * Doppio click sulla riga per aprire la scheda. Solo desktop: su mobile le righe
+     * diventano schede e il doppio click non è un gesto disponibile, quindi lì resta il
+     * pulsante "Apri" tra le azioni (che comunque rimane anche su desktop).
+     */
+    onRowOpen?: (row: TRow) => void;
 };
 
 /**
@@ -48,6 +54,7 @@ const EntityTable = <TRow,>({
     renderRowActions,
     getRowStatusColor,
     getAccentClassName,
+    onRowOpen,
 }: EntityTableProps<TRow>) => {
     return (
         <>
@@ -70,7 +77,12 @@ const EntityTable = <TRow,>({
                         </TableRow>
                     ) : (
                         rows.map((row) => (
-                            <TableRow key={getRowKey(row)} data-status-color={getRowStatusColor?.(row)}>
+                            <TableRow
+                                key={getRowKey(row)}
+                                data-status-color={getRowStatusColor?.(row)}
+                                className={onRowOpen ? "cursor-pointer select-none" : undefined}
+                                onDoubleClick={onRowOpen ? () => onRowOpen(row) : undefined}
+                            >
                                 {columns.map((column) => (
                                     <TableCell
                                         key={`${getRowKey(row)}-${column.key}`}
@@ -81,7 +93,13 @@ const EntityTable = <TRow,>({
                                         }
                                     >
                                         {column.key === "actions" ? (
-                                            <div className="flex items-center justify-end gap-2">
+                                            // I pulsanti di riga sono l'unico punto interattivo della
+                                            // riga: fermare qui il doppio click evita che un click
+                                            // ripetuto su un'azione apra anche la scheda.
+                                            <div
+                                                className="flex items-center justify-end gap-2"
+                                                onDoubleClick={(event) => event.stopPropagation()}
+                                            >
                                                 {renderRowActions(row)}
                                             </div>
                                         ) : (

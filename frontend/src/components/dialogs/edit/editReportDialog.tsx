@@ -179,6 +179,13 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
             return;
         }
 
+        // Un rapporto chiuso senza collaboratore non dice chi l'ha lavorato: il vincolo vale
+        // solo sulla chiusura, quindi il campo resta facoltativo finché il rapporto è aperto.
+        if (formValues.closed && collaboratorId == null) {
+            toast.error("Per chiudere un rapporto è necessario selezionare un collaboratore");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             await onSubmit({

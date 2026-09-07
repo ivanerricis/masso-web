@@ -261,6 +261,7 @@ const DashboardPage = () => {
                 type: values.type,
                 status: values.status,
                 description: values.description,
+                problem: values.problem,
                 customerId,
                 collaboratorId: values.collaboratorId,
                 interventionDate: values.interventionDate,

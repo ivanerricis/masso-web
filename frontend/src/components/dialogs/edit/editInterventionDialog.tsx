@@ -23,6 +23,7 @@ export type EditInterventionSubmitValues = {
     type: InterventionType;
     status: InterventionStatus;
     description: string;
+    problem: string | null;
     collaboratorId: number;
     interventionDate: string | null;
     startTime: string | null;
@@ -53,6 +54,7 @@ const EditInterventionDialog = ({
         type: "consegna_materiale" as InterventionType,
         status: "programmato" as InterventionStatus,
         description: "",
+        problem: "",
         collaboratorId: "",
         interventionDate: "",
         startTime: "",
@@ -83,6 +85,7 @@ const EditInterventionDialog = ({
                     type: intervention.type,
                     status: intervention.status,
                     description: intervention.description,
+                    problem: intervention.problem ?? "",
                     collaboratorId: String(intervention.collaboratorId),
                     interventionDate: intervention.interventionDate ?? "",
                     startTime: intervention.startTime?.slice(0, 5) ?? "",
@@ -129,6 +132,11 @@ const EditInterventionDialog = ({
         }
 
         if (isOnSite) {
+            if (formValues.problem.trim() === "") {
+                toast.error("Indica il problema riscontrato");
+                return;
+            }
+
             if (formValues.startTime.trim() === "" || formValues.endTime.trim() === "") {
                 toast.error("Indica l'ora di inizio e di fine assistenza");
                 return;
@@ -147,6 +155,7 @@ const EditInterventionDialog = ({
                 type: formValues.type,
                 status: formValues.status,
                 description: formValues.description.trim(),
+                problem: isOnSite ? formValues.problem.trim() : null,
                 collaboratorId,
                 interventionDate: formValues.interventionDate,
                 startTime: isOnSite ? formValues.startTime : null,
@@ -334,6 +343,24 @@ const EditInterventionDialog = ({
                                                     }
                                                 />
                                             </div>
+                                        </div>
+                                    ) : null}
+
+                                    {isOnSite ? (
+                                        <div className="grid gap-1 lg:col-span-2">
+                                            <Label htmlFor="problem" className="text-lg">
+                                                Problema
+                                            </Label>
+                                            <Textarea
+                                                id="problem"
+                                                className="resize-none text-lg!"
+                                                rows={4}
+                                                placeholder="Descrivi il problema riscontrato"
+                                                value={formValues.problem}
+                                                onChange={(event) =>
+                                                    setFormValues((prev) => ({ ...prev, problem: event.target.value }))
+                                                }
+                                            />
                                         </div>
                                     ) : null}
 

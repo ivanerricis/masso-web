@@ -93,6 +93,7 @@ const InterventionsTable = ({
             renderRowActions={renderRowActions}
             getRowStatusColor={(row) => statusColorByStatus[row.status]}
             getAccentClassName={(row) => accentClassNameByStatus[row.status]}
+            onRowOpen={(row) => onOpenIntervention(row.id)}
         />
     );
 };

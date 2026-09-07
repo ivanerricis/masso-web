@@ -59,16 +59,34 @@ describe("preferenze di tema salvate", () => {
     });
 
     it("righe per pagina: default a 10 e valori non validi scartati", () => {
-        expect(getStoredTableRowsPerPage()).toBe(10);
+        expect(getStoredTableRowsPerPage("interventions")).toBe(10);
 
-        localStorage.setItem("easylab-web-table-rows-per-page", "999");
-        expect(getStoredTableRowsPerPage()).toBe(10);
+        localStorage.setItem("easylab-web-table-rows-per-page:interventions", "999");
+        expect(getStoredTableRowsPerPage("interventions")).toBe(10);
 
-        setStoredTableRowsPerPage(50);
-        expect(getStoredTableRowsPerPage()).toBe(50);
+        setStoredTableRowsPerPage("interventions", 50);
+        expect(getStoredTableRowsPerPage("interventions")).toBe(50);
 
-        setStoredTableRowsPerPage(10);
-        expect(localStorage.getItem("easylab-web-table-rows-per-page")).toBeNull();
+        setStoredTableRowsPerPage("interventions", 10);
+        expect(getStoredTableRowsPerPage("interventions")).toBe(10);
+    });
+
+    it("righe per pagina: ogni tabella ha il suo valore", () => {
+        setStoredTableRowsPerPage("interventions", 50);
+
+        expect(getStoredTableRowsPerPage("interventions")).toBe(50);
+        expect(getStoredTableRowsPerPage("devices")).toBe(10);
+    });
+
+    it("righe per pagina: si eredita la vecchia chiave globale finché la tabella non ha un valore suo", () => {
+        localStorage.setItem("easylab-web-table-rows-per-page", "20");
+
+        expect(getStoredTableRowsPerPage("interventions")).toBe(20);
+
+        setStoredTableRowsPerPage("interventions", 10);
+
+        expect(getStoredTableRowsPerPage("interventions")).toBe(10);
+        expect(getStoredTableRowsPerPage("devices")).toBe(20);
     });
 
     it("densità e dimensione carattere non valide non vengono restituite", () => {

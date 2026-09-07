@@ -11,6 +11,94 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — Problema sull'intervento, data odierna predefinita, apertura col doppio click, collaboratore obbligatorio alla chiusura, righe per pagina per tabella
+
+Sei richieste raccolte dall'uso quotidiano, più due difetti di layout emersi verificandole.
+
+**Data odierna predefinita.** Il campo data della dialog di creazione partiva vuoto, ma
+l'intervento è quasi sempre di oggi: si ridigitava ogni volta. Ora è precompilato con
+`getTodayDateString()` (già esistente in `frontend/src/lib/interventions.ts`) e resta
+modificabile. `initialDate` mantiene la precedenza, così lo slot cliccato nel calendario
+non viene sovrascritto.
+
+**Nuovo campo "Problema".** Per gli interventi in sede o da remoto mancava un posto dove
+annotare il problema riscontrato, distinto dalla descrizione dell'attività svolta — i
+rapportini ce l'hanno da sempre (`issueDescription`). È testo libero, obbligatorio per quei
+due tipi e assente per le consegne materiale, dove viene forzato a `NULL`. Gli interventi
+già esistenti restano vuoti. La condizione riusa i predicati che c'erano già di qua e di
+là (`isOnSiteInterventionType`, `onSiteInterventionTypes`), e il campo compare anche nel PDF
+di stampa e nell'email.
+- Migrazione `backend/drizzle/0018_add_intervention_problem.sql` (colonna `text` nullable),
+  con la voce aggiunta a mano in `meta/_journal.json`: qui le migrazioni non sono generate
+  da `drizzle-kit`.
+- File: `backend/src/db/schema.ts`, `backend/src/routes/interventions.ts`,
+  `backend/src/services/interventionPdf.ts`, `frontend/src/lib/api/interventions.ts`, le due
+  dialog di creazione/modifica intervento, `InterventionsPage`, `InterventionPage`,
+  `DashboardPage`.
+
+**Apertura con doppio click.** Rapportini e interventi si aprivano solo dal pulsante icona
+in fondo alla riga. Il doppio click è stato aggiunto in `components/entity-table.tsx`, che
+entrambe le tabelle già condividevano, quindi una modifica sola copre tutti e due; il
+doppio click sulla cella delle azioni è fermato con `stopPropagation` perché è l'unico punto
+interattivo della riga. Il pulsante "Apri" resta: su mobile le righe diventano schede e il
+doppio click non è un gesto disponibile.
+
+**Collaboratore obbligatorio per chiudere un rapporto.** `collaboratorId` è nullable e nulla
+impediva di spuntare "Report chiuso" lasciando "Nessuno": si chiudevano rapporti senza sapere
+chi li avesse lavorati. Il controllo è sia in `editReportDialog.handleConfirm` (la dialog è
+usata da tre pagine diverse, quindi metterlo nelle pagine avrebbe voluto dire triplicarlo)
+sia nel `PUT /reports/:id`, dove il valore va risolto sull'unione fra corpo parziale e riga
+esistente — come già si faceva per il vincolo sul prezzo. La colonna resta nullable: il
+vincolo riguarda solo la chiusura.
+
+**Valore lungo che sfonda dalla select** (`frontend/src/components/ui/select.tsx`). Un nome
+cliente lungo usciva dal bordo del suo campo e finiva sopra la select affiancata. Il
+`line-clamp-1` che il `SelectTrigger` aveva già non tagliava niente, perché la regola
+`*:data-[slot=select-value]:flex` sulla stessa classe gli sovrascrive il `display:
+-webkit-box` da cui `line-clamp` dipende; il trigger inoltre era `overflow: visible`. Aggiunti
+`overflow-hidden` sul trigger e `min-w-0` sul valore, così il testo viene troncato invece di
+tracimare. Il difetto era comune a ogni select dell'app, non solo a quella segnalata.
+
+**Righe per pagina su ogni pagina con tabella.** Era un'unica impostazione globale in
+Impostazioni > Tema, valida per tutte le tabelle e per giunta letta una sola volta al mount
+(cambiarla non aveva effetto finché non si cambiava pagina). Ora il selettore sta in
+`table-pagination.tsx`, che è già sotto ogni tabella dell'app — la barra dei filtri esiste
+solo su tre pagine su dodici — e ogni tabella ricorda il proprio valore sotto la chiave
+`easylab-web-table-rows-per-page:<tabella>`. In lettura si ricade sulla vecchia chiave
+globale finché la tabella non ha un valore suo, così la preferenza già configurata non si
+perde; per lo stesso motivo il valore ora si scrive sempre, anche quando è 10, mentre prima
+il default veniva memorizzato cancellando la chiave.
+- File: `frontend/src/lib/theme.ts`, `hooks/useTableRowsPerPage.ts`, il nuovo
+  `components/rows-per-page-select.tsx`, `components/table-pagination.tsx`,
+  `components/settings/themeSettingsSection.tsx` (card rimossa), gli 11 call site e
+  `logsSettingsPanel.tsx`, che aveva `pageSize` fisso a 25 fuori dal set 10/20/50.
+
+---
+
+## 2026-09-07 — Liste anagrafiche in ordine alfabetico, conferma prima di inviare l'email
+
+Le liste di dispositivi, collaboratori e tecnici esterni erano ordinate per data di
+creazione decrescente (le più recenti in cima), non per nome: su elenchi lunghi questo
+rende difficile trovare una voce specifica a colpo d'occhio. La lista clienti aveva già
+tutta l'infrastruttura di ordinamento (query con `sortBy`, selettore "Nome (A-Z)" in UI)
+ma il default restava comunque sulla data. Inoltre l'invio dell'email di un intervento
+partiva subito al click sull'icona nella tabella, senza alcuna conferma: un click per
+errore mandava l'email al cliente senza possibilità di annullare.
+
+- **`backend/src/db/queries/device.ts`**: `orderBy` cambiato da `desc(created_at)` ad
+  `asc(name)`.
+- **`backend/src/db/queries/collaborator.ts`** e **`technician.ts`**: `orderBy` cambiato
+  da `desc(created_at)` ad `asc(firstName), asc(lastName)`.
+- **`frontend/src/pages/customers/components/types.ts`**: `DEFAULT_CUSTOMER_SORT_OPTION`
+  cambiato da `"createdAt:desc"` a `"name:asc"` (la pipeline di ordinamento esisteva già,
+  bastava cambiare il default).
+- **`frontend/src/pages/interventions/InterventionsPage.tsx`**: l'invio email ora apre
+  prima una `CustomDialog` di conferma (stesso pattern già usato per l'eliminazione e per
+  la stampa con intervallo di date) e chiama `sendInterventionEmail` solo alla conferma
+  esplicita dell'utente.
+
+---
+
 ## 2026-08-07 — Selezione automatica sui campi numerici, cursore a mano su checkbox/radio, textarea con altezza limitata
 
 Nella dialog "Modifica rapporto" (e in generale ovunque si usino gli stessi componenti UI)

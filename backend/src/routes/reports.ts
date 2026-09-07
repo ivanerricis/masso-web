@@ -200,6 +200,11 @@ reportsRouter.post("/", validate({ body: reportCreateBodySchema }), async (req, 
     const paymentMethod = (req.body.paymentMethod ?? "non_paid") as ReportPaymentMethod;
     const price = req.body.price ?? 0;
 
+    if (req.body.closed && req.body.collaboratorId == null) {
+        res.status(400).json({ message: "Per chiudere un rapporto è necessario indicare un collaboratore" });
+        return;
+    }
+
     const createdReport = await createReport({
         ...req.body,
         paymentMethod,
@@ -225,6 +230,18 @@ reportsRouter.put("/:id", validate({ params: idParamsSchema, body: reportUpdateB
         res.status(400).json({
             message: "Se il pagamento è in contanti o con carta, il prezzo deve essere maggiore di 0",
         });
+        return;
+    }
+
+    // Come per il prezzo qui sopra: la combinazione da validare nasce dall'unione del corpo
+    // parziale con la riga esistente, quindi lo schema non può vederla. `collaboratorId` usa
+    // `!== undefined` e non `??` perché `null` è un valore significativo ("svuota il campo").
+    const nextClosed = req.body.closed ?? existingReport[0].closed;
+    const nextCollaboratorId =
+        req.body.collaboratorId !== undefined ? req.body.collaboratorId : existingReport[0].collaboratorId;
+
+    if (nextClosed && nextCollaboratorId == null) {
+        res.status(400).json({ message: "Per chiudere un rapporto è necessario indicare un collaboratore" });
         return;
     }
 

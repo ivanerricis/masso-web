@@ -1,4 +1,4 @@
-import { desc, eq, or, sql } from "drizzle-orm";
+import { asc, eq, or, sql } from "drizzle-orm";
 import { db } from "../index";
 import { collaboratorTable } from "../schema";
 import type { NewCollaborator, UpdateCollaborator } from "../types";
@@ -28,7 +28,7 @@ export const listCollaborators = async ({ page, pageSize, search }: ListCollabor
         .select()
         .from(collaboratorTable)
         .where(whereClause)
-        .orderBy(desc(collaboratorTable.created_at));
+        .orderBy(asc(collaboratorTable.firstName), asc(collaboratorTable.lastName));
 
     if (page == null || pageSize == null) {
         return takeUnpaginated(baseQuery, "collaborators");

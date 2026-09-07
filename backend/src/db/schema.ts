@@ -202,6 +202,8 @@ export const interventionTable = pgTable(
         id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
         type: varchar("type", { length: 30 }).notNull(),
         description: text("description").notNull(),
+        /** Solo per gli interventi in sede o da remoto: resta NULL per le consegne materiale. */
+        problem: text("problem"),
         status: varchar("status", { length: 20 }).notNull().default("programmato"),
         interventionDate: date("intervention_date"),
         startTime: time("start_time"),

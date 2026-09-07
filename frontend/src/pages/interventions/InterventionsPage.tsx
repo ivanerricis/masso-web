@@ -6,6 +6,7 @@ import EditInterventionDialog, {
     type EditInterventionSubmitValues,
 } from "@/components/dialogs/edit/editInterventionDialog";
 import ConfirmDeleteDialog from "@/components/dialogs/delete/confirmDeleteDialog";
+import CustomDialog from "@/components/dialogs/customDialog";
 import PageHeader from "@/components/page-header";
 import TablePagination from "@/components/table-pagination";
 import {
@@ -108,6 +109,8 @@ const InterventionsPage = () => {
     const [interventionCustomerNameToEdit, setInterventionCustomerNameToEdit] = useState("");
     const [interventionToDelete, setInterventionToDelete] = useState<InterventionDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [interventionIdToEmail, setInterventionIdToEmail] = useState<number | null>(null);
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
     const [statusFilter, setStatusFilter] = useState<InterventionStatusFilter>(() =>
         parseStatusFilter(searchParams.get("status"))
     );
@@ -123,7 +126,7 @@ const InterventionsPage = () => {
     const [sortOption, setSortOption] = useState<InterventionSortOption>(DEFAULT_INTERVENTION_SORT_OPTION);
     const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
     const [dateTo, setDateTo] = useState<string | undefined>(undefined);
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("interventions");
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [searchText, statusFilter, typeFilter, sortOption, dateFrom, dateTo, pageSize],
     });
@@ -158,6 +161,7 @@ const InterventionsPage = () => {
                 type: values.type,
                 status: values.status,
                 description: values.description,
+                problem: values.problem,
                 customerId,
                 collaboratorId: values.collaboratorId,
                 interventionDate: values.interventionDate,
@@ -202,6 +206,7 @@ const InterventionsPage = () => {
             type: values.type,
             status: values.status,
             description: values.description,
+            problem: values.problem,
             collaboratorId: values.collaboratorId,
             interventionDate: values.interventionDate,
             startTime: values.startTime,
@@ -245,12 +250,24 @@ const InterventionsPage = () => {
         openPrintWindow(getInterventionPrintUrl(id));
     };
 
-    const handleSendEmailIntervention = async (id: number) => {
+    const handleOpenSendEmailDialog = (id: number) => {
+        setInterventionIdToEmail(id);
+    };
+
+    const handleConfirmSendEmailIntervention = async () => {
+        if (interventionIdToEmail == null || isSendingEmail) {
+            return;
+        }
+
         try {
-            const result = await sendInterventionEmail(id);
+            setIsSendingEmail(true);
+            const result = await sendInterventionEmail(interventionIdToEmail);
             toast.success(result.message);
+            setInterventionIdToEmail(null);
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile inviare l'email"));
+        } finally {
+            setIsSendingEmail(false);
         }
     };
 
@@ -303,6 +320,22 @@ const InterventionsPage = () => {
                     onConfirm={handleDeleteIntervention}
                 />
 
+                <CustomDialog
+                    open={interventionIdToEmail != null}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setInterventionIdToEmail(null);
+                        }
+                    }}
+                    title="Invia email intervento"
+                    description={`Sei sicuro di voler inviare l'email per l'intervento ID ${interventionIdToEmail}?`}
+                    confirmLabel="Invia"
+                    cancelLabel="Annulla"
+                    confirmDisabled={isSendingEmail}
+                    onCancel={() => setInterventionIdToEmail(null)}
+                    onConfirm={handleConfirmSendEmailIntervention}
+                />
+
                 <InterventionsFilters
                     searchText={searchText}
                     onSearchTextChange={setSearchText}
@@ -326,7 +359,7 @@ const InterventionsPage = () => {
                             onOpenIntervention={handleOpenIntervention}
                             onEditIntervention={handleOpenEditDialog}
                             onPrintIntervention={handlePrintIntervention}
-                            onSendEmailIntervention={handleSendEmailIntervention}
+                            onSendEmailIntervention={handleOpenSendEmailDialog}
                             onDeleteIntervention={handleOpenDeleteDialog}
                         />
                     </div>
@@ -336,6 +369,7 @@ const InterventionsPage = () => {
                         totalItems={totalItems}
                         pageSize={pageSize}
                         onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
                     />
                 </div>
 

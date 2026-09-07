@@ -23,7 +23,7 @@ const IssuesPage = () => {
     const [issueToEdit, setIssueToEdit] = useState<IssueDto | null>(null);
     const [issueToDelete, setIssueToDelete] = useState<IssueDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("issues");
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const {
         rows: issueRows,
@@ -160,6 +160,7 @@ const IssuesPage = () => {
                     totalItems={totalItems}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
                 />
             </div>
 

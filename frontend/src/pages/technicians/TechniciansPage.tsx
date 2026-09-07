@@ -25,7 +25,7 @@ const TechniciansPage = () => {
     const [technicianToEdit, setTechnicianToEdit] = useState<TechnicianDto | null>(null);
     const [technicianToDelete, setTechnicianToDelete] = useState<TechnicianDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("technicians");
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const {
         rows: technicianRows,
@@ -174,6 +174,7 @@ const TechniciansPage = () => {
                     totalItems={totalItems}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
                 />
             </div>
 

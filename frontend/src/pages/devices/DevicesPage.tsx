@@ -23,7 +23,7 @@ const DevicesPage = () => {
     const [deviceToEdit, setDeviceToEdit] = useState<DeviceDto | null>(null);
     const [deviceToDelete, setDeviceToDelete] = useState<DeviceDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("devices");
     const { currentPage, setCurrentPage } = useTablePagination({ resetDependencies: [searchText, pageSize] });
     const {
         rows: deviceRows,
@@ -163,6 +163,7 @@ const DevicesPage = () => {
                     totalItems={totalItems}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
                 />
             </div>
 

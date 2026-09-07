@@ -86,7 +86,7 @@ const CustomerInterventionsPage = () => {
         return interventionRows.filter((intervention) => intervention.status === statusFilter);
     }, [interventionRows, statusFilter]);
 
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("customer-interventions");
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [statusFilter, pageSize],
     });
@@ -279,6 +279,7 @@ const CustomerInterventionsPage = () => {
                     totalItems={totalItems}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
                 />
             </div>
         </div>

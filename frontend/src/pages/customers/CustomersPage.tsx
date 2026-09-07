@@ -38,7 +38,7 @@ const CustomersPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [printReportsCustomerId, setPrintReportsCustomerId] = useState<number | null>(null);
     const [printInterventionsCustomerId, setPrintInterventionsCustomerId] = useState<number | null>(null);
-    const pageSize = useTableRowsPerPage();
+    const [pageSize, setPageSize] = useTableRowsPerPage("customers");
     const { currentPage, setCurrentPage } = useTablePagination({
         resetDependencies: [searchText, sortOption, pageSize],
     });
@@ -246,6 +246,7 @@ const CustomersPage = () => {
                     totalItems={totalItems}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
                 />
             </div>
 

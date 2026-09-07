@@ -1,6 +1,6 @@
 export type CustomerSortOption = "createdAt:desc" | "createdAt:asc" | "name:asc" | "name:desc";
 
-export const DEFAULT_CUSTOMER_SORT_OPTION: CustomerSortOption = "createdAt:desc";
+export const DEFAULT_CUSTOMER_SORT_OPTION: CustomerSortOption = "name:asc";
 
 export const customerSortOptions: { value: CustomerSortOption; label: string }[] = [
     { value: "createdAt:desc", label: "Più recenti" },
