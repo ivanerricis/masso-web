@@ -97,6 +97,14 @@ const foreignKeyViolationMessage = ({ constraint, message, detail }: PgError): s
 
 const GENERIC_ERROR_MESSAGE = "Si è verificato un errore imprevisto. Riprova più tardi.";
 
+// Gli errori di multer hanno un campo `code` come quelli di Postgres, ma testuale: senza
+// riconoscerli qui finirebbero nel ramo generico, e un file troppo grande risponderebbe
+// "errore imprevisto" con status 500 invece di dire cosa è successo.
+const MULTER_MESSAGES: Record<string, { message: string; status: number }> = {
+    LIMIT_FILE_SIZE: { message: "Il file caricato supera la dimensione massima consentita", status: 413 },
+    LIMIT_UNEXPECTED_FILE: { message: "Campo file non atteso nella richiesta", status: 400 },
+};
+
 export const errorHandler = (
     error: unknown,
     _req: express.Request,
@@ -109,6 +117,14 @@ export const errorHandler = (
     if (error instanceof ApiError) {
         res.locals.apiErrorMessage = error.message;
         res.status(error.statusCode).json({ message: error.message });
+        return;
+    }
+
+    const multerError = error instanceof Error ? MULTER_MESSAGES[(error as { code?: string }).code ?? ""] : undefined;
+
+    if (multerError) {
+        res.locals.apiErrorMessage = multerError.message;
+        res.status(multerError.status).json({ message: multerError.message });
         return;
     }
 

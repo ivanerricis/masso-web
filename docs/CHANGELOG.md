@@ -11,6 +11,128 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — Rassegna di sicurezza: iniezione in smbclient, SVG del logo, permessi delle impostazioni
+
+**Tre difetti sfruttabili da un utente autenticato qualsiasi, più tre irrobustimenti.** La
+revisione è nata dalla domanda "ci sono problemi di sicurezza?" dopo la pubblicazione su
+dominio: finché si entrava solo dalla LAN il modello di minaccia erano gli errori in buona
+fede, adesso è chiunque ottenga una credenziale.
+
+**1. La cartella remota del NAS pilotava smbclient.** `backupSmb.ts` componeva la stringa
+passata a `smbclient -c` come `cd "<percorso>"; ls`, ripulendo il percorso dalle sole
+virgolette. Ma smbclient spezza quella stringa sui `;` *prima* di interpretare il quoting:
+le virgolette non isolavano niente, e chi scriveva quel campo sceglieva i comandi eseguiti.
+
+**Verificato contro un server Samba vero**, perché sul meccanismo esatto era facile
+sbagliarsi: la shell escape `!` **non** esiste più (`!: command not found` su Samba 4.12),
+quindi non si arriva a una shell, ma `put` e `get` bastano da soli. Nella prova
+`put /etc/passwd` ha copiato un file locale sulla condivisione remota, e
+`get payload /app/dist/index.js` ha **sovrascritto il codice che il backend esegue**. In
+mano a un utente qualsiasi dell'app significa: portare fuori `data/secret.key` e i dump del
+database verso una condivisione propria (host e credenziali li sceglie lui, nello stesso
+form), e riscrivere file dentro il container - che fino a oggi girava anche come root.
+
+- Ora il percorso passa per una **whitelist** (`smbPathPattern`: lettere, cifre, spazio e
+  `. _ - / \`) invece che per una ripulitura. Togliere i caratteri pericolosi è una difesa
+  che si rompe appena se ne dimentica uno — ed è esattamente quello che era successo.
+- Il controllo sta in due punti: nello schema zod delle rotte (così l'utente riceve un 400
+  comprensibile) e in `safeRemotePath`, subito prima di comporre il comando. Il secondo non
+  è ridondante: il percorso arriva anche dalle impostazioni salvate su disco, che un
+  ripristino da archivio può sostituire.
+- File: `backend/src/services/backupSmb.ts`, `backend/src/routes/settings.ts`,
+  `backend/src/services/backupSmb.test.ts`.
+
+**2. Il logo SVG era una XSS persistente sull'origin dell'app.** L'upload accetta l'SVG e lo
+salva senza rasterizzarlo, per non perdere la resa vettoriale; `/assets/logo.jpg` lo
+restituiva con `Content-Type: image/svg+xml` e **senza autenticazione**. Dentro un `<img>` un
+SVG non esegue script, ma aprendo l'URL direttamente il browser lo tratta come un documento
+sulla stessa origin dell'app: da lì può chiamare `/api/*` con la sessione di chi lo apre, e
+`httpOnly` sul cookie non protegge da una richiesta same-origin. Bastava caricare un logo e
+mandare il link a un amministratore.
+
+- Due header sulla rotta, non un divieto: `Content-Security-Policy: sandbox` e
+  `Content-Disposition: attachment`. Il primo toglie gli script al documento e gli dà origin
+  opaca, il secondo fa scaricare il file invece di aprirlo.
+- **Verificato in Edge**, perché la scelta si regge su un dettaglio di comportamento dei
+  browser: con i vecchi header la navigazione diretta eseguiva davvero lo script dell'SVG
+  (che cambiava il titolo della pagina), con i nuovi parte un download e il titolo resta
+  vuoto; il `<img>` continua a caricare l'immagine a 64x64 in entrambi i casi, perché sulle
+  sottorisorse `Content-Disposition` è ignorato. Provata anche la sola CSP: script non
+  eseguito e `window.origin` a `null`. Logo in sidebar, in anteprima e nei PDF intatto.
+- File: `backend/src/index.ts`.
+
+**3. Le impostazioni erano riservate solo "agli autenticati".** Su `/api/settings` c'era il
+solo `requireAuth`: un utente qualunque poteva **scaricare un dump completo del database** —
+che contiene gli hash delle password di tutti e i segreti cifrati — leggere il registro delle
+azioni altrui, riconfigurare NAS e SMTP e far partire connessioni verso host e porte a
+scelta. Il commento sulle rotte di aggiornamento diceva già "un singolo account compromesso
+non deve bastare per arrivarci": vale identico per il download dei backup.
+
+- `settingsRouter.use(requireAdmin)` subito dopo le uniche due letture innocue
+  (`GET /company` e `GET /logo`: nome del laboratorio e presenza di un logo, dati già
+  visibili nell'interfaccia). I `requireAdmin` per-rotta su restore e update sono stati tolti
+  perché ora ridondanti.
+- Lato interfaccia `adminOnlySections` passa da due sezioni a sei: a un non amministratore
+  resta il **Tema**, che è una preferenza di chi guarda. Nascondere è cosmetica, il permesso
+  lo impone il backend — ma una sezione che risponde solo 403 è peggio che assente.
+- File: `backend/src/routes/settings.ts`, `frontend/src/pages/settings/SettingsPage.tsx`,
+  `backend/src/routes/settings.test.ts`.
+
+**4. Il token di sessione non è più in chiaro nel database.** In tabella finisce
+`sha256(token)`, il cookie continua a portare il token vero. È il complemento del punto 3: un
+archivio di backup contiene anche la tabella `session`, e un token in chiaro lì dentro è una
+credenziale riutilizzabile senza conoscere nessuna password. Basta un hash semplice, senza
+salt né costo di calcolo — il token è già 256 bit casuali, non c'è nulla da indovinare a
+forza bruta come per una password scelta da una persona, e la ricerca deve restare una
+lookup su indice a ogni richiesta.
+
+- Migrazione `0020`: `DELETE FROM "session"` e rinomina della colonna in `token_hash`. Le
+  righe esistenti non sono convertibili in hash utilizzabili, quindi **dopo l'aggiornamento
+  tutti rifanno il login una volta sola**.
+- File: `backend/src/db/schema.ts`, `backend/src/services/authManager.ts`,
+  `backend/drizzle/0020_hash_session_tokens.sql`.
+
+**5. Il backend non gira più come root.** Un difetto sfruttabile nel container (come il punto
+1) non deve consegnare anche i privilegi di root. Il processo Node passa all'utente `node`,
+già presente nell'immagine.
+
+- Il passaggio avviene in un `docker-entrypoint.sh` che parte come root, sistema il
+  proprietario dei quattro percorsi montati e poi scende con `su-exec`. Un semplice
+  `USER node` nel Dockerfile avrebbe rotto **le installazioni esistenti**: i volumi con nome
+  già creati e i bind mount che arrivano dall'host appartengono a root, e l'aggiornamento
+  automatico avrebbe lasciato l'app senza poter scrivere backup, log e `data/`, in silenzio.
+- Il `chown -R` scatta solo se il proprietario è davvero sbagliato: su una cartella con molti
+  archivi ripeterlo a ogni avvio sarebbe lavoro inutile. `exec su-exec` serve a far arrivare
+  SIGTERM a Node, altrimenti l'arresto pulito di `src/index.ts` non verrebbe mai eseguito.
+- `Dockerfile.dev` resta invariato: in sviluppo il sorgente è montato dall'host e i
+  `node_modules` sono del container, cambiare utente lì crea solo attriti.
+- File: `backend/Dockerfile`, `backend/docker-entrypoint.sh`.
+
+**6. L'upload di un dump aveva un tetto di 2 GB, tenuti in memoria.** `multer` conservava il
+file interamente in RAM senza `limits`, e nginx accettava `client_max_body_size 2048m`: una
+sola richiesta poteva esaurire la memoria del container. Ora il limite è 512 MB su entrambi —
+molto sopra i dump reali e comunque sotto il tetto di 100 MB per richiesta del piano
+Cloudflare, che nella pratica taglia prima.
+
+- `errorHandler` traduce `LIMIT_FILE_SIZE` in **413** con un messaggio leggibile: gli errori
+  di multer hanno un campo `code` testuale come quelli di Postgres, e senza un ramo dedicato
+  finivano nel caso generico, cioè "errore imprevisto" con status 500. Riguardava anche il
+  limite di 5 MB sul logo, che esisteva già.
+- File: `backend/src/routes/settings.ts`, `backend/src/middleware/errorHandler.ts`,
+  `frontend/nginx.conf`.
+
+**Non toccato, di proposito:** la CSP resta limitata a `frame-ancestors 'none'` e manca
+`Permissions-Policy`; `update-server.sh` continua a fare `chmod 666` su `status.json`; resta
+la segnalazione *moderate* di `npm audit` su `qs` (transitiva da express). Scelte fatte in
+sede di revisione, annotate qui perché non vadano perse.
+
+**Verificato ed escluso** durante la rassegna: SQL injection (drizzle parametrizza, `sortBy`
+è mappato su colonne costanti e non interpolato), path traversal sul download di backup e log
+(pattern ancorati), `dangerouslySetInnerHTML` ed `eval` nel frontend (assenti), CSRF (cookie
+`SameSite=Lax`, nessuna rotta di scrittura esposta in GET), enumerazione degli username sul
+login (hash esca), falsificazione dell'IP nel limitatore dei login (`CF-Connecting-IP` dietro
+tunnel), `secret.key` e password admin iniziale esclusi dagli archivi di backup.
+
 ## 2026-09-07 — Avviso di backup prima di aggiornare
 
 **La conferma di "Aggiorna adesso" ricorda di fare un backup e dice quando è stato fatto

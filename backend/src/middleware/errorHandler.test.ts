@@ -52,6 +52,17 @@ describe("errorHandler", () => {
         expect(res.body.message).toBe("È già in corso un'operazione sul database");
     });
 
+    // Multer segnala il superamento del limite con un `code` testuale, che senza un ramo
+    // dedicato finirebbe nel caso generico: un upload troppo grande risponderebbe "errore
+    // imprevisto" con status 500, senza dire cosa è andato storto.
+    it("traduce il limite di dimensione di multer in 413", () => {
+        const error = Object.assign(new Error("File too large"), { code: "LIMIT_FILE_SIZE" });
+        const res = run(error);
+
+        expect(res.statusCode).toBe(413);
+        expect(res.body.message).toMatch(/dimensione massima/i);
+    });
+
     it("mappa la violazione di unicità (23505) su 409", () => {
         const res = run({ code: "23505", detail: "Key (username)=(mario) already exists." });
 

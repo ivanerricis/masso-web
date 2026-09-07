@@ -162,7 +162,10 @@ export const userTable = pgTable("user", {
 export const sessionTable = pgTable(
     "session",
     {
-        token: varchar("token", { length: 64 }).primaryKey(),
+        // sha256 del token consegnato nel cookie, mai il token stesso: una copia del
+        // database (per esempio un archivio di backup) non deve permettere di riusare le
+        // sessioni aperte. 64 caratteri esatti, quanti ne occupa l'hash in esadecimale.
+        tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
         userId: integer("user_id")
             .notNull()
             .references(() => userTable.id, { onDelete: "cascade" }),

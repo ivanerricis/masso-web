@@ -350,6 +350,11 @@ Da quel momento, in Impostazioni > Aggiornamenti sono disponibili:
 - **Verifica aggiornamenti**: esegue un `git fetch` e mostra se è disponibile un nuovo commit, senza modificare nulla.
 - **Aggiorna adesso**: applica l'aggiornamento e ricostruisce i container. L'app risulta brevemente irraggiungibile durante il rebuild; la pagina ripropone lo stato non appena il backend torna online.
 
+> **Nota (aggiornamento del 07/09/2026):** questo aggiornamento cambia il modo in cui le
+> sessioni sono salvate nel database (ora solo l'hash del token, mai il token stesso), quindi
+> le sessioni aperte vengono invalidate: al primo accesso successivo tutti dovranno rifare il
+> login una volta sola. Le password non cambiano.
+
 **Rollback manuale** (nessun rollback automatico in caso di crash post-deploy): sulla VM,
 
 ```bash
@@ -394,5 +399,12 @@ Sopravvivono a `docker compose down` e agli aggiornamenti; si perdono solo con `
 | `backend_data` | `/app/data` | chiave di cifratura, impostazioni email/backup, logo |
 | `backend_logs` | `/app/logs` | log azioni utente |
 | *(bind mount)* | `/app/backups` | archivi di backup, in `BACKUP_HOST_DIR` |
+
+Il backend gira come utente non privilegiato `node` (uid 1000), non come root: un difetto
+sfruttabile nel container non deve consegnare anche i privilegi di amministratore della
+macchina virtuale. Non serve nessun intervento manuale sui permessi — `backend/docker-entrypoint.sh`
+parte come root, corregge il proprietario dei quattro percorsi montati (compresi quelli creati
+prima di questa modifica, che appartengono a root) e poi cede i privilegi. Vale anche per
+`BACKUP_HOST_DIR` e `ops/update/` sull'host, che dopo il primo avvio risultano di uid 1000.
 
 `backend_logs` è un volume proprio perché senza di esso i log starebbero nel layer scrivibile del container, che viene ricreato ad ogni `up --build`: si azzererebbero ad ogni aggiornamento.

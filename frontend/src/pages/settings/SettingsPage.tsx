@@ -69,10 +69,12 @@ const settingsSections: Array<{
 const isSettingsSectionKey = (value: string | null): value is SettingsSectionKey =>
     value != null && (settingsSectionKeys as string[]).includes(value);
 
-// "update" è riservata all'amministratore come "users": non cambia una preferenza, esegue
-// sull'host il codice di origin/main e ricostruisce lo stack. Il backend la protegge con
-// requireAdmin; qui la si nasconde perché a un non-admin risponderebbe solo 403.
-const adminOnlySections = new Set<SettingsSectionKey>(["users", "update"]);
+// Il backend riserva all'amministratore tutto /api/settings tranne la lettura di dati
+// azienda e stato del logo: sono operazioni sulla macchina (dump del database, log di
+// tutti, credenziali NAS e SMTP, aggiornamento dello stack), non preferenze personali.
+// Qui le sezioni corrispondenti vengono nascoste, perché a un non-admin risponderebbero
+// solo 403. Al di fuori dell'amministratore resta il tema, che è una scelta di chi guarda.
+const adminOnlySections = new Set<SettingsSectionKey>(["users", "company", "email", "backup", "update", "logs"]);
 
 const SettingsPage = () => {
     const { user } = useAuth();

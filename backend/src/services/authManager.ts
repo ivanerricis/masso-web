@@ -59,6 +59,15 @@ const verifyPassword = (password: string, storedHash: string): Promise<boolean> 
 
 const generateSessionToken = () => crypto.randomBytes(sessionTokenBytes).toString("hex");
 
+/**
+ * Il cookie contiene il token in chiaro, la tabella solo il suo sha256: chi legge il
+ * database - per esempio da un archivio di backup - non ottiene credenziali riutilizzabili.
+ * Basta un hash semplice, senza salt né costo di calcolo: il token è già 256 bit casuali,
+ * quindi non c'è nulla da indovinare a forza bruta come per una password scelta da una
+ * persona, e la ricerca deve restare una lookup su indice a ogni richiesta.
+ */
+const hashSessionToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
+
 // Hash "esca" usato quando lo username non esiste, per far girare comunque scrypt e non
 // rivelare quali username esistono tramite il tempo di risposta del login.
 let cachedDummyPasswordHash: Promise<string> | null = null;
@@ -156,13 +165,14 @@ export const login = async (username: string, password: string, ip: string) => {
 
     const token = generateSessionToken();
     const expiresAt = new Date(Date.now() + sessionDurationMs);
-    await db.insert(sessionTable).values({ token, userId: user.id, expiresAt });
+    await db.insert(sessionTable).values({ tokenHash: hashSessionToken(token), userId: user.id, expiresAt });
 
     const adminId = await getAdminUserId();
     return { token, expiresAt, user: toPublicUser(user, user.id === adminId) };
 };
 
 export const getSessionUser = async (token: string): Promise<PublicUser | null> => {
+    const tokenHash = hashSessionToken(token);
     const rows = await db
         .select({
             expiresAt: sessionTable.expiresAt,
@@ -174,7 +184,7 @@ export const getSessionUser = async (token: string): Promise<PublicUser | null> 
         })
         .from(sessionTable)
         .innerJoin(userTable, eq(sessionTable.userId, userTable.id))
-        .where(eq(sessionTable.token, token))
+        .where(eq(sessionTable.tokenHash, tokenHash))
         .limit(1);
 
     const row = rows[0];
@@ -183,7 +193,7 @@ export const getSessionUser = async (token: string): Promise<PublicUser | null> 
     }
 
     if (row.expiresAt.getTime() <= Date.now() || !row.active) {
-        await db.delete(sessionTable).where(eq(sessionTable.token, token));
+        await db.delete(sessionTable).where(eq(sessionTable.tokenHash, tokenHash));
         return null;
     }
 
@@ -191,7 +201,8 @@ export const getSessionUser = async (token: string): Promise<PublicUser | null> 
     return toPublicUser(row, row.id === adminId);
 };
 
-export const deleteSession = (token: string) => db.delete(sessionTable).where(eq(sessionTable.token, token));
+export const deleteSession = (token: string) =>
+    db.delete(sessionTable).where(eq(sessionTable.tokenHash, hashSessionToken(token)));
 
 /**
  * `getSessionUser` cancella una sessione scaduta solo se qualcuno presenta proprio quel
@@ -200,7 +211,7 @@ export const deleteSession = (token: string) => db.delete(sessionTable).where(eq
  */
 export const deleteExpiredSessions = async () => {
     const deleted = await db.delete(sessionTable).where(lt(sessionTable.expiresAt, new Date())).returning({
-        token: sessionTable.token,
+        tokenHash: sessionTable.tokenHash,
     });
 
     return deleted.length;
@@ -247,7 +258,9 @@ export const deleteAllSessionsForUser = (userId: number) =>
     db.delete(sessionTable).where(eq(sessionTable.userId, userId));
 
 const deleteOtherSessionsForUser = (userId: number, currentToken: string) =>
-    db.delete(sessionTable).where(and(eq(sessionTable.userId, userId), ne(sessionTable.token, currentToken)));
+    db
+        .delete(sessionTable)
+        .where(and(eq(sessionTable.userId, userId), ne(sessionTable.tokenHash, hashSessionToken(currentToken))));
 
 export const listUsers = async (): Promise<PublicUser[]> => {
     const [rows, adminId] = await Promise.all([

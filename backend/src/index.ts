@@ -51,9 +51,26 @@ if (corsOrigins?.length) {
 app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
+/**
+ * Il logo è l'unica risorsa caricata dagli utenti che l'app restituisce così com'è, e fra i
+ * formati ammessi c'è l'SVG, che non viene rasterizzato per non perdere la resa vettoriale
+ * nell'app e nei PDF. Un SVG però può contenere `<script>`: dentro un `<img>` non viene
+ * eseguito, ma aprendo direttamente questo URL il browser lo tratta come un documento, e
+ * quel documento sta sulla stessa origin dell'app - potrebbe quindi chiamare /api/* con la
+ * sessione di chi lo apre. I due header qui sotto chiudono la strada senza rinunciare
+ * all'SVG:
+ *
+ * - `sandbox` (senza allow-scripts) toglie l'esecuzione di script al documento risultante;
+ *   sulle richieste fatte da un `<img>` non ha effetto, perché lì non nasce un documento;
+ * - `Content-Disposition: attachment` fa scaricare il file invece di aprirlo, ma vale solo
+ *   per la navigazione diretta: i browser lo ignorano sulle sottorisorse, quindi il logo
+ *   continua a comparire regolarmente in sidebar, in anteprima e nei PDF.
+ */
 app.get("/assets/logo.jpg", async (_req, res) => {
     const { filePath, mimeType } = await getLogoFile();
     res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Content-Security-Policy", "sandbox");
+    res.setHeader("Content-Disposition", 'attachment; filename="logo"');
     res.type(mimeType);
     res.sendFile(filePath);
 });
