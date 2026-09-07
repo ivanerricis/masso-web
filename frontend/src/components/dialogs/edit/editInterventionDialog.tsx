@@ -6,11 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import DatePickerField from "@/components/date-picker-field";
 import { getApiErrorMessage, getIntervention, listCollaborators } from "@/lib/api";
 import {
+    getInterventionValidationError,
     interventionDateLabel,
     interventionDescriptionLabel,
     interventionStatusOptions,
     interventionTypeOptions,
     isOnSiteInterventionType,
+    isScheduledInterventionStatus,
 } from "@/lib/interventions";
 import type { CollaboratorDto, InterventionStatus, InterventionType } from "@/types/dtos";
 import { startTransition, useEffect, useState } from "react";
@@ -22,7 +24,8 @@ export type EditInterventionSubmitValues = {
     interventionId: number;
     type: InterventionType;
     status: InterventionStatus;
-    description: string;
+    /** `null` quando l'intervento è solo programmato: il lavoro non è ancora stato svolto. */
+    description: string | null;
     problem: string | null;
     collaboratorId: number;
     interventionDate: string | null;
@@ -62,6 +65,9 @@ const EditInterventionDialog = ({
     });
 
     const isOnSite = isOnSiteInterventionType(formValues.type);
+    // Un intervento ancora da svolgere non ha orari né lavoro da descrivere: i campi
+    // restano compilabili, ma smettono di essere obbligatori e l'etichetta lo dice.
+    const isScheduled = isScheduledInterventionStatus(formValues.status);
 
     useEffect(() => {
         if (!open || !interventionId) {
@@ -84,7 +90,7 @@ const EditInterventionDialog = ({
                 setFormValues({
                     type: intervention.type,
                     status: intervention.status,
-                    description: intervention.description,
+                    description: intervention.description ?? "",
                     problem: intervention.problem ?? "",
                     collaboratorId: String(intervention.collaboratorId),
                     interventionDate: intervention.interventionDate ?? "",
@@ -117,35 +123,11 @@ const EditInterventionDialog = ({
             return;
         }
 
-        if (formValues.description.trim() === "") {
-            toast.error(
-                formValues.type === "consegna_materiale"
-                    ? "Indica i materiali da consegnare"
-                    : "Indica il tipo di assistenza effettuata"
-            );
+        const validationError = getInterventionValidationError(formValues);
+
+        if (validationError) {
+            toast.error(validationError);
             return;
-        }
-
-        if (formValues.interventionDate.trim() === "") {
-            toast.error(isOnSite ? "Seleziona la data dell'intervento" : "Seleziona la data di consegna");
-            return;
-        }
-
-        if (isOnSite) {
-            if (formValues.problem.trim() === "") {
-                toast.error("Indica il problema riscontrato");
-                return;
-            }
-
-            if (formValues.startTime.trim() === "" || formValues.endTime.trim() === "") {
-                toast.error("Indica l'ora di inizio e di fine assistenza");
-                return;
-            }
-
-            if (formValues.startTime >= formValues.endTime) {
-                toast.error("L'ora di fine deve essere successiva all'ora di inizio");
-                return;
-            }
         }
 
         try {
@@ -154,12 +136,12 @@ const EditInterventionDialog = ({
                 interventionId,
                 type: formValues.type,
                 status: formValues.status,
-                description: formValues.description.trim(),
+                description: formValues.description.trim() || null,
                 problem: isOnSite ? formValues.problem.trim() : null,
                 collaboratorId,
                 interventionDate: formValues.interventionDate,
-                startTime: isOnSite ? formValues.startTime : null,
-                endTime: isOnSite ? formValues.endTime : null,
+                startTime: isOnSite ? formValues.startTime || null : null,
+                endTime: isOnSite ? formValues.endTime || null : null,
             });
 
             toast.success("Intervento aggiornato con successo");
@@ -367,6 +349,9 @@ const EditInterventionDialog = ({
                                     <div className="grid gap-1 lg:col-span-2">
                                         <Label htmlFor="description" className="text-lg">
                                             {interventionDescriptionLabel(formValues.type)}
+                                            {isScheduled ? (
+                                                <span className="text-base text-muted-foreground"> (facoltativo)</span>
+                                            ) : null}
                                         </Label>
                                         <Textarea
                                             id="description"

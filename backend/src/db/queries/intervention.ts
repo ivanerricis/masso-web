@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../index";
 import { collaboratorTable, customerTable, interventionTable } from "../schema";
 import type { NewIntervention, UpdateIntervention } from "../types";
@@ -16,6 +16,9 @@ type ListInterventionsParams = {
     dateFrom?: string;
     dateTo?: string;
     scheduledDate?: string;
+    /** Intervallo sulla data dell'intervento, non su quella di creazione: lo usa il calendario. */
+    scheduledFrom?: string;
+    scheduledTo?: string;
     customerId?: number;
     sortBy?: InterventionSortBy;
     sortOrder?: "asc" | "desc";
@@ -30,6 +33,8 @@ export const listInterventions = async ({
     dateFrom,
     dateTo,
     scheduledDate,
+    scheduledFrom,
+    scheduledTo,
     customerId,
     sortBy = "createdAt",
     sortOrder = "desc",
@@ -64,6 +69,40 @@ export const listInterventions = async ({
                 ? sql`${interventionTable.created_at}::date <= ${dateTo}`
                 : undefined;
     const scheduledDateCondition = scheduledDate ? eq(interventionTable.interventionDate, scheduledDate) : undefined;
+
+    /**
+     * Intervallo sulla data dell'intervento, per il calendario.
+     *
+     * Il ramo sui record senza data non è teorico: quelli creati prima dell'introduzione di
+     * `intervention_date` ne sono privi, e il calendario li colloca sulla data di creazione
+     * (`useCalendarInterventions.toCalendarEvent`). Filtrare qui solo sulla prima colonna li
+     * farebbe sparire dal calendario invece di limitarsi a non caricarli fuori intervallo.
+     * Scritto come OR di due condizioni e non come `coalesce(...)`: un'espressione calcolata
+     * non sarebbe coperta dagli indici, mentre così il pianificatore può usarli entrambi.
+     */
+    const scheduledRangeBounds =
+        scheduledFrom && scheduledTo
+            ? { from: scheduledFrom, to: scheduledTo }
+            : scheduledFrom
+              ? { from: scheduledFrom, to: null }
+              : scheduledTo
+                ? { from: null, to: scheduledTo }
+                : null;
+    const inScheduledRange = (column: SQL | typeof interventionTable.interventionDate) =>
+        scheduledRangeBounds?.from && scheduledRangeBounds.to
+            ? sql`${column} BETWEEN ${scheduledRangeBounds.from} AND ${scheduledRangeBounds.to}`
+            : scheduledRangeBounds?.from
+              ? sql`${column} >= ${scheduledRangeBounds.from}`
+              : sql`${column} <= ${scheduledRangeBounds?.to}`;
+    const scheduledRangeCondition = scheduledRangeBounds
+        ? or(
+              and(sql`${interventionTable.interventionDate} IS NOT NULL`, inScheduledRange(interventionTable.interventionDate)),
+              and(
+                  sql`${interventionTable.interventionDate} IS NULL`,
+                  inScheduledRange(sql`${interventionTable.created_at}::date`)
+              )
+          )
+        : undefined;
     const customerCondition = customerId ? eq(interventionTable.customerId, customerId) : undefined;
     const searchCondition = searchConditions.length > 0 ? or(...searchConditions) : undefined;
     const whereConditions = [
@@ -71,6 +110,7 @@ export const listInterventions = async ({
         typeCondition,
         dateCondition,
         scheduledDateCondition,
+        scheduledRangeCondition,
         customerCondition,
         searchCondition,
     ].filter((condition): condition is NonNullable<typeof condition> => condition != null);

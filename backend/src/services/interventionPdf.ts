@@ -25,7 +25,8 @@ export type InterventionPrintData = {
     collaboratorName: string;
     type: InterventionType;
     status: InterventionStatus;
-    description: string;
+    /** Resta NULL finché l'intervento è solo programmato: il lavoro non è ancora stato svolto. */
+    description: string | null;
     /** Valorizzato solo per gli interventi in sede o da remoto. */
     problem: string | null;
     interventionDateLabel: string | null;
@@ -39,7 +40,7 @@ export type CustomerInterventionSummaryItem = {
     createdAtLabel: string;
     type: InterventionType;
     status: InterventionStatus;
-    description: string;
+    description: string | null;
     scheduleLabel: string | null;
 };
 
@@ -175,7 +176,7 @@ const buildActivitySection = (intervention: InterventionPrintData) => ({
                 {},
                 {},
             ],
-            [{ text: intervention.description, style: "value", colSpan: 4, margin: [0, 0, 0, 4] }, {}, {}, {}],
+            [{ text: intervention.description ?? "-", style: "value", colSpan: 4, margin: [0, 0, 0, 4] }, {}, {}, {}],
         ],
     },
     layout: tableLayout,
@@ -300,7 +301,7 @@ const buildCustomerInterventionsTable = (interventions: CustomerInterventionSumm
                 { text: String(intervention.id), alignment: "center", bold: true },
                 { text: intervention.createdAtLabel, alignment: "center" },
                 { text: formatInterventionType(intervention.type), bold: true },
-                { text: intervention.description, fontSize: 8.5 },
+                { text: intervention.description ?? "-", fontSize: 8.5 },
                 { text: intervention.scheduleLabel ?? "-", alignment: "center" },
                 { text: formatInterventionStatus(intervention.status), alignment: "center" },
             ]);

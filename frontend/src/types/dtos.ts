@@ -86,7 +86,8 @@ export type InterventionStatus = "programmato" | "in_lavorazione" | "completato"
 export type InterventionDto = {
     id: number;
     type: InterventionType;
-    description: string;
+    /** Assente finché l'intervento è solo programmato: il lavoro non è ancora stato svolto. */
+    description: string | null;
     status: InterventionStatus;
     interventionDate: string | null;
     startTime: string | null;

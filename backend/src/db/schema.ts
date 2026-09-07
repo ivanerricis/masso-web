@@ -206,7 +206,12 @@ export const interventionTable = pgTable(
     {
         id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
         type: varchar("type", { length: 30 }).notNull(),
-        description: text("description").notNull(),
+        /**
+         * L'assistenza effettuata, o i materiali consegnati. Resta NULL finché l'intervento
+         * è solo programmato: è un'informazione che nasce quando il lavoro viene svolto.
+         * Le rotte la richiedono negli altri due stati.
+         */
+        description: text("description"),
         /** Solo per gli interventi in sede o da remoto: resta NULL per le consegne materiale. */
         problem: text("problem"),
         status: varchar("status", { length: 20 }).notNull().default("programmato"),
@@ -224,6 +229,9 @@ export const interventionTable = pgTable(
     (table) => [
         index("intervention_customer_id_idx").on(table.customerId),
         index("intervention_collaborator_id_idx").on(table.collaboratorId),
+        // Il calendario carica solo l'intervallo di date che sta mostrando: senza questo
+        // indice quel filtro sarebbe una scansione dell'intera tabella a ogni cambio di mese.
+        index("intervention_intervention_date_idx").on(table.interventionDate),
         index("intervention_type_idx").on(table.type),
         index("intervention_status_idx").on(table.status),
         index("intervention_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`),

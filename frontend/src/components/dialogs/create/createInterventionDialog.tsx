@@ -10,11 +10,13 @@ import InputWithAdd from "@/components/inputWithAdd";
 import DatePickerField from "@/components/date-picker-field";
 import { createCustomer, getApiErrorMessage, listCollaborators, listCustomers } from "@/lib/api";
 import {
+    getInterventionValidationError,
     interventionDateLabel,
     interventionDescriptionLabel,
     interventionStatusOptions,
     interventionTypeOptions,
     isOnSiteInterventionType,
+    isScheduledInterventionStatus,
     getTodayDateString,
 } from "@/lib/interventions";
 import type { CollaboratorDto, InterventionStatus, InterventionType } from "@/types/dtos";
@@ -37,7 +39,8 @@ const formatPersonName = (firstName: string, lastName: string | null) => `${firs
 export type CreateInterventionSubmitValues = {
     type: InterventionType;
     status: InterventionStatus;
-    description: string;
+    /** `null` quando l'intervento è solo programmato: il lavoro non è ancora stato svolto. */
+    description: string | null;
     problem: string | null;
     customer: string;
     customerId: number | null;
@@ -72,6 +75,9 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isOnSite = isOnSiteInterventionType(formValues.type);
+    // Un intervento ancora da svolgere non ha orari né lavoro da descrivere: i campi
+    // restano compilabili, ma smettono di essere obbligatori e l'etichetta lo dice.
+    const isScheduled = isScheduledInterventionStatus(formValues.status);
 
     useEffect(() => {
         if (!open) {
@@ -142,35 +148,11 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
             return;
         }
 
-        if (formValues.description.trim() === "") {
-            toast.error(
-                formValues.type === "consegna_materiale"
-                    ? "Indica i materiali da consegnare"
-                    : "Indica il tipo di assistenza effettuata"
-            );
+        const validationError = getInterventionValidationError(formValues);
+
+        if (validationError) {
+            toast.error(validationError);
             return;
-        }
-
-        if (formValues.interventionDate.trim() === "") {
-            toast.error(isOnSite ? "Seleziona la data dell'intervento" : "Seleziona la data di consegna");
-            return;
-        }
-
-        if (isOnSite) {
-            if (formValues.problem.trim() === "") {
-                toast.error("Indica il problema riscontrato");
-                return;
-            }
-
-            if (formValues.startTime.trim() === "" || formValues.endTime.trim() === "") {
-                toast.error("Indica l'ora di inizio e di fine assistenza");
-                return;
-            }
-
-            if (formValues.startTime >= formValues.endTime) {
-                toast.error("L'ora di fine deve essere successiva all'ora di inizio");
-                return;
-            }
         }
 
         if (!onSubmit) {
@@ -183,14 +165,14 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
             await onSubmit({
                 type: formValues.type,
                 status: formValues.status,
-                description: formValues.description.trim(),
+                description: formValues.description.trim() || null,
                 problem: isOnSite ? formValues.problem.trim() : null,
                 customer: formValues.customer,
                 customerId: customerIdByOption[formValues.customer] ?? null,
                 collaboratorId: Number(formValues.collaboratorId),
                 interventionDate: formValues.interventionDate,
-                startTime: isOnSite ? formValues.startTime : null,
-                endTime: isOnSite ? formValues.endTime : null,
+                startTime: isOnSite ? formValues.startTime || null : null,
+                endTime: isOnSite ? formValues.endTime || null : null,
             });
             onOpenChange(false);
             toast.success("Intervento creato con successo");
@@ -353,6 +335,12 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                         <div className="grid gap-1">
                                             <Label htmlFor="startTime" className="text-lg">
                                                 Ora inizio
+                                                {isScheduled ? (
+                                                    <span className="text-base text-muted-foreground">
+                                                        {" "}
+                                                        (facoltativa)
+                                                    </span>
+                                                ) : null}
                                             </Label>
                                             <Input
                                                 id="startTime"
@@ -370,6 +358,12 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                         <div className="grid gap-1">
                                             <Label htmlFor="endTime" className="text-lg">
                                                 Ora fine
+                                                {isScheduled ? (
+                                                    <span className="text-base text-muted-foreground">
+                                                        {" "}
+                                                        (facoltativa)
+                                                    </span>
+                                                ) : null}
                                             </Label>
                                             <Input
                                                 id="endTime"
@@ -404,6 +398,9 @@ const CreateInterventionDialog = ({ open, onOpenChange, onSubmit, initialDate }:
                                 <div className="grid gap-1 lg:col-span-2">
                                     <Label htmlFor="description" className="text-lg">
                                         {interventionDescriptionLabel(formValues.type)}
+                                        {isScheduled ? (
+                                            <span className="text-base text-muted-foreground"> (facoltativo)</span>
+                                        ) : null}
                                     </Label>
                                     <Textarea
                                         id="description"

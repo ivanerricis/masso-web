@@ -39,13 +39,20 @@ const interventionListQuerySchema = listQuerySchema.extend({
     dateFrom: z.string().regex(dateRegex).optional(),
     dateTo: z.string().regex(dateRegex).optional(),
     scheduledDate: z.string().regex(dateRegex).optional(),
+    // Intervallo sulla data dell'intervento, che è cosa diversa da `dateFrom`/`dateTo`:
+    // quelli filtrano la data di creazione. Li usa il calendario per caricare solo il
+    // periodo che sta mostrando invece dell'intera tabella.
+    scheduledFrom: z.string().regex(dateRegex).optional(),
+    scheduledTo: z.string().regex(dateRegex).optional(),
     sortBy: z.enum(interventionSortFields).optional(),
 });
 
 const interventionBodySchema = z
     .object({
         type: z.enum(interventionTypes),
-        description: z.string().trim().min(1).max(4000),
+        // Facoltativa nello schema perché un intervento solo programmato non l'ha ancora;
+        // l'obbligo negli altri due stati è applicato più sotto, dove si conosce lo stato.
+        description: z.string().trim().max(4000).nullable().optional(),
         // Solo per gli interventi in sede o da remoto: le consegne materiale lo ignorano.
         problem: z.string().trim().max(4000).nullable().optional(),
         status: z.enum(interventionStatuses).optional(),
@@ -57,9 +64,30 @@ const interventionBodySchema = z
     })
     .strict();
 
+/**
+ * Un intervento "programmato" è un lavoro che deve ancora essere svolto: l'orario esatto e
+ * l'assistenza effettuata sono informazioni che nascono quando lo si fa, non quando lo si
+ * mette in agenda. Restano invece obbligatorie negli altri due stati, altrimenti un
+ * intervento potrebbe risultare completato senza che risulti cosa è stato fatto.
+ *
+ * Il problema riscontrato non segue questa regola: si conosce già al momento della chiamata
+ * del cliente, ed è il motivo per cui l'intervento viene programmato.
+ */
+const isScheduledStatus = (status?: (typeof interventionStatuses)[number]) => (status ?? "programmato") === "programmato";
+
 const interventionCreateBodySchema = interventionBodySchema.superRefine((value, ctx) => {
     if (!value.interventionDate) {
         ctx.addIssue({ code: "custom", message: "La data dell'intervento è obbligatoria", path: ["interventionDate"] });
+    }
+
+    const scheduled = isScheduledStatus(value.status);
+
+    if (!scheduled && !value.description) {
+        ctx.addIssue({
+            code: "custom",
+            message: "La descrizione del lavoro svolto è obbligatoria quando l'intervento non è solo programmato",
+            path: ["description"],
+        });
     }
 
     if (!onSiteInterventionTypes.has(value.type)) {
@@ -70,14 +98,15 @@ const interventionCreateBodySchema = interventionBodySchema.superRefine((value, 
         ctx.addIssue({ code: "custom", message: "Il problema riscontrato è obbligatorio", path: ["problem"] });
     }
 
-    if (!value.startTime) {
+    if (!scheduled && !value.startTime) {
         ctx.addIssue({ code: "custom", message: "L'ora di inizio è obbligatoria", path: ["startTime"] });
     }
 
-    if (!value.endTime) {
+    if (!scheduled && !value.endTime) {
         ctx.addIssue({ code: "custom", message: "L'ora di fine è obbligatoria", path: ["endTime"] });
     }
 
+    // Vale anche per un intervento programmato: se gli orari ci sono, devono avere senso.
     if (value.startTime && value.endTime && value.startTime >= value.endTime) {
         ctx.addIssue({
             code: "custom",
@@ -92,19 +121,33 @@ const interventionUpdateBodySchema = interventionBodySchema.partial().refine((va
 });
 
 interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), async (req, res) => {
-    const { page, pageSize, search, status, type, dateFrom, dateTo, scheduledDate, sortBy, sortOrder } =
-        req.query as unknown as {
-            page?: number;
-            pageSize?: number;
-            search?: string;
-            status?: "all" | (typeof interventionStatuses)[number];
-            type?: "all" | InterventionType;
-            dateFrom?: string;
-            dateTo?: string;
-            scheduledDate?: string;
-            sortBy?: (typeof interventionSortFields)[number];
-            sortOrder?: "asc" | "desc";
-        };
+    const {
+        page,
+        pageSize,
+        search,
+        status,
+        type,
+        dateFrom,
+        dateTo,
+        scheduledDate,
+        scheduledFrom,
+        scheduledTo,
+        sortBy,
+        sortOrder,
+    } = req.query as unknown as {
+        page?: number;
+        pageSize?: number;
+        search?: string;
+        status?: "all" | (typeof interventionStatuses)[number];
+        type?: "all" | InterventionType;
+        dateFrom?: string;
+        dateTo?: string;
+        scheduledDate?: string;
+        scheduledFrom?: string;
+        scheduledTo?: string;
+        sortBy?: (typeof interventionSortFields)[number];
+        sortOrder?: "asc" | "desc";
+    };
 
     const interventions = await listInterventions({
         page,
@@ -115,6 +158,8 @@ interventionsRouter.get("/", validate({ query: interventionListQuerySchema }), a
         dateFrom,
         dateTo,
         scheduledDate,
+        scheduledFrom,
+        scheduledTo,
         sortBy,
         sortOrder,
     });
@@ -256,7 +301,9 @@ interventionsRouter.post("/", validate({ body: interventionCreateBodySchema }), 
 
     const createdIntervention = await createIntervention({
         type: req.body.type,
-        description: req.body.description,
+        // Stringa vuota e campo assente sono la stessa cosa: "non ancora compilato" si
+        // scrive NULL, come per `problem`.
+        description: req.body.description || null,
         problem: isOnSite ? (req.body.problem ?? null) : null,
         status: req.body.status ?? "programmato",
         customerId: req.body.customerId,
@@ -289,9 +336,21 @@ interventionsRouter.put(
         const nextStartTime = "startTime" in req.body ? (req.body.startTime ?? null) : existing.startTime;
         const nextEndTime = "endTime" in req.body ? (req.body.endTime ?? null) : existing.endTime;
         const nextProblem = "problem" in req.body ? (req.body.problem ?? null) : existing.problem;
+        const nextStatus = (req.body.status ?? existing.status) as (typeof interventionStatuses)[number];
+        const nextDescription = "description" in req.body ? (req.body.description || null) : existing.description;
+        // Come per il prezzo dei report: la combinazione da validare nasce dall'unione del
+        // corpo parziale con la riga esistente, quindi lo schema non può vederla da solo.
+        const scheduled = isScheduledStatus(nextStatus);
 
         if (!nextInterventionDate) {
             res.status(400).json({ message: "La data dell'intervento è obbligatoria" });
+            return;
+        }
+
+        if (!scheduled && !nextDescription) {
+            res.status(400).json({
+                message: "La descrizione del lavoro svolto è obbligatoria quando l'intervento non è solo programmato",
+            });
             return;
         }
 
@@ -302,7 +361,7 @@ interventionsRouter.put(
             return;
         }
 
-        if (isOnSite && (!nextStartTime || !nextEndTime)) {
+        if (isOnSite && !scheduled && (!nextStartTime || !nextEndTime)) {
             res.status(400).json({
                 message: "Per interventi in sede o da remoto sono richiesti ora inizio e ora fine",
             });
@@ -317,6 +376,7 @@ interventionsRouter.put(
         const updatedIntervention = await updateInterventionById(id, {
             ...req.body,
             interventionDate: nextInterventionDate,
+            description: nextDescription,
             problem: isOnSite ? nextProblem : null,
             startTime: isOnSite ? nextStartTime : null,
             endTime: isOnSite ? nextEndTime : null,

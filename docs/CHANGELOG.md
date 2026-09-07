@@ -11,6 +11,119 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — Un intervento programmato non ha più bisogno di orari né di lavoro svolto
+
+**Cosa.** Creando un intervento con stato "Programmato", ora **ora inizio, ora fine e la
+descrizione del lavoro svolto** possono restare vuote; le etichette lo dicono con un
+"(facoltativo)" che compare e sparisce al cambio di stato. Restano obbligatorie negli stati
+"In lavorazione" e "Completato", anche passando per la modifica: chiudere un intervento
+lasciando quei campi vuoti viene rifiutato.
+
+**Il perché.** Un intervento programmato descrive un lavoro **non ancora svolto**: l'orario
+esatto e l'assistenza effettuata sono informazioni che nascono quando lo si fa, non quando lo
+si mette in agenda. Obbligarle in fase di programmazione costringeva a inventare un testo e
+un orario, cioè a scrivere nel database qualcosa di falso pur di poter salvare.
+
+**Il problema riscontrato resta invece obbligatorio**, e non è un'incoerenza: quello si conosce
+già dalla telefonata del cliente ed è esattamente il motivo per cui l'intervento viene
+programmato.
+
+**La regola vale anche in modifica, e questa è la parte che rende la cosa sensata.** Se
+l'obbligo scattasse solo alla creazione, un intervento nato programmato resterebbe per sempre
+senza descrizione anche una volta completato: basterebbe cambiargli stato. Il controllo è
+quindi applicato sulla combinazione fra il corpo parziale della richiesta e la riga già
+salvata — stesso schema già usato in `reports.ts` per "un report chiuso richiede un
+collaboratore" — così al momento del passaggio di stato i campi si compilano nella stessa
+richiesta.
+
+**Sul database.** `intervention.description` era `NOT NULL` e diventa facoltativa
+([migrazione 0022](../backend/drizzle/0022_intervention_description_optional.sql)), con lo
+stesso significato che ha già `problem`: NULL = non ancora noto, non "vuoto". L'obbligo negli
+altri due stati è una regola applicativa, non un vincolo della colonna, perché al passaggio di
+stato il testo arriva nella stessa richiesta e un vincolo di colonna non saprebbe distinguere
+i due momenti. Le stringhe vuote in arrivo vengono normalizzate a NULL, così non esistono due
+modi diversi di dire la stessa cosa.
+
+**La regola sta in un punto solo per lato.** Le due finestre (creazione e modifica)
+applicavano gli stessi controlli ciascuna per conto proprio, copiati carattere per carattere:
+sono confluiti in `getInterventionValidationError`
+([lib/interventions.ts](../frontend/src/lib/interventions.ts)), per lo stesso motivo per cui
+esiste `DateRangeFilter` — due copie di una regola sono due occasioni perché una cambi da sola.
+Il server riapplica comunque tutto.
+
+**Verificato sulle rotte reali**, otto casi: programmato senza orari né descrizione (creato,
+`description` e `startTime` a NULL), consegna programmata senza descrizione (creata),
+completato senza descrizione (rifiutato), completato senza orari (rifiutato), completato con
+tutto (creato), programmato con ora fine prima dell'inizio (rifiutato — la coerenza fra orari
+vale anche quando sono facoltativi), chiusura via modifica senza compilare nulla (rifiutata),
+chiusura compilando tutto (accettata).
+
+**File:** [routes/interventions.ts](../backend/src/routes/interventions.ts),
+[db/schema.ts](../backend/src/db/schema.ts),
+[lib/interventions.ts](../frontend/src/lib/interventions.ts), i due dialoghi degli interventi,
+[interventionPdf.ts](../backend/src/services/interventionPdf.ts) e la scheda intervento (che
+ora mostrano "-" quando il lavoro non è ancora stato descritto).
+
+---
+
+## 2026-09-07 — Il calendario carica solo il periodo che sta mostrando
+
+**Cosa.** La dashboard chiedeva **tutti** gli interventi e ne riceveva al massimo 5000, il
+tetto di `takeUnpaginated`. Ora chiede solo l'intervallo di giorni che il calendario sta
+disegnando, tramite i nuovi parametri `scheduledFrom`/`scheduledTo`.
+
+**Il perché è prima di tutto la correttezza, non la velocità.** Con 8000 interventi in
+archivio il calendario ne mostrava 5000 e gli altri 3000 sparivano: nessun errore a schermo,
+nessun segnale per chi guarda, solo una riga `Lista "interventions" … risultato troncato` nei
+log del server a ogni caricamento della dashboard. Un calendario che tace e mostra una parte
+degli appuntamenti è peggio di uno lento.
+
+| | prima | dopo |
+| --- | ---: | ---: |
+| Interventi ricevuti | 5000 su 8000, troncati in silenzio | 982, **tutti** quelli del periodo |
+| Peso della risposta | 1,87 MB | 361 KB |
+| Durata lato server | ~240 ms | ~110 ms |
+| Avvisi di troncamento nei log | a ogni caricamento | nessuno |
+
+Il guadagno maggiore però non è nei millisecondi del server: è il browser, che prima doveva
+interpretare quasi due MB di JSON e costruire 5000 eventi per disegnarne una manciata.
+
+**Due dettagli che hanno richiesto una verifica, non un'ipotesi.**
+
+*Il filtro giusto non esisteva.* `dateFrom`/`dateTo` degli interventi filtrano la **data di
+creazione**, mentre il calendario colloca gli eventi sulla **data dell'intervento**: usarli
+avrebbe filtrato la colonna sbagliata. Da qui i due parametri nuovi, più
+l'[indice su `intervention_date`](../backend/drizzle/0021_add_intervention_date_index.sql) che
+rende quel filtro una lettura d'indice (`BitmapOr`, verificato con `EXPLAIN ANALYZE`) invece di
+una scansione a ogni cambio di mese.
+
+*Il primo caricamento non partiva.* `onRangeChange` di react-big-calendar sembra il modo
+naturale di sapere quali giorni sono visibili, ma nel sorgente della libreria viene chiamato
+solo da `handleNavigate` e `handleViewChange`: **non al montaggio**. Con il solo
+`onRangeChange` il calendario restava vuoto finché non si premeva "Avanti" — difetto scoperto
+osservando le richieste di rete del browser, dove la chiamata con l'intervallo compariva solo
+dopo la navigazione, non al caricamento. Il primo intervallo viene quindi calcolato in
+`initialRangeFor`, che riproduce le regole delle viste della libreria (compresa la griglia
+mensile, che mostra anche la coda del mese precedente e l'inizio del successivo).
+
+**Cosa non è stato lasciato indietro.** I record creati prima dell'introduzione di
+`intervention_date` non ne hanno una, e il calendario li colloca sulla data di creazione:
+filtrare solo sulla prima colonna li avrebbe fatti sparire del tutto. La condizione copre
+entrambi i casi, scritta come `OR` di due confronti e non con `coalesce(...)`, perché
+un'espressione calcolata non sarebbe coperta da nessun indice.
+
+Resta infine un tetto di 1000 righe per periodo, ma ora **se scatta lo dice**: compare un
+avviso che invita a passare alla vista settimana o giorno, invece di disegnare in silenzio una
+parte degli interventi.
+
+**File:** [queries/intervention.ts](../backend/src/db/queries/intervention.ts),
+[routes/interventions.ts](../backend/src/routes/interventions.ts),
+[useCalendarInterventions.ts](../frontend/src/pages/calendar/hooks/useCalendarInterventions.ts),
+[interventions-calendar.tsx](../frontend/src/pages/calendar/components/interventions-calendar.tsx),
+[DashboardPage.tsx](../frontend/src/pages/dashboard/DashboardPage.tsx).
+
+---
+
 ## 2026-09-07 — La casella di ricerca smette di confrontare colonne che testo non sono
 
 **Cosa.** Le sette liste con ricerca libera non convertono più in testo id, date, booleani,

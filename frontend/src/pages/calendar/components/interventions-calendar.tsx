@@ -6,9 +6,9 @@ import CreateInterventionDialog, {
     type CreateInterventionSubmitValues,
 } from "@/components/dialogs/create/createInterventionDialog";
 import type { InterventionStatus } from "@/types/dtos";
-import { format, getDay, parse, startOfWeek } from "date-fns";
+import { addDays, endOfMonth, endOfWeek, format, getDay, parse, startOfMonth, startOfWeek } from "date-fns";
 import { it } from "date-fns/locale";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Calendar,
     dateFnsLocalizer,
@@ -21,7 +21,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../calendar-theme.css";
 import CalendarEventPopover from "./calendar-event-popover";
 import { useNavigate } from "react-router-dom";
-import type { InterventionCalendarEvent } from "../hooks/useCalendarInterventions";
+import type { CalendarRange, InterventionCalendarEvent } from "../hooks/useCalendarInterventions";
 
 const locales = { it };
 
@@ -62,18 +62,80 @@ const statusEventStyle: Record<InterventionStatus, { backgroundColor: string; co
 
 const components = { event: CalendarEventPopover };
 
+/**
+ * Giorni effettivamente disegnati dalla vista corrente, che non coincidono con il mese di
+ * calendario: la griglia mensile mostra anche la coda del mese precedente e l'inizio del
+ * successivo. react-big-calendar li comunica come elenco di date (viste mese, settimana,
+ * giorno) o come intervallo (vista agenda), ma solo quando si naviga: per il primo
+ * intervallo vedi `initialRangeFor` qui sotto.
+ */
+const toCalendarRange = (range: Date[] | { start: Date; end: Date }): CalendarRange => {
+    const days = Array.isArray(range) ? range : [range.start, range.end];
+    const timestamps = days.map((day) => day.getTime());
+
+    return {
+        from: format(new Date(Math.min(...timestamps)), "yyyy-MM-dd"),
+        to: format(new Date(Math.max(...timestamps)), "yyyy-MM-dd"),
+    };
+};
+
+/**
+ * Intervallo iniziale, calcolato qui perché react-big-calendar **non** chiama
+ * `onRangeChange` al montaggio: nel suo sorgente parte solo da `handleNavigate` e
+ * `handleViewChange`. Senza questo il calendario resterebbe vuoto fino al primo cambio di
+ * mese — verificato osservando le richieste di rete, dove la chiamata con l'intervallo
+ * compariva solo dopo aver premuto "Avanti".
+ *
+ * Riproduce le stesse regole delle viste della libreria, compresa la settimana che parte di
+ * lunedì come impostato nel localizer. Un eventuale scarto durerebbe comunque solo fino alla
+ * prima navigazione, che porta l'intervallo esatto.
+ */
+const initialRangeFor = (date: Date, view: View): CalendarRange => {
+    if (view === "day") {
+        return toCalendarRange([date]);
+    }
+
+    if (view === "week" || view === "work_week") {
+        return toCalendarRange([startOfWeek(date, { weekStartsOn: 1 }), endOfWeek(date, { weekStartsOn: 1 })]);
+    }
+
+    if (view === "agenda") {
+        // `length` di default nella vista agenda: 30 giorni a partire dalla data corrente.
+        return toCalendarRange([date, addDays(date, 30)]);
+    }
+
+    // Vista mese: la griglia mostra anche la coda del mese precedente e l'inizio del successivo.
+    return toCalendarRange([
+        startOfWeek(startOfMonth(date), { weekStartsOn: 1 }),
+        endOfWeek(endOfMonth(date), { weekStartsOn: 1 }),
+    ]);
+};
+
 type Props = Readonly<{
     className?: string;
     events: InterventionCalendarEvent[];
     isLoading: boolean;
     onCreateIntervention: (values: CreateInterventionSubmitValues) => Promise<void> | void;
+    onRangeChange: (range: CalendarRange) => void;
 }>;
 
-const InterventionsCalendar = ({ className, events, isLoading, onCreateIntervention }: Props) => {
+const InterventionsCalendar = ({ className, events, isLoading, onCreateIntervention, onRangeChange }: Props) => {
     const navigate = useNavigate();
     const [view, setView] = useState<View>(() => getStoredCalendarView());
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [initialInterventionDate, setInitialInterventionDate] = useState("");
+
+    // Solo al montaggio: da qui in poi è la libreria a comunicare l'intervallo navigando.
+    const hasAnnouncedInitialRange = useRef(false);
+
+    useEffect(() => {
+        if (hasAnnouncedInitialRange.current) {
+            return;
+        }
+
+        hasAnnouncedInitialRange.current = true;
+        onRangeChange(initialRangeFor(new Date(), view));
+    }, [onRangeChange, view]);
 
     const eventPropGetter = useMemo<EventPropGetter<InterventionCalendarEvent>>(
         () => (event) => ({
@@ -114,6 +176,7 @@ const InterventionsCalendar = ({ className, events, isLoading, onCreateIntervent
                     onSelectEvent={(event) => navigate(`/interventions/${event.id}`)}
                     selectable
                     onSelectSlot={handleSelectSlot}
+                    onRangeChange={(range) => onRangeChange(toCalendarRange(range))}
                     popup
                     style={{ height: "100%" }}
                 />

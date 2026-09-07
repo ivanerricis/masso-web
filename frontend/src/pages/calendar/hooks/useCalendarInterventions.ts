@@ -45,7 +45,24 @@ const toCalendarEvent = (intervention: InterventionDto): InterventionCalendarEve
     };
 };
 
-export const useCalendarInterventions = () => {
+export type CalendarRange = { from: string; to: string };
+
+/**
+ * Interventi da mostrare nel calendario, limitati all'intervallo che il calendario sta
+ * visualizzando.
+ *
+ * Prima l'elenco veniva chiesto per intero, e `takeUnpaginated` lo tagliava a 5000 righe: con
+ * più interventi di così quelli in eccesso sparivano dal calendario senza alcun errore, solo
+ * un avviso nei log del server. Chiedere il periodo visibile risolve il troncamento ed è
+ * anche molto più leggero — il browser riceve qualche decina di KB invece di quasi due MB.
+ *
+ * `range` arriva dal calendario stesso (`onRangeChange`), che è l'unico a sapere quali giorni
+ * sta disegnando: la vista mensile, per esempio, mostra anche la coda del mese precedente e
+ * l'inizio del successivo. Finché è `null` non si carica nulla: il primo intervallo arriva
+ * al montaggio del componente, quindi si evita una richiesta iniziale sull'intervallo
+ * sbagliato.
+ */
+export const useCalendarInterventions = (range: CalendarRange | null) => {
     const [events, setEvents] = useState<InterventionCalendarEvent[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -54,18 +71,36 @@ export const useCalendarInterventions = () => {
     const latestRequestIdRef = useRef(0);
 
     const loadEvents = useCallback(async () => {
+        if (!range) {
+            return;
+        }
+
         const requestId = latestRequestIdRef.current + 1;
         latestRequestIdRef.current = requestId;
         setIsLoading(true);
 
         try {
-            const interventions = await listInterventions();
+            const interventions = await listInterventions({
+                scheduledFrom: range.from,
+                scheduledTo: range.to,
+                pageSize: 1000,
+            });
 
             if (requestId !== latestRequestIdRef.current) {
                 return;
             }
 
-            setEvents(interventions.map(toCalendarEvent));
+            // Il periodo visibile sta comodamente sotto il tetto di righe, ma se un giorno
+            // non ci stesse è meglio dirlo: un calendario che tace e mostra solo una parte
+            // degli interventi è esattamente il difetto che questa modifica ha corretto.
+            if (interventions.totalItems > interventions.items.length) {
+                toast.warning(
+                    `Nel periodo mostrato ci sono ${interventions.totalItems} interventi: ne vengono disegnati ` +
+                        `${interventions.items.length}. Passa alla vista settimana o giorno per vederli tutti.`
+                );
+            }
+
+            setEvents(interventions.items.map(toCalendarEvent));
         } catch (error) {
             if (requestId !== latestRequestIdRef.current) {
                 return;
@@ -77,7 +112,7 @@ export const useCalendarInterventions = () => {
                 setIsLoading(false);
             }
         }
-    }, []);
+    }, [range]);
 
     useEffect(() => {
         startTransition(() => {

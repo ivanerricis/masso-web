@@ -148,6 +148,20 @@
       "when": 1776367000000,
       "tag": "0020_hash_session_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1776368000000,
+      "tag": "0021_add_intervention_date_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1776369000000,
+      "tag": "0022_intervention_description_optional",
+      "breakpoints": true
     }
   ]
 }

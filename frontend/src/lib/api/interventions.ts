@@ -5,7 +5,7 @@ import type { InterventionDto, InterventionStatus, InterventionType } from "@/ty
 export type InterventionEntityDto = {
     id: number;
     type: InterventionType;
-    description: string;
+    description: string | null;
     /** Valorizzato solo per gli interventi in sede o da remoto. */
     problem: string | null;
     status: InterventionStatus;
@@ -20,7 +20,7 @@ export type InterventionEntityDto = {
 
 export type InterventionCreateInput = {
     type: InterventionType;
-    description: string;
+    description?: string | null;
     problem?: string | null;
     status?: InterventionStatus;
     customerId: number;
@@ -41,6 +41,9 @@ export type ListInterventionsParams = {
     dateFrom?: string;
     dateTo?: string;
     scheduledDate?: string;
+    /** Intervallo sulla data dell'intervento; `dateFrom`/`dateTo` filtrano invece la data di creazione. */
+    scheduledFrom?: string;
+    scheduledTo?: string;
     sortBy?: InterventionSortBy;
     sortOrder?: "asc" | "desc";
 };
@@ -63,6 +66,8 @@ export async function listInterventions(params?: ListInterventionsParams) {
             dateFrom: params.dateFrom,
             dateTo: params.dateTo,
             scheduledDate: params.scheduledDate,
+            scheduledFrom: params.scheduledFrom,
+            scheduledTo: params.scheduledTo,
             sortBy: params.sortBy,
             sortOrder: params.sortOrder,
         },

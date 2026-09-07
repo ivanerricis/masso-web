@@ -16,7 +16,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, startTransition, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 const InterventionsCalendar = lazy(() => import("@/pages/calendar/components/interventions-calendar"));
 import CreateEntityButton from "@/components/create-entity-button";
@@ -36,7 +36,7 @@ import {
 import { cn, formatEuro, openPrintWindow } from "@/lib/utils";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { useCalendarInterventions } from "@/pages/calendar/hooks/useCalendarInterventions";
+import { useCalendarInterventions, type CalendarRange } from "@/pages/calendar/hooks/useCalendarInterventions";
 
 const getMonthKey = (date: Date) => {
     const year = date.getFullYear();
@@ -79,11 +79,21 @@ const DashboardPage = () => {
     const navigate = useNavigate();
     const [dialogCreateReportOpen, setDialogCreateReportOpen] = useState(false);
     const [dialogCreateInterventionOpen, setDialogCreateInterventionOpen] = useState(false);
+    // L'intervallo lo decide il calendario, che è l'unico a sapere quali giorni sta
+    // disegnando; qui viene solo tenuto in stato per poterlo passare al caricamento.
+    // Confrontare i due estremi evita di rilanciare la richiesta quando il calendario
+    // ripete lo stesso intervallo (lo fa a ogni ridisegno).
+    const [calendarRange, setCalendarRange] = useState<CalendarRange | null>(null);
+    const handleCalendarRangeChange = useCallback((nextRange: CalendarRange) => {
+        setCalendarRange((previous) =>
+            previous && previous.from === nextRange.from && previous.to === nextRange.to ? previous : nextRange
+        );
+    }, []);
     const {
         events: calendarEvents,
         isLoading: isCalendarLoading,
         loadEvents: loadCalendarEvents,
-    } = useCalendarInterventions();
+    } = useCalendarInterventions(calendarRange);
     const [selectedRevenueMonth, setSelectedRevenueMonth] = useState(() => getMonthKey(new Date()));
     const [openReports, setOpenReports] = useState(0);
     const [closedReports, setClosedReports] = useState(0);
@@ -476,6 +486,7 @@ const DashboardPage = () => {
                     events={calendarEvents}
                     isLoading={isCalendarLoading}
                     onCreateIntervention={handleCreateIntervention}
+                    onRangeChange={handleCalendarRangeChange}
                 />
             </Suspense>
 
