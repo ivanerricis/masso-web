@@ -172,7 +172,7 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
                 dataBackup: formValues.dataBackup === "yes",
             });
             onOpenChange(false);
-            toast.success("Rapporto creato con successo");
+            toast.success("Report creato con successo");
         } catch (error) {
             toast.error(getApiErrorMessage(error, "Impossibile salvare i dati"));
         } finally {
@@ -185,8 +185,8 @@ const CreateReportDialog = ({ open, onOpenChange, onSubmit }: Props) => {
             <CustomDialog
                 open={open}
                 onOpenChange={onOpenChange}
-                title="Nuovo rapporto"
-                description="Inserisci i dati del rapporto e conferma per salvare."
+                title="Nuovo report"
+                description="Inserisci i dati del report e conferma per salvare."
                 contentClassName="sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl"
                 preventOutsideClose
                 confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}

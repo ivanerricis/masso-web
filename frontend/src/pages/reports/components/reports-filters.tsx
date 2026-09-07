@@ -5,10 +5,10 @@ import { ArrowUpDown, ListFilter } from "lucide-react";
 import { reportSortOptions, type ReportSortOption, type ReportVisibilityFilter } from "./types";
 
 // La visibilità non ha un elenco di opzioni altrove: "aperti"/"chiusi" derivano dal
-// booleano `closed` del rapporto, non da una colonna con valori propri.
+// booleano `closed` del report, non da una colonna con valori propri.
 const reportVisibilityOptions: { value: ReportVisibilityFilter; label: string }[] = [
-    { value: "open", label: "Rapportini aperti" },
-    { value: "closed", label: "Rapportini chiusi" },
+    { value: "open", label: "Report aperti" },
+    { value: "closed", label: "Report chiusi" },
 ];
 
 type ReportsFiltersProps = {
@@ -38,13 +38,13 @@ const ReportsFilters = ({
 }: ReportsFiltersProps) => {
     return (
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <SearchInput value={searchText} onValueChange={onSearchTextChange} placeholder="Cerca rapporto..." />
+            <SearchInput value={searchText} onValueChange={onSearchTextChange} placeholder="Cerca report..." />
 
             <FilterSelect
                 value={visibilityFilter}
                 onValueChange={onVisibilityFilterChange}
                 options={reportVisibilityOptions}
-                allOption={{ value: "all", label: "Tutti i rapportini" }}
+                allOption={{ value: "all", label: "Tutti i report" }}
                 label="Filtra per stato"
                 icon={ListFilter}
             />

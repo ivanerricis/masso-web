@@ -11,6 +11,34 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — Terminologia unificata su "report", stato del report come card
+
+**"Rapportino"/"rapporto" → "report" ovunque.** L'interfaccia usava tre parole per la
+stessa entità — "rapportino" nei filtri e in dashboard, "rapporto" nei titoli, nei toast e
+nei messaggi d'errore del backend, "report" nelle rotte e nel codice. Chi legge non può
+sapere che sono la stessa cosa, e la ricerca testuale nel codice ne risentiva. Ora la
+terminologia visibile è sempre "report" (invariabile: *il report*, *i report*), allineata al
+nome che l'entità ha già nel database, nell'API e nei file sorgente.
+- Frontend: voce di sidebar, titoli e descrizioni pagina, filtri stato (`Tutti i report`,
+  `Report aperti/chiusi`), placeholder di ricerca, `aria-label` delle azioni di riga, toast
+  di creazione/modifica/eliminazione, dialog di creazione e modifica, sezioni "Report del
+  cliente/collaboratore/tecnico".
+- Backend: messaggi di `errorHandler.ts` (vincoli di integrità), validazione di chiusura in
+  `routes/reports.ts`, intestazione del PDF (`Report #<id>`).
+- Non toccato: `frontend/src/index.css`, dove "rapporto di contrasto" è il termine di
+  accessibilità e non ha niente a che vedere con l'entità. Le voci storiche di questo
+  changelog restano com'erano scritte allora.
+
+**Lo stato del report diventa una card.** Sopra la griglia delle card, `ReportPage` mostrava
+tre pillole ("Creato:", "Aggiornato:", stato aperto/chiuso) che duplicavano informazioni già
+presenti più in basso: le due date stanno tal quali nella card "Stato e gestione", e lo
+stato era l'unico dato che meritava rilievo. Le pillole sono state rimosse e lo stato è ora
+la prima card della griglia, che passa da `xl:grid-cols-4` a `xl:grid-cols-5` per far stare
+le cinque card su una riga; sotto `xl` la griglia continua a riflettere in due colonne. Il
+badge conserva i colori di `statusBadgeClass`, verificati in tema chiaro e scuro.
+- File: `frontend/src/pages/reports/ReportPage.tsx`.
+
+
 ## 2026-09-07 — Problema sull'intervento, data odierna predefinita, apertura col doppio click, collaboratore obbligatorio alla chiusura, righe per pagina per tabella
 
 Sei richieste raccolte dall'uso quotidiano, più due difetti di layout emersi verificandole.

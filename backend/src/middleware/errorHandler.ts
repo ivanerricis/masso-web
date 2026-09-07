@@ -45,27 +45,27 @@ const findPgError = (error: unknown): PgError => {
 // natural in Italian and independent of Postgres' own error text/locale.
 const FK_MESSAGES: Record<string, { onDeleteParent: string; onInvalidReference: string }> = {
     report_device_id_device_id_fk: {
-        onDeleteParent: "Impossibile eliminare il dispositivo: è ancora associato a uno o più rapporti.",
+        onDeleteParent: "Impossibile eliminare il dispositivo: è ancora associato a uno o più report.",
         onInvalidReference: "Il dispositivo selezionato non esiste.",
     },
     report_issue_id_issue_id_fk: {
-        onDeleteParent: "Impossibile eliminare il guasto: è ancora associato a uno o più rapporti.",
+        onDeleteParent: "Impossibile eliminare il guasto: è ancora associato a uno o più report.",
         onInvalidReference: "Il guasto selezionato non esiste.",
     },
     report_collaborator_id_collaborator_id_fk: {
-        onDeleteParent: "Impossibile eliminare il collaboratore: è ancora associato a uno o più rapporti.",
+        onDeleteParent: "Impossibile eliminare il collaboratore: è ancora associato a uno o più report.",
         onInvalidReference: "Il collaboratore selezionato non esiste.",
     },
     report_customer_id_customer_id_fk: {
-        onDeleteParent: "Impossibile eliminare il cliente: è ancora associato a uno o più rapporti.",
+        onDeleteParent: "Impossibile eliminare il cliente: è ancora associato a uno o più report.",
         onInvalidReference: "Il cliente selezionato non esiste.",
     },
     report_technician_report_id_report_id_fk: {
-        onDeleteParent: "Impossibile eliminare il rapporto: è ancora assegnato a uno o più tecnici.",
-        onInvalidReference: "Il rapporto selezionato non esiste.",
+        onDeleteParent: "Impossibile eliminare il report: è ancora assegnato a uno o più tecnici.",
+        onInvalidReference: "Il report selezionato non esiste.",
     },
     report_technician_technician_id_technician_id_fk: {
-        onDeleteParent: "Impossibile eliminare il tecnico: è ancora assegnato a uno o più rapporti.",
+        onDeleteParent: "Impossibile eliminare il tecnico: è ancora assegnato a uno o più report.",
         onInvalidReference: "Il tecnico selezionato non esiste.",
     },
     intervention_customer_id_customer_id_fk: {

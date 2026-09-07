@@ -149,7 +149,7 @@ const buildActivitySection = (intervention: InterventionPrintData) => ({
     table: {
         widths: [90, "*", 90, "*"],
         body: [
-            sectionBarRow("RAPPORTO ATTIVITÀ", 4),
+            sectionBarRow("REPORT ATTIVITÀ", 4),
             dualFieldRow(
                 "Codice",
                 `#${intervention.id}`,

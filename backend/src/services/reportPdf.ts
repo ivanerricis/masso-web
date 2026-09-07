@@ -160,7 +160,7 @@ const buildReportMetaBlock = (report: ReportPrintData) => ({
             [
                 {
                     stack: [
-                        { text: `Rapporto #${report.id}`, style: "metaTitle", alignment: "right" },
+                        { text: `Report #${report.id}`, style: "metaTitle", alignment: "right" },
                         { text: report.createdAtLabel, style: "metaDate", alignment: "right" },
                     ],
                 },

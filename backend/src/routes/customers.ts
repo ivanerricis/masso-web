@@ -61,7 +61,7 @@ const customerUpdateBodySchema = customerBodySchemaBase
         message: "At least one field is required",
     });
 
-// Intestazione condivisa dai due resoconti PDF del cliente (rapporti e interventi).
+// Intestazione condivisa dai due resoconti PDF del cliente (report e interventi).
 const loadCustomerPrintContext = async (req: Request, id: number) => {
     const customers = await getCustomerById(id);
 

@@ -179,10 +179,10 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
             return;
         }
 
-        // Un rapporto chiuso senza collaboratore non dice chi l'ha lavorato: il vincolo vale
-        // solo sulla chiusura, quindi il campo resta facoltativo finché il rapporto è aperto.
+        // Un report chiuso senza collaboratore non dice chi l'ha lavorato: il vincolo vale
+        // solo sulla chiusura, quindi il campo resta facoltativo finché il report è aperto.
         if (formValues.closed && collaboratorId == null) {
-            toast.error("Per chiudere un rapporto è necessario selezionare un collaboratore");
+            toast.error("Per chiudere un report è necessario selezionare un collaboratore");
             return;
         }
 
@@ -208,10 +208,10 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
                 internalPrice,
             });
 
-            toast.success("Rapporto aggiornato con successo");
+            toast.success("Report aggiornato con successo");
             onOpenChange(false);
         } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile aggiornare il rapporto"));
+            toast.error(getApiErrorMessage(error, "Impossibile aggiornare il report"));
         } finally {
             setIsSubmitting(false);
         }
@@ -221,7 +221,7 @@ const EditReportDialog = ({ open, reportId, customerName, onOpenChange, onSubmit
         <CustomDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Modifica rapporto"
+            title="Modifica report"
             contentClassName="sm:max-w-4xl lg:max-w-6xl xl:max-w-[88rem]"
             preventOutsideClose
             confirmLabel={isSubmitting ? "Salvataggio..." : "Salva"}

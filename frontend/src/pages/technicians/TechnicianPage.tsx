@@ -197,7 +197,7 @@ const TechnicianPage = () => {
                 <h1 className="text-2xl font-bold">{technicianName}</h1>
             </div>
 
-            <p className="ml-12">Rapporti del tecnico</p>
+            <p className="ml-12">Report del tecnico</p>
             <div className="ml-12">
                 <Select
                     value={visibilityFilter}
@@ -207,9 +207,9 @@ const TechnicianPage = () => {
                         <SelectValue placeholder="Filtra per stato" />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                        <SelectItem value="all">Tutti i rapportini</SelectItem>
-                        <SelectItem value="open">Rapportini aperti</SelectItem>
-                        <SelectItem value="closed">Rapportini chiusi</SelectItem>
+                        <SelectItem value="all">Tutti i report</SelectItem>
+                        <SelectItem value="open">Report aperti</SelectItem>
+                        <SelectItem value="closed">Report chiusi</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

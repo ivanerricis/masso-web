@@ -28,7 +28,7 @@ type FilterSelectProps<TValue extends string> = {
     icon: LucideIcon;
     /**
      * Voce "nessun filtro" in cima all'elenco, con la sua etichetta ("Tutti gli stati",
-     * "Tutti i rapportini"): il valore corrispondente non sta negli `options`, che
+     * "Tutti i report"): il valore corrispondente non sta negli `options`, che
      * elencano solo gli stati reali dell'entità.
      */
     allOption?: { value: TValue; label: string };

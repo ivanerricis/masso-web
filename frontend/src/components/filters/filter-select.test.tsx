@@ -50,10 +50,10 @@ describe("FilterSelect", () => {
                 value="all"
                 onValueChange={() => {}}
                 options={[
-                    { value: "open" as const, label: "Rapportini aperti" },
-                    { value: "closed" as const, label: "Rapportini chiusi" },
+                    { value: "open" as const, label: "Report aperti" },
+                    { value: "closed" as const, label: "Report chiusi" },
                 ]}
-                allOption={{ value: "all" as const, label: "Tutti i rapportini" }}
+                allOption={{ value: "all" as const, label: "Tutti i report" }}
                 label="Filtra per stato"
                 icon={ListFilter}
             />
@@ -62,7 +62,7 @@ describe("FilterSelect", () => {
         await user.click(screen.getByRole("combobox", { name: "Filtra per stato" }));
 
         const options = screen.getAllByRole("option").map((option) => option.textContent);
-        expect(options).toEqual(["Tutti i rapportini", "Rapportini aperti", "Rapportini chiusi"]);
+        expect(options).toEqual(["Tutti i report", "Report aperti", "Report chiusi"]);
     });
 
     it("omette la voce 'tutti' quando non è richiesta", async () => {

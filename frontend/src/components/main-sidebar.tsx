@@ -30,7 +30,7 @@ type SidebarItem = {
 
 const sidebarItems: SidebarItem[] = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Rapporti", path: "/reports", icon: ClipboardList },
+    { label: "Report", path: "/reports", icon: ClipboardList },
     { label: "Interventi", path: "/interventions", icon: HardHat },
     { label: "Clienti", path: "/clients", icon: Users },
     { label: "Collaboratori", path: "/collaborators", icon: BookUser },

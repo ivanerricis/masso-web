@@ -256,7 +256,7 @@ Ogni backup produce un archivio `db-backup-YYYYMMDD-HHMMSS.tar.gz`:
 
 | Contenuto | Note |
 |---|---|
-| `dump.sql` | tutti i dati: clienti, rapporti, interventi, utenti |
+| `dump.sql` | tutti i dati: clienti, report, interventi, utenti |
 | `data/email-settings.json` | server SMTP, porta, utente, mittente |
 | `data/backup-settings.json` | pianificazione, destinazione NAS, retention |
 | `data/logo/` | logo del laboratorio usato nei PDF |

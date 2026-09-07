@@ -2,7 +2,7 @@ import path from "node:path";
 import pdfmake from "pdfmake";
 
 /**
- * Parti comuni ai PDF di rapporti e interventi: font, palette, primitive di tabella e il
+ * Parti comuni ai PDF di report e interventi: font, palette, primitive di tabella e il
  * frontespizio dei riepiloghi per cliente.
  *
  * Prima ognuno dei due generatori aveva la propria copia identica di tutto questo, e i

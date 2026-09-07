@@ -34,14 +34,14 @@ const ReportsTable = ({
             <OpenEntityButton
                 size="icon-lg"
                 onClick={() => onOpenReport(row.id)}
-                aria-label={`Apri rapporto ${row.id}`}
+                aria-label={`Apri report ${row.id}`}
             />
             <TableActionButton
                 variant="default"
                 size="icon-lg"
                 className="bg-primary/10 hover:bg-primary/20"
                 onClick={() => onEditReport(row.id)}
-                aria-label={`Modifica rapporto ${row.id}`}
+                aria-label={`Modifica report ${row.id}`}
             >
                 <Pencil className="size-5 text-primary" />
             </TableActionButton>
@@ -50,7 +50,7 @@ const ReportsTable = ({
                 size="icon-lg"
                 className="bg-yellow-400/20 hover:bg-yellow-400/30"
                 onClick={() => onPrintReport(row.id)}
-                aria-label={`Stampa rapporto ${row.id}`}
+                aria-label={`Stampa report ${row.id}`}
             >
                 <Printer className="size-5 text-yellow-400" />
             </TableActionButton>
@@ -58,7 +58,7 @@ const ReportsTable = ({
                 variant="destructive"
                 size="icon-lg"
                 onClick={() => onDeleteReport(row)}
-                aria-label={`Elimina rapporto ${row.id}`}
+                aria-label={`Elimina report ${row.id}`}
             >
                 <Trash2 className="size-5" />
             </TableActionButton>
@@ -70,7 +70,7 @@ const ReportsTable = ({
             columns={columns}
             rows={rows}
             getRowKey={(row) => row.id}
-            emptyMessage="Nessun rapporto disponibile."
+            emptyMessage="Nessun report disponibile."
             renderRowActions={renderRowActions}
             getRowStatusColor={getStatusColor}
             getAccentClassName={getAccentClassName}

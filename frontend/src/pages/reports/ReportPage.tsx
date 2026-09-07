@@ -239,7 +239,7 @@ const ReportPage = () => {
 
                             <div className="min-w-0">
                                 <h1 className="text-xl font-bold tracking-tight wrap-break-word sm:text-2xl">
-                                    Rapporto #{details.report.id} - {details.customerName}
+                                    Report #{details.report.id} - {details.customerName}
                                 </h1>
                             </div>
                         </div>
@@ -251,44 +251,43 @@ const ReportPage = () => {
                                         variant="outline"
                                         size={"lg"}
                                         onClick={() => setIsEditDialogOpen(true)}
-                                        aria-label="Modifica rapporto"
+                                        aria-label="Modifica report"
                                     >
                                         <Pencil className="size-5" />
                                         <Label className="hidden text-lg lg:inline">Modifica</Label>
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>Modifica rapporto</TooltipContent>
+                                <TooltipContent>Modifica report</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button size={"lg"} onClick={handlePrintReport} aria-label="Stampa rapporto">
+                                    <Button size={"lg"} onClick={handlePrintReport} aria-label="Stampa report">
                                         <Printer className="size-5" />
                                         <Label className="hidden text-lg lg:inline">Stampa</Label>
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent>Stampa rapporto</TooltipContent>
+                                <TooltipContent>Stampa report</TooltipContent>
                             </Tooltip>
                         </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 text-sm">
-                        <span className="rounded-full border border-border/70 bg-background px-3 py-2">
-                            Creato: {formatDateTime(details.report.created_at)}
-                        </span>
-                        <span className="rounded-full border border-border/70 bg-background px-3 py-2">
-                            Aggiornato: {details.report.updated_at ? formatDateTime(details.report.updated_at) : "-"}
-                        </span>
-                        <span
-                            className={`rounded-full px-3 py-2 font-medium ${statusBadgeClass(details.report.closed)}`}
-                        >
-                            {details.report.closed ? "Chiuso" : "Aperto"}
-                        </span>
                     </div>
                 </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <Card className="h-fit! gap-2! border-primary/20">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-primary">Stato</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <span
+                            className={`inline-flex rounded-full px-3 py-1 text-2xl font-semibold ${statusBadgeClass(details.report.closed)}`}
+                        >
+                            {details.report.closed ? "Chiuso" : "Aperto"}
+                        </span>
+                    </CardContent>
+                </Card>
+
                 <Card className="h-fit! gap-2! border-primary/20">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-primary">Prezzo interno</CardTitle>

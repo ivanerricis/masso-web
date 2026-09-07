@@ -229,7 +229,7 @@ const DashboardPage = () => {
 
         await loadDashboardMetrics(selectedRevenueMonth);
 
-        if (window.confirm("Rapporto creato. Vuoi stamparlo adesso?")) {
+        if (window.confirm("Report creato. Vuoi stamparlo adesso?")) {
             openPrintWindow(getReportPrintUrl(createdReport.id));
         }
     };
@@ -301,7 +301,7 @@ const DashboardPage = () => {
                 description="Panoramica del laboratorio e stato delle riparazioni."
                 action={
                     <div className="flex flex-wrap items-center gap-2">
-                        <CreateEntityButton label="Nuovo rapportino" onClick={() => setDialogCreateReportOpen(true)} />
+                        <CreateEntityButton label="Nuovo report" onClick={() => setDialogCreateReportOpen(true)} />
                         <CreateEntityButton
                             label="Nuovo intervento"
                             onClick={() => setDialogCreateInterventionOpen(true)}
@@ -312,7 +312,7 @@ const DashboardPage = () => {
 
             <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-start sm:gap-4">
                 <CardDashboard
-                    text="Rapportini aperti"
+                    text="Report aperti"
                     mobileText="Aperti"
                     icon={CircleDashed}
                     number={String(openReports)}
@@ -320,7 +320,7 @@ const DashboardPage = () => {
                     onClick={() => goToReportsPage("open")}
                 />
                 <CardDashboard
-                    text="Rapportini chiusi"
+                    text="Report chiusi"
                     mobileText="Chiusi"
                     icon={CircleCheck}
                     number={String(closedReports)}

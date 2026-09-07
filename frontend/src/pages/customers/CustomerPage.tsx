@@ -154,7 +154,7 @@ const CustomerPage = () => {
                 </Tooltip>
             </div>
 
-            <p className="ml-12">Rapporti del cliente</p>
+            <p className="ml-12">Report del cliente</p>
             <div className="ml-12">
                 <Select
                     value={visibilityFilter}
@@ -164,9 +164,9 @@ const CustomerPage = () => {
                         <SelectValue placeholder="Filtra per stato" />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                        <SelectItem value="all">Tutti i rapportini</SelectItem>
-                        <SelectItem value="open">Rapportini aperti</SelectItem>
-                        <SelectItem value="closed">Rapportini chiusi</SelectItem>
+                        <SelectItem value="all">Tutti i report</SelectItem>
+                        <SelectItem value="open">Report aperti</SelectItem>
+                        <SelectItem value="closed">Report chiusi</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -192,7 +192,7 @@ const CustomerPage = () => {
                             ) : (
                                 paginatedReportRows.map((report) => (
                                     <TableRow key={report.id} data-status-color={report.closed ? "green" : "red"}>
-                                        <TableCell>Rapporto #{report.id}</TableCell>
+                                        <TableCell>Report #{report.id}</TableCell>
                                         <TableCell>{report.deviceName}</TableCell>
                                         <TableCell>{report.closed ? "Chiuso" : "Aperto"}</TableCell>
                                         <TableCell className="bg-background text-right text-foreground">
@@ -213,7 +213,7 @@ const CustomerPage = () => {
                     <EntityCardList
                         className="sm:hidden"
                         columns={[
-                            { key: "id", header: "ID", render: (row: CustomerReportRow) => `Rapporto #${row.id}` },
+                            { key: "id", header: "ID", render: (row: CustomerReportRow) => `Report #${row.id}` },
                             {
                                 key: "deviceName",
                                 header: "Dispositivo",

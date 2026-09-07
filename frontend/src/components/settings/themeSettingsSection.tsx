@@ -229,7 +229,7 @@ const ThemeSettingsSection = () => {
 
             <SettingsCard
                 title="Righe delle tabelle"
-                description="Quanto sono marcati i colori di stato nelle tabelle di interventi e rapporti."
+                description="Quanto sono marcati i colori di stato nelle tabelle di interventi e report."
             >
                 <div className="grid gap-2 sm:grid-cols-3">
                     {tableRowIntensities.map((intensity) => (

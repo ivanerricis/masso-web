@@ -213,11 +213,11 @@ const ReportsPage = () => {
 
             await loadReports();
 
-            if (window.confirm("Rapporto creato. Vuoi stamparlo adesso?")) {
+            if (window.confirm("Report creato. Vuoi stamparlo adesso?")) {
                 handlePrintReport(createdReport.id);
             }
         } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile creare il rapporto"));
+            toast.error(getApiErrorMessage(error, "Impossibile creare il report"));
             throw error;
         }
     };
@@ -313,12 +313,12 @@ const ReportsPage = () => {
         try {
             setIsDeleting(true);
             await deleteReport(reportToDelete.id);
-            toast.success("Rapporto eliminato con successo");
+            toast.success("Report eliminato con successo");
             setIsDeleteDialogOpen(false);
             setReportToDelete(null);
             await loadReports();
         } catch (error) {
-            toast.error(getApiErrorMessage(error, "Impossibile eliminare il rapporto"));
+            toast.error(getApiErrorMessage(error, "Impossibile eliminare il report"));
         } finally {
             setIsDeleting(false);
         }
@@ -332,10 +332,10 @@ const ReportsPage = () => {
         <div className="relative flex h-full min-h-0 w-full flex-col gap-4">
             <>
                 <PageHeader
-                    title="Rapporti"
-                    description="Gestisci i rapporti del laboratorio."
+                    title="Report"
+                    description="Gestisci i report del laboratorio."
                     action={
-                        <CreateEntityButton label="Crea nuovo rapporto" onClick={() => setIsCreateDialogOpen(true)} />
+                        <CreateEntityButton label="Crea nuovo report" onClick={() => setIsCreateDialogOpen(true)} />
                     }
                 />
 
@@ -367,11 +367,11 @@ const ReportsPage = () => {
                             setReportToDelete(null);
                         }
                     }}
-                    title="Elimina rapporto"
+                    title="Elimina report"
                     description={
                         reportToDelete
-                            ? `Sei sicuro di voler eliminare il rapporto ID ${reportToDelete.id}?`
-                            : "Sei sicuro di voler eliminare questo rapporto?"
+                            ? `Sei sicuro di voler eliminare il report ID ${reportToDelete.id}?`
+                            : "Sei sicuro di voler eliminare questo report?"
                     }
                     isDeleting={isDeleting}
                     onConfirm={handleDeleteReport}

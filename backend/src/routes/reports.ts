@@ -201,7 +201,7 @@ reportsRouter.post("/", validate({ body: reportCreateBodySchema }), async (req, 
     const price = req.body.price ?? 0;
 
     if (req.body.closed && req.body.collaboratorId == null) {
-        res.status(400).json({ message: "Per chiudere un rapporto è necessario indicare un collaboratore" });
+        res.status(400).json({ message: "Per chiudere un report è necessario indicare un collaboratore" });
         return;
     }
 
@@ -241,7 +241,7 @@ reportsRouter.put("/:id", validate({ params: idParamsSchema, body: reportUpdateB
         req.body.collaboratorId !== undefined ? req.body.collaboratorId : existingReport[0].collaboratorId;
 
     if (nextClosed && nextCollaboratorId == null) {
-        res.status(400).json({ message: "Per chiudere un rapporto è necessario indicare un collaboratore" });
+        res.status(400).json({ message: "Per chiudere un report è necessario indicare un collaboratore" });
         return;
     }
 

@@ -39,7 +39,7 @@ export const useReportsRows = ({
                 dateTo,
             }),
         queryKey: [currentPage, pageSize, debouncedSearchText, visibilityFilter, sortOption, dateFrom, dateTo],
-        errorMessage: "Impossibile caricare i rapporti",
+        errorMessage: "Impossibile caricare i report",
         initialLoading: false,
     });
 

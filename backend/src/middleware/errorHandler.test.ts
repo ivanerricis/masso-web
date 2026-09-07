@@ -67,7 +67,7 @@ describe("errorHandler", () => {
         });
 
         expect(res.statusCode).toBe(400);
-        expect(res.body.message).toBe("Impossibile eliminare il dispositivo: è ancora associato a uno o più rapporti.");
+        expect(res.body.message).toBe("Impossibile eliminare il dispositivo: è ancora associato a uno o più report.");
     });
 
     it("traduce una FK violata in inserimento nel messaggio sul riferimento", () => {

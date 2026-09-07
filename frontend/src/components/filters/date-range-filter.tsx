@@ -14,7 +14,7 @@ type DateRangeFilterProps = {
  *
  * Il vincolo "inizio ≤ fine" è espresso con `max`/`min` incrociati fra i due campi, così è
  * il selettore del browser stesso a impedire la combinazione impossibile invece di
- * segnalarla dopo. È il motivo per cui questo componente esiste: rapporti e interventi ne
+ * segnalarla dopo. È il motivo per cui questo componente esiste: report e interventi ne
  * avevano due copie identiche carattere per carattere, e quella regola è comportamento,
  * non impaginazione — due copie di una regola sono due occasioni perché una cambi da sola.
  */
