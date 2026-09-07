@@ -47,6 +47,8 @@ frontend/vite.config.ts.timestamp-*
 *.sqlite3
 backend/data/
 backend/backups/
+# Scritta a runtime da updateManager per chiedere all'host un controllo aggiornamenti.
+backend/update-signal/
 ops/update/
 
 # Credenziali del tunnel Cloudflare (cert.pem + <tunnel>.json): sono segreti della VM,

@@ -11,6 +11,29 @@ solo l'evoluzione del codice e dell'infrastruttura.
 
 ---
 
+## 2026-09-07 — PDF del report: il riquadro "avvisato" si divide in due
+
+**"Lavoro eseguito" accanto ad "avvisato", nella striscia in fondo alla copia interna.** Il
+riquadro in basso a sinistra registrava solo se il cliente è stato avvisato; ora tiene due
+voci affiancate, "lavoro eseguito" a sinistra (vuota, da spuntare a mano come già accade per
+"avvisato" quando il report non è ancora stato notificato) e "avvisato" a destra, che
+continua a stampare il valore del report.
+- È una tabella sola a due colonne, non due riquadri affiancati: così la barra di sezione e
+  la riga sotto condividono altezza e bordi, esattamente come fa già "PAGAMENTO" con le sue
+  due caselle. Due riquadri separati avrebbero raddoppiato i bordi in mezzo.
+- Le colonne sono `["*", 64]` e non metà e metà: a 10,5 pt "LAVORO ESEGUITO" misura 91,3 pt
+  (misurato con `widthOfString`, non stimato) contro i ~79 pt disponibili in mezza casella,
+  quindi sarebbe andato a capo, e una barra su due righe avrebbe alzato questo riquadro
+  rispetto a "IMPORTO" e "PAGAMENTO", che restano su una riga sola. Con 64 pt riservati ad
+  "AVVISATO" (49,2 pt di testo) entrambi i titoli stanno su una riga e i tre riquadri
+  tornano allineati sopra e sotto.
+- `sectionBarCell` estratto da `sectionBarRow` in `services/pdf/shared.ts`: serviva la
+  singola cella-barra, senza il `colSpan` che `sectionBarRow` impone. `sectionBarRow` ora la
+  usa, quindi lo stile della barra resta definito in un punto solo.
+- Il resto dell'impaginazione è invariato: verificato rendendo il PDF prima e dopo con dati
+  di prova e confrontando le due pagine — tutte le sezioni cadono alla stessa altezza.
+- File: `backend/src/services/reportPdf.ts`, `backend/src/services/pdf/shared.ts`.
+
 ## 2026-09-07 — Località del cliente
 
 **Nuovo campo `city` sul cliente, facoltativo.** La scheda cliente registrava solo nome,

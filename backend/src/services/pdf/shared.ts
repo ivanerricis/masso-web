@@ -99,9 +99,17 @@ export const tableLayout = {
     paddingBottom: () => 4,
 };
 
+export const sectionBarCell = (title: string, colSpan?: number) => ({
+    text: title,
+    style: "sectionBar",
+    alignment: "center",
+    fillColor: "#E7ECF3",
+    ...(colSpan == null ? {} : { colSpan }),
+});
+
 export const sectionBarRow = (title: string, colSpan: number) => {
     const row = new Array(colSpan).fill({});
-    row[0] = { text: title, style: "sectionBar", colSpan, alignment: "center", fillColor: "#E7ECF3" };
+    row[0] = sectionBarCell(title, colSpan);
     return row;
 };
 
